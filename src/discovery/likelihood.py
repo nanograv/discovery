@@ -208,6 +208,43 @@ class GlobalLikelihood:
 
         return getos
 
+    @functools.cached_property
+    def os_skyscramble(self):
+        os_rhosigma = self.os_rhosigma
+
+        gwpar = [par for par in self.globalgp.Phi.params if "log10_A" in par][0]
+
+        pos = self.globalgp.pos
+        pairs = [(i1, i2) for i1 in range(len(pos)) for i2 in range(i1 + 1, len(pos))]
+
+        def hd_orf_os(pos1, pos2):
+            """no need for autocorrelation if statement since
+            this will only be used for the OS"""
+            omc2 = (1.0 - matrix.jnp.dot(pos1, pos2)) / 2.0
+            return 1.5 * omc2 * matrix.jnp.log(omc2) - 0.25 * omc2 + 0.5
+
+        def getos(positions, params):
+            orfs = matrix.jnparray([hd_orf_os(positions[i1], positions[i2]) for (i1, i2) in pairs])
+            rhos, sigmas = os_rhosigma(params)
+
+            gwnorm = 10 ** (2.0 * params[gwpar])
+            rhos, sigmas = gwnorm * rhos, gwnorm * sigmas
+
+            os = matrix.jnp.sum(rhos * orfs / sigmas**2) / matrix.jnp.sum(orfs**2 / sigmas**2)
+            os_sigma = 1.0 / matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 / sigmas**2))
+            snr = os / os_sigma
+
+            return {
+                "os": os,
+                "os_sigma": os_sigma,
+                "snr": snr
+            }
+
+        getos.params = os_rhosigma.params
+        # getos.angles = angles
+
+        return getos
+
     # rho_ij = y_i Cmi(theta) Fi Phi Ftj Cmj(theta) y_j
     # sigma_ij = tr Fti Cmi(theta) Fi Phi Ftj Cmj(theta) Fj Phi
     @functools.cached_property
