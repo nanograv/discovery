@@ -2,6 +2,7 @@ import os, jax
 import numpy as np
 
 import discovery as ds
+from discovery.samplers import utils
 from PTMCMCSampler import PTMCMCSampler as ptmcmc
 
 
@@ -121,8 +122,6 @@ class InferenceModel(object):
 
     Methods:
     - __init__(self, model, pnames=None): Initializes the InferenceModel object.
-    - x2p(self, x): Converts a list of values to a dictionary of parameter-value pairs.
-    - p2x(self, p): Converts a dictionary of parameter-value pairs to a list of values.
     - get_parameter_groups(self): Utility function to get parameter groupings for sampling.
     - setup_sampler(self, outdir='chains', resume=False, empirical_distr=None, groups=None, loglkwargs={}, logpkwargs={}): Sets up the sampler for MCMC sampling.
     """
@@ -147,33 +146,8 @@ class InferenceModel(object):
         jlogl = jax.jit(loglike)
         jlogp = jax.jit(logprior)
 
-        self.get_lnlikelihood = lambda x: float(jlogl(self.x2p(x)))
-        self.get_lnprior = lambda x: float(jlogp(self.x2p(x)))
-
-    def x2p(self, x):
-        """
-        Converts a list of parameter values `x` to a dictionary representation.
-
-        Args:
-            x (list): A list of parameter values.
-
-        Returns:
-            dict: A dictionary representation of the parameter values, where the keys are the parameter names and the values are the corresponding values from `x`.
-        """
-        # does not handle vector parameters
-        return {par: val for par, val in zip(self.param_names, x)}
-
-    def p2x(self, p):
-        """
-        Convert a dictionary of values to a NumPy array.
-
-        Parameters:
-            p (dict): A dictionary containing values.
-
-        Returns:
-            numpy.ndarray: A NumPy array containing the values from the dictionary.
-        """
-        return np.array(list(p.values()), 'd')
+        self.get_lnlikelihood = lambda x: float(jlogl(utils.x2p(x, self.param_names)))
+        self.get_lnprior = lambda x: float(jlogp(utils.x2p(x, self.param_names)))
 
     def get_parameter_groups(self):
         """Utility function to get parameter groupings for sampling."""
