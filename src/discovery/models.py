@@ -1,7 +1,7 @@
 from jax.tree_util import Partial
 import discovery as ds
 
-def lhood_maker(psrs, noisedict=None, gamma_common=None, 
+def make_likelihood(psrs, noisedict=None, gamma_common=None,
                 red_components=30, common_components=14,
                 common_type='curn', array_like=False):
     """
@@ -18,7 +18,7 @@ def lhood_maker(psrs, noisedict=None, gamma_common=None,
     Returns:
     - gl (object): Discovery likelihood object.
     """
-    
+
     tspan = ds.getspan(psrs)
 
     if gamma_common is not None:
@@ -34,7 +34,7 @@ def lhood_maker(psrs, noisedict=None, gamma_common=None,
                                     ds.makegp_ecorr(psr, noisedict),
                                     ds.makegp_timing(psr, svd=True),
                                     ds.makegp_fourier(psr, ds.powerlaw, red_components, T=tspan, name='red_noise'),
-                                    ds.makegp_fourier(psr, common_powerlaw, common_components, T=tspan, 
+                                    ds.makegp_fourier(psr, common_powerlaw, common_components, T=tspan,
                                                       common=['gw_log10_A']+gamma_common_name, name='gw')
                                                       ]) for psr in psrs))
     elif common_type == 'hd':
@@ -44,8 +44,8 @@ def lhood_maker(psrs, noisedict=None, gamma_common=None,
                                     ds.makegp_timing(psr, svd=True),
                                     ds.makegp_fourier(psr, ds.powerlaw, red_components, T=tspan, name="red_noise")
                                     ]) for psr in psrs),
-                                    ds.makegp_fourier_global(psrs, common_powerlaw, 
-                                                             ds.hd_orf, common_components, 
+                                    ds.makegp_fourier_global(psrs, common_powerlaw,
+                                                             ds.hd_orf, common_components,
                                                              T=tspan, name="gw"))
 
     return gl
