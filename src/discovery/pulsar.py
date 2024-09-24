@@ -1,14 +1,35 @@
 import json
+from typing import Self
 
 import numpy as np
 import pandas as pd
 import pyarrow
 import pyarrow.feather
 
-def read_chain(fileordir):
-    """Read a Discovery Feather chain or a PTMCMC chain directory to a Pandas table.
-    Look in `attrs` for priors, runtime_info, and noisedict."""
 
+def read_chain(fileordir: str) -> pd.DataFrame:
+    """Read a Discovery Feather chain or a PTMCMC chain directory to a Pandas table.
+
+    This function can read either a Feather file or a PTMCMC chain directory and convert it into a Pandas DataFrame.
+    The resulting DataFrame will contain chain data and additional metadata in its `attrs` attribute.
+
+    Parameters
+    ----------
+    fileordir : str
+        Path to either a Feather file or a PTMCMC chain directory.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the chain data. The DataFrame's `attrs` attribute will contain `priors`,
+        `runtime_info`, and `noisedict` if available.
+
+    Notes
+    -----
+    - For Feather files, metadata is stored in the `attrs` attribute of the DataFrame.
+    - For PTMCMC directories, the function reads multiple files to construct the DataFrame and its metadata.
+
+    """
     if fileordir.endswith('.feather'):
         table = pyarrow.feather.read_table(fileordir)
 
@@ -41,15 +62,86 @@ def read_chain(fileordir):
 
         return df
 
-def save_chain(df, filename):
-    """Saves Pandas chain table to Feather, preserving `attrs` in `schema.metadata['json']`."""
+def save_chain(df: pd.DataFrame, filename: str) -> None:
+    """Saves Pandas chain table to Feather, preserving `attrs` in `schema.metadata['json']`.
 
+    This function saves a Pandas DataFrame containing chain data to a Feather file, ensuring that
+    the DataFrame's `attrs` are preserved in the Feather file's metadata.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The DataFrame containing the chain data to be saved.
+    filename : str
+        The path where the Feather file should be saved.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    The function stores the DataFrame's 'attrs' in the Feather file's schema metadata under the 'json' key.
+
+    """
     table = pyarrow.Table.from_pandas(df)
     table = table.replace_schema_metadata({**table.schema.metadata, 'json': json.dumps(df.attrs)})
     pyarrow.feather.write_feather(table, filename)
 
 
 class Pulsar:
+    """A class representing a pulsar and its associated data.
+
+    This class provides methods to read and write pulsar data from/to Feather files,
+    and stores various pulsar attributes such as timing data, residuals, and metadata.
+
+    Attributes
+    ----------
+    name : str
+        The name of the pulsar.
+    toas : np.ndarray
+        Time of arrivals.
+    stoas : np.ndarray
+        Site arrival times.
+    toaerrs : np.ndarray
+        TOA errors.
+    residuals : np.ndarray
+        Timing residuals.
+    freqs : np.ndarray
+        Observing frequencies.
+    backend_flags : np.ndarray
+        Backend flags.
+    Mmat : np.ndarray
+        Design matrix.
+    sunssb : np.ndarray
+        Sun's position in the Solar System Barycenter.
+    pos_t : np.ndarray
+        Pulsar position at each epoch.
+    planetssb : np.ndarray
+        Planets' positions in the Solar System Barycenter.
+    flags : dict
+        Various flags associated with the pulsar data.
+    dm : float
+        Dispersion measure.
+    pdist : float
+        Pulsar distance.
+    pos : list
+        Pulsar position.
+    phi : float
+        Ecliptic longitude.
+    theta : float
+        Ecliptic latitude.
+    noisedict : dict, optional
+        Dictionary containing noise model parameters.
+
+    Methods
+    -------
+    read_feather(filename)
+        Class method to read pulsar data from a Feather file.
+    save_feather(filename, noisedict=None)
+        Instance method to save pulsar data to a Feather file.
+
+    """
     # notes: currently ignores _isort/__isort and gets sorted versions
 
     columns = ['toas', 'stoas', 'toaerrs', 'residuals', 'freqs', 'backend_flags']
@@ -69,7 +161,22 @@ class Pulsar:
         return str(self)
 
     @classmethod
-    def read_feather(cls, filename):
+    def read_feather(cls, filename: str) -> Self:
+        """Read pulsar data from a Feather file.
+
+        This class method reads a Feather file containing pulsar data and returns a new Pulsar object.
+
+        Parameters
+        ----------
+        filename : str
+            Path to the Feather file containing the pulsar data.
+
+        Returns
+        -------
+        Pulsar
+            A new Pulsar object populated with data from the Feather file.
+
+        """
         f = pyarrow.feather.read_table(filename)
         self = Pulsar()
 
@@ -101,7 +208,24 @@ class Pulsar:
 
     to_list = lambda a: a.tolist() if isinstance(a, np.ndarray) else a
 
-    def save_feather(self, filename, noisedict=None):
+    def save_feather(self, filename: str, noisedict: dict | None=None) -> None:
+        """Save pulsar data to a Feather file.
+
+        This method saves the pulsar data to a Feather file, including all attributes and metadata.
+
+        Parameters
+        ----------
+        filename : str
+            Path where the Feather file should be saved.
+        noisedict : dict, optional
+            A dictionary of noise model parameters to be saved with the pulsar data.
+            If None, the method will use the Pulsar object's noisedict attribute if it exists.
+
+        Returns
+        -------
+        None
+
+        """
         pydict = {array: getattr(self, array) for array in Pulsar.columns}
 
         pydict.update({f'{array}_{i}': getattr(self, array)[:,i] for array in Pulsar.vector_columns

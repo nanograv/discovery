@@ -9,22 +9,110 @@ jnp = matrix.jnp
 
 import jax
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from discovery import GlobalLikelihood, VariableGP, PulsarLikelihood
+
+    from jax.typing import ArrayLike
+
+    from collections.abc import Callable
+
 # these versions of ORFs take only one parameter (the angle)
 # z = jnp.dot(pos1, pos2)
 
-def hd_orfa(z):
+def hd_orfa(z: ArrayLike) -> ArrayLike:
+    """Calculate the Hellings and Downs overlap reduction function.
+
+    Parameters
+    ----------
+    z : ArrayLike
+        The cosine(s) of the angle(s) between two pulsars.
+
+    Returns
+    -------
+    ArrayLike
+        The Hellings and Downs correlation(s) for `z` .
+
+    """
     omc2 = (1.0 - z) / 2.0
     return 1.5 * omc2 * jnp.log(omc2) - 0.25 * omc2 + 0.5 + 0.5 * jnp.allclose(z, 1.0)
 
-def dipole_orfa(z):
+def dipole_orfa(z: ArrayLike) -> ArrayLike:
+    """Calculate the dipole overlap reduction function.
+
+    Parameters
+    ----------
+    z : ArrayLike
+        The cosine(s) of the angle(s) between two pulsars.
+
+    Returns
+    -------
+    ArrayLike
+        The dipole correlation(s) evaluated at `z`.
+
+    """
     return z + 1.0e-6 * jnp.allclose(z, 1.0)
 
-def monopole_orfa(z):
+def monopole_orfa(z: ArrayLike) -> ArrayLike:
+    """Calculate the monopole overlap reduction function.
+
+    Parameters
+    ----------
+    z : ArrayLike
+        The cosine(s) of the angle(s) between two pulsars.
+
+    Returns
+    -------
+    ArrayLike
+        The monopole correlation for `z`.
+
+    """
     return 1.0 + 1.0e-6 * jnp.allclose(z, 1.0)
 
 
 class OS:
-    def __init__(self, gbl):
+    """Optimal Statistic (OS) class.
+
+    This class implements various methods for calculating and analyzing the optimal statistic.
+
+    Attributes
+    ----------
+    psls : list[PulsarLikelihood]
+        List of PulsarLikelihood objects.
+    gws : list[VariableGP]
+        List of GW GP objects for each pulsar.
+    gwpar : str
+        Name of the GW amplitude parameter.
+    pos : list[jax.Array]
+        List of pulsar position vectors.
+    pairs : list[tuple[int, int]]
+        List of pulsar pair indices.
+    angles : list[jax.Array]
+        List of angles between pulsar pairs.
+    params : list[str]
+        List of parameters used in calculation.
+    os_rhosigma : Callable[[dict[str, float]], tuple[jax.Array, jax.Array]]
+        Cached closure that takes a dictionary of parameters and retunrs the cross correlations and correpsonding
+        uncertainties
+    os :
+
+    """
+
+    def __init__(self, gbl: GlobalLikelihood):
+        """Initialize the Optimal Statistic object.
+
+        Parameters
+        ----------
+        gbl : GlobalLikelihood
+            A GlobalLikelihood object containing pulsar likelihoods.
+
+        Raises
+        ------
+        AttributeError
+            If the common GW GP cannot be found in the pulsar likelihood objects.
+
+        """
         self.psls = gbl.psls
 
         try:
@@ -38,37 +126,81 @@ class OS:
         self.angles = [jnp.dot(self.pos[i], self.pos[j]) for (i,j) in self.pairs]
 
     @functools.cached_property
-    def params(self):
+    def params(self) -> list[str]:
+        """
+        Get the parameters used in the optimal statistic calculation.
+
+        Returns
+        -------
+        list[str]
+            A list of parameter names.
+
+        """
         return self.os_rhosigma.params
 
     @functools.cached_property
-    def os_rhosigma(self):
+    def os_rhosigma(self) -> Callable[[dict[str, float]], tuple[jax.Array, jax.Array]]:
+        """Calculate the cross-correlation values (rho) and their uncertainties (sigma).
+
+        Returns
+        -------
+        get_rhosigma : Callable[[dict[str, float]], tuple[jax.Array, jax.Array]]
+            A function that computes rho and sigma given a set of parameters.
+
+        """
         kernelsolves = [psl.N.make_kernelsolve(psl.y, gw.F) for (psl, gw) in zip(self.psls, self.gws)]
         getN = self.gws[0].Phi.getN   # use prior from first pulsar, assume all GW GP are the same
         pairs = self.pairs
 
-        def get_rhosigma(params):
+        def get_rhosigma(params: dict[str, float]) -> tuple[jax.Array, jax.Array]:
+            """Compute rho and sigma for given parameters.
+
+            Parameters
+            ----------
+            params : dict[str, float]
+                Dictionary of parameter names and values.
+
+            Attributes
+            ----------
+            params : set
+                Sorted set of kernel parameters.
+
+            Returns
+            -------
+            tuple[jax.Array, jax.Array]
+                Tuple containing rho and sigma arrays.
+
+            """
             sN = jnp.sqrt(getN(params))
             ks = [k(params) for k in kernelsolves]
 
-            ts = [jnp.dot(sN * ks[i][0], sN * ks[j][0]) for (i,j) in pairs]
+            ts = [jnp.dot(sN * ks[i][0], sN * ks[j][0]) for (i, j) in pairs]
 
-            ds = [sN[:,jnp.newaxis] * k[1] * sN[jnp.newaxis,:] for k in ks]
-            bs = [jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
+            ds = [sN[:, jnp.newaxis] * k[1] * sN[jnp.newaxis, :] for k in ks]
+            bs = [jnp.trace(ds[i] @ ds[j]) for (i, j) in pairs]
 
-            return (matrix.jnparray(ts) / matrix.jnparray(bs),
-                    1.0 / jnp.sqrt(matrix.jnparray(bs)))
+            return (matrix.jnparray(ts) / matrix.jnparray(bs), 1.0 / jnp.sqrt(matrix.jnparray(bs)))
 
         get_rhosigma.params = sorted(set.union(*[set(k.params) for k in kernelsolves], getN.params))
 
         return get_rhosigma
 
     @functools.cached_property
-    def os(self):
+    def os(self) -> Callable[dict[str, float]]:
+        """Calculate the optimal statistic.
+
+        Returns
+        -------
+        Callable
+            A function that computes the optimal statistic, its uncertainty,
+            signal-to-noise ratio, and log10 of the GW amplitude given parameters
+            and an optional overlap reduction function (ORF).
+
+        """
         os_rhosigma = self.os_rhosigma    # getos will close on os_rhosigma
         gwpar, angles = self.gwpar, matrix.jnparray(self.angles)
 
-        def get_os(params, orf=hd_orfa):
+        def get_os(params: dict[str, float], orf: Callable[[ArrayLike], ArrayLike]=hd_orfa):
             rhos, sigmas = os_rhosigma(params)
 
             gwnorm = 10**(2.0 * params[gwpar])
@@ -87,31 +219,59 @@ class OS:
         return get_os
 
     @functools.cached_property
-    def scramble(self):
+    def scramble(self) -> Callable:
+        """Calculate the scrambled optimal statistic.
+
+        Returns
+        -------
+        get_scramble
+            A function that computes the scrambled optimal statistic given
+            parameters, pulsar positions, and an optional ORF.
+
+        """
         os_rhosigma = self.os_rhosigma    # getos will close on os_rhosigma
         gwpar, pairs = self.gwpar, self.pairs
 
-        def get_scramble(params, pos, orf=hd_orfa):
+        def get_scramble(
+            params: dict[str, float], pos: list[jax.Array], orf: Callable[[ArrayLike], ArrayLike] = hd_orfa
+        ) -> dict[str, float]:
+            """Compute the scrambled optimal statistic.
+
+            Parameters
+            ----------
+            params : dict[str, float]
+                Dictionary of parameter names and values.
+            pos : list[jax.Array]
+                List of pulsar position vectors.
+            orf : Callable, optional
+                Overlap reduction function, by default hd_orfa.
+
+            Returns
+            -------
+            dict[str, float]
+                Dictionary containing 'os', 'os_sigma', 'snr', and 'log10_A'.
+
+            """
             rhos, sigmas = os_rhosigma(params)
 
-            gwnorm = 10**(2.0 * params[gwpar])
+            gwnorm = 10 ** (2.0 * params[gwpar])
             rhos, sigmas = gwnorm * rhos, gwnorm * sigmas
 
-            angles = matrix.jnparray([jnp.dot(pos[i], pos[j]) for (i,j) in pairs])
+            angles = matrix.jnparray([jnp.dot(pos[i], pos[j]) for (i, j) in pairs])
             orfs = orf(angles)
 
             os = jnp.sum(rhos * orfs / sigmas**2) / jnp.sum(orfs**2 / sigmas**2)
             os_sigma = 1.0 / jnp.sqrt(jnp.sum(orfs**2 / sigmas**2))
             snr = os / os_sigma
 
-            return {'os': os, 'os_sigma': os_sigma, 'snr': snr, 'log10_A': params[gwpar]} #, 'rhos': rhos, 'sigmas': sigmas}
+            return {"os": os, "os_sigma": os_sigma, "snr": snr, "log10_A": params[gwpar]}  # , 'rhos': rhos, 'sigmas': sigmas}
 
         get_scramble.params = os_rhosigma.params
 
         return get_scramble
 
     @functools.cached_property
-    def os_rhosigma_complex(self):
+    def os_rhosigma_complex(self) -> Callable[[dict[str,float]], tuple[jax.Array, jax.Array]]:
         kernelsolves = [psl.N.make_kernelsolve(psl.y, gw.F) for (psl, gw) in zip(self.psls, self.gws)]
         getN = self.gws[0].Phi.getN
         pairs = self.pairs
