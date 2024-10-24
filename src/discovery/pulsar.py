@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pyarrow
 import pyarrow.feather
+import jax
 
 def read_chain(fileordir):
     """Read a Discovery Feather chain or a PTMCMC chain directory to a Pandas table.
@@ -69,7 +70,15 @@ class Pulsar:
         return str(self)
 
     @classmethod
-    def read_feather(cls, filename):
+    def read_feather(cls, filename, exclude_metadata=None):
+        # exclude some metadata in reading the feather file
+        # (e.g. if you know that dmx doesn't appear)
+        if exclude_metadata is not None:
+            if isinstance(exclude_metadata, str):
+                exclude_metadata = [exclude_metadata]
+            for em in exclude_metadata:
+                if em in cls.metadata:
+                    cls.metadata.remove(em)
         f = pyarrow.feather.read_table(filename)
         self = Pulsar()
 
@@ -101,7 +110,15 @@ class Pulsar:
 
     to_list = lambda a: a.tolist() if isinstance(a, np.ndarray) else a
 
-    def save_feather(self, filename, noisedict=None):
+    def save_feather(self, filename, noisedict=None, exclude_metadata=None):
+        # exclude some metadata in writing the feather file
+        # (e.g. if you know that dmx doesn't appear in the pulsar object)
+        if exclude_metadata is not None:
+            if isinstance(exclude_metadata, str):
+                exclude_metadata = [exclude_metadata]
+            for em in exclude_metadata:
+                if em in cls.metadata:
+                    cls.metadata.remove(em)
         pydict = {array: getattr(self, array) for array in Pulsar.columns}
 
         pydict.update({f'{array}_{i}': getattr(self, array)[:,i] for array in Pulsar.vector_columns
@@ -122,3 +139,4 @@ class Pulsar:
 
         pyarrow.feather.write_feather(pyarrow.Table.from_pydict(pydict, metadata={'json': json.dumps(meta)}),
                                       filename)
+
