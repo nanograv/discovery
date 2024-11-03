@@ -2,6 +2,7 @@ import numpy as np
 
 from . import const
 from . import matrix
+from . import fourierbasis
 
 AU_light_sec = const.AU / const.c  # 1 AU in light seconds
 AU_pc = const.AU / const.pc        # 1 AU in parsecs (for DM normalization)
@@ -46,3 +47,47 @@ def make_chromaticdecay(psr):
         return matrix.jnp.where(dt > 0.0, -1.0 * (10**log10_Amp) * matrix.jnp.exp(-dt / (10**log10_tau)) * normfreqs**idx, 0.0)
 
     return decay
+
+def _dm_solar_close(n_earth, r_earth):
+    return (n_earth * AU_light_sec * AU_pc / r_earth)
+
+
+def _dm_solar(n_earth, theta, r_earth):
+    return ((np.pi - theta) *
+            (n_earth * AU_light_sec * AU_pc
+             / (r_earth * np.sin(theta))))
+
+
+def dm_solar(n_earth, theta, r_earth):
+    """
+    Calculates Dispersion measure due to 1/r^2 solar wind density model.
+    ::param :n_earth Solar wind proton/electron density at Earth (1/cm^3)
+    ::param :theta: angle between sun and line-of-sight to pulsar (rad)
+    ::param :r_earth :distance from Earth to Sun in (light seconds).
+    See You et al. 2007 for more details.
+    """
+    return matrix.jnp.where(np.pi - theta >= 1e-5,
+                    _dm_solar(n_earth, theta, r_earth),
+                    _dm_solar_close(n_earth, r_earth))
+
+def fourierbasis_solar_dm(psr,
+                          components,
+                          T=None):
+    """
+    From enterprise_extions: construct DM-Solar Model Fourier design matrix.
+
+    :param psr: Pulsar object
+    :param components: Number of Fourier components in the model
+    :param T: Total timespan of the data
+
+    :return: F: SW DM-variation fourier design matrix
+    :return: f: Sampling frequencies
+    """
+
+    # get base Fourier design matrix and frequencies
+    f, df, fmat = fourierbasis(psr, components, T)
+    theta, R_earth, _, _ = theta_impact(psr)
+    dm_sol_wind = dm_solar(1.0, theta, R_earth)
+    dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
+
+    return f, df, fmat * dt_DM[:, None]
