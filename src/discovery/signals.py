@@ -686,7 +686,7 @@ def makedelay(psr, delay, common=[], name='delay'):
 
 # standard parameters t, pos, d;
 def makedelay_deterministic(psr, delay, name='deterministic'):
-    argspec = inspect.getfullargspec(prior)
+    argspec = inspect.getfullargspec(delay)
     argmap = [f'{name}_{arg}' + (f'({components})' if argspec.annotations.get(arg) == typing.Sequence else '')
               for arg in argspec.args if arg not in ['t', 'pos', 'd']]
 
