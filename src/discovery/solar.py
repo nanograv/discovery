@@ -1,8 +1,11 @@
 import numpy as np
+import inspect
+import jax.numpy as jnp
 
 from . import const
 from . import matrix
 from . import fourierbasis
+from . import quantize
 
 AU_light_sec = const.AU / const.c  # 1 AU in light seconds
 AU_pc = const.AU / const.pc        # 1 AU in parsecs (for DM normalization)
@@ -32,9 +35,9 @@ def make_solardm(psr):
     theta, r_earth, _, _ = theta_impact(psr)
     shape = matrix.jnparray(AU_light_sec * AU_pc / r_earth / np.sinc(1 - theta/np.pi) * 4.148808e3 / psr.freqs**2)
 
-    def solardm(n_earth):
-        return n_earth * shape
-
+    def solardm(params):
+        return params['n_earth'] * shape
+    solardm.params = ['n_earth']
     return solardm
 
 def make_chromaticdecay(psr):
@@ -91,3 +94,27 @@ def fourierbasis_solar_dm(psr,
     dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
 
     return f, df, fmat * dt_DM[:, None]
+
+def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, common=[], name='timedomain_sw_gp'):
+    argspec = inspect.getfullargspec(covariance)
+    argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
+              for arg in argspec.args if arg not in ['tau']]
+    
+    # get solar wind ingredients
+    theta, R_earth, _, _ = theta_impact(psr)
+    dm_sol_wind = dm_solar(1.0, theta, R_earth)
+    dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
+
+    bins = quantize(psr.toas, dt)
+    Umat = np.vstack([bins == i for i in range(bins.max() + 1)]).T.astype('d')
+    Umat = Umat * dt_DM[:, None] 
+    toas = psr.toas @ Umat / Umat.sum(axis=0)
+
+    get_tmat = covariance
+    tau = jnp.abs(toas[:, jnp.newaxis] - toas[jnp.newaxis, :])
+
+    def getphi(params):
+        return get_tmat(tau, *[params[arg] for arg in argmap])
+    getphi.params = argmap
+
+    return matrix.VariableGP(matrix.NoiseMatrix2D_var(getphi), Umat)
