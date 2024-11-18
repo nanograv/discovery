@@ -1065,7 +1065,7 @@ class ShermanMorrisonKernel_varP(VariableKernel):
 
         return kernelproduct
 
-    def make_kernelproduct_gpcomponent(self, y):
+    def make_kernelproduct_gpcomponent(self, y, transform=None):
         # -0.5 yt Nm y + yt Nm F a - 0.5 ct Ft Nm F c - 0.5 log |2 pi N| - 0.5 cT Pm c - 0.5 log |2 pi P|
 
         NmF, ldN = self.N.solve_2d(self.F)
@@ -1076,20 +1076,23 @@ class ShermanMorrisonKernel_varP(VariableKernel):
         ytNmy = y @ Nmy
 
         ytNmy, NmFty, FtNmF = jnparray(ytNmy), jnparray(NmFty), jnparray(FtNmF)
-        # P_inv = self.P_var.make_inv()
         P_solve = self.P_var.make_solve_1d()
-
-        cvars = list(self.index.keys())
+        cvars = self.index
 
         def kernelproduct(params):
             c = jnp.concatenate([params[cvar] for cvar in cvars])
 
-            # Pm, ldP = P_inv(params)
+            if transform is not None:
+                c, ldL = transform(params, c)
+            else:
+                ldL = 0.0
+
             Pmc, ldP = P_solve(params, c)
 
-            return (-0.5 * ytNmy + c @ NmFty - 0.5 * c @ (FtNmF @ c)
-                    -0.5 * ldN - 0.5 * c @ Pmc - 0.5 * ldP)    # c @ Pmc was c @ (Pm @ c)
-        kernelproduct.params = sorted(self.P_var.params + cvars)
+            ret = (-0.5 * ytNmy + c @ NmFty - 0.5 * c @ (FtNmF @ c)
+                   -0.5 * ldN - 0.5 * c @ Pmc - 0.5 * ldP + ldL)    # c @ Pmc was c @ (Pm @ c)
+            return (ret, c) if transform is not None else ret
+        kernelproduct.params = sorted(set(self.P_var.params + list(cvars) + ([] if transform is None else transform.params)))
 
         return kernelproduct
 
@@ -1370,7 +1373,7 @@ class VectorShermanMorrisonKernel_varP(VariableKernel):
 
         return kernelproduct
 
-    def make_kernelproduct_gpcomponent(self, ys):
+    def make_kernelproduct_gpcomponent(self, ys, transform=None):
         # -0.5 yt Nm y + yt Nm F a - 0.5 ct Ft Nm F c - 0.5 log |2 pi N| - 0.5 cT Pm c - 0.5 log |2 pi P|
 
         NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs)])
@@ -1388,28 +1391,59 @@ class VectorShermanMorrisonKernel_varP(VariableKernel):
         else:
             cvarsall = [{par: sl} for par, sl in self.index.items()]
 
+        # cvarsall is a list over pulsars; each cvars is a dict over GPs
+        # make an npsr x nbasis array from a dictionary of parameter vectors
+        def fold(params):
+            return jnp.array([jnp.concatenate([params[cvar] for cvar in cvars]) for cvars in cvarsall])
+
+        # make a dictionary back from the array
+        def unfold(c):
+            cv, cnt = c.flatten(), 0
+            return {cvar: cv[cnt:(cnt := cnt + sl.stop - sl.start)]
+                    for cvars in cvarsall for cvar, sl in cvars.items()}
+
         if hasattr(self, 'prior'):
             P_var_prior = self.prior
 
             def kernelproduct(params):
-                c = jnp.array([jnp.concatenate([params[cvar] for cvar in cvars]) for cvars in cvarsall])
+                c = fold(params)
+
+                if transform is not None:
+                    c, ldL = transform(params, c)
+                    params = {**params, **unfold(c)}
+                else:
+                    ldL = 0.0
+
                 logpr = P_var_prior(params)
 
-                return (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
-                        -0.5 * ldN - logpr) # note Pm is 1D
+                ret = (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
+                       -0.5 * ldN - logpr + ldL)
+                return (ret, c) if transform is not None else ret
 
-            kernelproduct.params = sorted(P_var_prior.params + sum([list(cvars) for cvars in cvarsall], []))
+            kernelproduct.params = sorted(set(P_var_prior.params +
+                                              sum([list(cvars) for cvars in cvarsall], []) +
+                                              ([] if transform is None else transform.params)))
         else:
             P_var_inv = self.P_var.make_inv()
 
             def kernelproduct(params):
-                c = jnp.array([jnp.concatenate([params[cvar] for cvar in cvars]) for cvars in cvarsall])
+                c = fold(params)
+
+                if transform is not None:
+                    c, ldL = transform(params, c)
+                else:
+                    ldL = 0.0
+
+                # P_var_inv does not use the coefficients
                 Pm, ldP = P_var_inv(params)
 
-                return (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
-                        -0.5 * ldN - 0.5 * jnp.sum(c * Pm * c) - 0.5 * jnp.sum(ldP)) # note Pm is 1D
+                ret = (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
+                       -0.5 * ldN - 0.5 * jnp.sum(c * Pm * c) - 0.5 * jnp.sum(ldP) + ldL) # note Pm is 1D
+                return (ret, c) if transform is not None else ret
 
-            kernelproduct.params = sorted(P_var_inv.params + sum([list(cvars) for cvars in cvarsall], []))
+            kernelproduct.params = sorted(set(P_var_inv.params +
+                                              sum([list(cvars) for cvars in cvarsall], []) +
+                                              ([] if transform is None else transform.params)))
 
         return kernelproduct
 
