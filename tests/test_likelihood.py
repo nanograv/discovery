@@ -5,8 +5,6 @@ import operator
 from functools import reduce
 from pathlib import Path
 
-
-
 import discovery as ds
 import jax
 import pytest
@@ -34,7 +32,7 @@ class TestLikelihood:
     test_psr.name = 'TEST'
     test_psr.backend_flags = np.array(['test']*len(test_psr.toas))
     test_psr.freqs = np.ones_like(test_psr.toas) * 1400
-    fake_noisedict = {'TEST_test_efac':1, 'TEST_test_log10_t2equad':-30}
+    fake_noisedict = {'TEST_test_efac': 1, 'TEST_test_log10_t2equad': -30}
 
     # let's reset this just to be safe.
     psrs = [ds.Pulsar.read_feather(psr) for psr in psr_files]
@@ -43,25 +41,32 @@ class TestLikelihood:
     def test_single_psr_likelihood_varP_rn(self):
         test_psr = TestLikelihood.test_psr
         fake_model = ds.PulsarLikelihood([test_psr.residuals,
-                                  ds.makenoise_measurement(test_psr, TestLikelihood.fake_noisedict),
-                                  ds.makegp_fourier(test_psr, ds.freespectrum, 2, name='test_fourier')])
+                                          ds.makenoise_measurement(
+                                              test_psr,
+                                              TestLikelihood.fake_noisedict),
+                                          ds.makegp_fourier(test_psr,
+                                                            k
 
         rho = np.random.rand()
 
         Nmat = TestLikelihood.toaerr**2 * np.eye(TestLikelihood.Ntoas)
-        FPhiF = fake_model.N.F @ np.eye(4)*rho**2 @  fake_model.N.F.T
-        Cmat =  Nmat + FPhiF
+        FPhiF = fake_model.N.F @ np.eye(4)*rho**2 @ fake_model.N.F.T
+        Cmat = Nmat + FPhiF
 
-        ll = -0.5 * test_psr.residuals @ np.linalg.solve(Cmat, test_psr.residuals) - 0.5 * np.linalg.slogdet(Cmat)[1]
+        ll = -0.5 * test_psr.residuals @ np.linalg.solve(
+            Cmat, test_psr.residuals) - 0.5 * np.linalg.slogdet(Cmat)[1]
 
         # test marginalized likelihood
-        npt.assert_allclose(fake_model.logL({'TEST_test_fourier_log10_rho(2)': np.array([np.log10(rho), np.log10(rho)])}), ll)
+        npt.assert_allclose(fake_model.logL(
+            {'TEST_test_fourier_log10_rho(2)': np.array([np.log10(rho),
+                                                         np.log10(rho)])}), ll)
 
         # test clogL
         c_vec = np.random.randn(4) * rho
         Phi = np.eye(4) * rho**2
 
-        pardict = {'TEST_test_fourier_log10_rho(2)': np.array([np.log10(rho), np.log10(rho)]),
+        pardict = {'TEST_test_fourier_log10_rho(2)': np.array([np.log10(rho),
+                                                               np.log10(rho)]),
                    'TEST_test_fourier_coefficients(4)': c_vec}
         cloglval = fake_model.clogL(pardict)
 
@@ -70,15 +75,14 @@ class TestLikelihood:
 
         # -1/2 * r^T N^-1 r - 1/2 logdet(N) - 1/2 c^T Phi^-1 c - 1/2 logdet(Phi)
         clogl_direct = -0.5 * rvals.T @ np.linalg.solve(Nmat,  rvals) - 0.5 * np.linalg.slogdet(Nmat)[1] + \
-                       -0.5 * c_vec.T @ np.linalg.solve(Phi, c_vec) - 0.5 * np.linalg.slogdet(Phi)[1]
+                       -0.5 * \
+            c_vec.T @ np.linalg.solve(Phi, c_vec) - \
+            0.5 * np.linalg.slogdet(Phi)[1]
         npt.assert_allclose(cloglval, clogl_direct)
-
-
 
     @pytest.mark.integration
     def test_compare_enterprise(self):
         # The directory containing the pulsar feather files should be parallel to the tests directory
-
 
         # Choose two pulsars for reproducibility
         psrs = TestLikelihood.psrs
@@ -95,7 +99,8 @@ class TestLikelihood:
                         ds.makenoise_measurement(psrs[ii], psrs[ii].noisedict),
                         ds.makegp_ecorr(psrs[ii], psrs[ii].noisedict),
                         ds.makegp_timing(psrs[ii]),
-                        ds.makegp_fourier(psrs[ii], ds.powerlaw, 30, T=tspan, name="red_noise"),
+                        ds.makegp_fourier(
+                            psrs[ii], ds.powerlaw, 30, T=tspan, name="red_noise"),
                         ds.makegp_fourier(
                             psrs[ii], ds.powerlaw, 14, T=tspan, common=["gw_log10_A", "gw_gamma"], name="gw"
                         ),

@@ -188,6 +188,9 @@ def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0):
 # Fourier GP
 
 def getspan(psrs):
+    """
+    get time span for a list of pulsars
+    """
     if isinstance(psrs, Iterable):
         return max(psr.toas.max() for psr in psrs) - min(psr.toas.min() for psr in psrs)
     else:
