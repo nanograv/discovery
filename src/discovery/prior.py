@@ -32,7 +32,16 @@ priordict_standard = {
     "crn_log10_rho": [-9, -4],
     "gw_(.*_)?log10_rho": [-9, -4],
     "(.*_)?red_noise_log10_rho\(([0-9]*)\)": [-9, -4],
-    "(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4]
+    "(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4],
+    # add the following parameters priors ['cw_costheta', 'cw_phi', 'cw_cosinc', 'cw_log10_Mc', 'cw_log10_fgw', 'cw_log10_h', 'cw_phase0', 'cw_psi']
+    "(.*_)?cw_costheta": [-1, 1],
+    "(.*_)?cw_phi": [0, 2*np.pi],
+    "(.*_)?cw_cosinc": [-1, 1],
+    "(.*_)?cw_log10_Mc": [7, 11],
+    "(.*_)?cw_log10_fgw": [-9, -7],
+    "(.*_)?cw_log10_h": [-18, -11],
+    "(.*_)?cw_phase0": [0, 2*np.pi],
+    "(.*_)?cw_psi": [0, np.pi],
 }
 
 
