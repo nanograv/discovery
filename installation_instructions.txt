@@ -1,0 +1,3 @@
+conda create -n disco -c conda-forge python=3.12 numpy scipy jax pyarrow imp jupyter
+pip install blackjax matplotlib
+pip install -e .
