@@ -1,6 +1,6 @@
 import inspect
 import sys
-import pickle, json
+import blackjax
 import discovery as ds
 import jax
 from jax import numpy as jnp
@@ -45,7 +45,8 @@ def mydelay(psr, prior, common=[], name='delay'):
 
     def delayfunc(params):
         inp = jnp.asarray([params[arg] for arg in argmap])
-        return psr.toas - delay(*inp)
+        # print(psr.toas - delay(*inp), psr.toas, delay(*inp))
+        return delay(*inp)
     delayfunc.params = argmap
 
     return delayfunc
@@ -97,10 +98,13 @@ gl = ds.GlobalLikelihood((ds.PulsarLikelihood([psrs[ii].residuals,
                                     ds.makegp_timing(psrs[ii]),
                                     ds.makegp_fourier(psrs[ii], ds.powerlaw, 30, T=tspan, name='red_noise'),
                                     ds.makegp_fourier(psrs[ii], ds.powerlaw, 14, T=tspan, common=['gw_log10_A', 'gw_gamma'], name='gw'),
-                                    mydelay(psrs[ii], prior, common=com, name='delay')
+                                    mydelay(psrs[ii], prior, common=com, name='cw')
                                     ])
                                     for ii in range(len(psrs))))
 
+
+#   File "/Users/lorenzo.speri/Library/CloudStorage/OneDrive-ESA/Documents/GitHub/discovery/src/discovery/likelihood.py", line 175, in sample
+# sampler = gl.sample
 
 print("params", gl.logL.params)
 x0 = ds.prior.sample_uniform(gl.logL.params)
@@ -117,10 +121,45 @@ def logdensity(x):
     return jlogp(x) + jlogl(x)
 
 initial_position = ds.prior.sample_uniform(gl.logL.params)
-logdensity(initial_position)
+# print initial position
+print(initial_position)
+# print logdensity at initial position
+print(logdensity(initial_position))
 
 start_time = time.time()
 logdensity(initial_position)  # ~16 ms per loop
 end_time = time.time()
 
 print(f"logdensity execution time: {end_time - start_time} seconds")
+
+
+# # sampling
+# # input some generic starting parameters
+# inv_mass_matrix = jnp.zeros(len(jlogl.params)) + 0.5
+# num_integration_steps = 60
+# step_size = 1e-3
+
+# nuts = blackjax.nuts(logdensity, step_size, inv_mass_matrix)
+
+# # set up the loop for nuts
+# def inference_loop(rng_key, kernel, initial_state, num_samples):
+#     @jax.jit
+#     def one_step(state, rng_key):
+#         state, _ = kernel(rng_key, state)
+#         return state, state
+
+#     keys = jax.random.split(rng_key, num_samples)
+#     _, states = jax.lax.scan(one_step, initial_state, keys)
+
+#     return states
+
+
+
+# # This cell takes 17m, 16s to run on my laptop
+# # run a warmup sequence to get the sampler to reasonable starting parameters
+# rng_key = jax.random.PRNGKey(30)  # initial rng_key
+# warmup = blackjax.window_adaptation(blackjax.nuts, logdensity)
+# breakpoint()
+# last_chain_state, kernel, warmup_chain = warmup.run(rng_key, initial_position)
+
+# states = inference_loop(rng_key, kernel, last_chain_state, 10000)
