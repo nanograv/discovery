@@ -4,8 +4,7 @@ import pickle, json
 import discovery as ds
 import jax
 from jax import numpy as jnp
-sys.path.append('./etudes/')
-from etudes.deterministic import CW_Signal
+from discovery.deterministic import CW_Signal
 
 from matplotlib import pyplot as plt
 import time
