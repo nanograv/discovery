@@ -96,19 +96,19 @@ class CW_Signal(object):
 
     def get_delay(self, pars, **kwargs):
         """Call underlying `_get_delay` function for input parameters"""
-        return self._get_delay(**pars, **kwargs)
+        return self._get_delay(*pars, **kwargs)
 
     @jax.jit
     def _get_delay(
         self,
-        cw_costheta=0,
-        cw_phi=0,
-        cw_cosinc=0,
-        cw_log10_Mc=9,
-        cw_log10_fgw=-8,
-        cw_log10_h=-15,
-        cw_phase0=0,
-        cw_psi=0,
+        cw_costheta,
+        cw_phi,
+        cw_cosinc,
+        cw_log10_Mc,
+        cw_log10_fgw,
+        cw_log10_h,
+        cw_phase0,
+        cw_psi,
         **kwargs,
     ):
         """Generalized function to compute GW induced residuals from a SMBHB,

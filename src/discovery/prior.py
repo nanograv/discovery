@@ -8,7 +8,9 @@ jnp = matrix.jnp
 
 def uniform(par, a, b):
     def logpriorfunc(params):
-        return matrix.jnp.where(matrix.jnp.logical_and(params[par] >= a, params[par] <= b), 0, -matrix.jnp.inf)
+        # return the log prior for the parameter
+        val = jnp.log(1/(b - a)) # set this to one and check against number of params for testing
+        return matrix.jnp.where(matrix.jnp.logical_and(params[par] >= a, params[par] <= b), val, -matrix.jnp.inf)
 
     return logpriorfunc
 
@@ -34,14 +36,14 @@ priordict_standard = {
     "(.*_)?red_noise_log10_rho\(([0-9]*)\)": [-9, -4],
     "(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4],
     # add the following parameters priors ['cw_costheta', 'cw_phi', 'cw_cosinc', 'cw_log10_Mc', 'cw_log10_fgw', 'cw_log10_h', 'cw_phase0', 'cw_psi']
-    "(.*_)?cw_costheta": [-1, 1],
-    "(.*_)?cw_phi": [0, 2*np.pi],
-    "(.*_)?cw_cosinc": [-1, 1],
-    "(.*_)?cw_log10_Mc": [7, 11],
-    "(.*_)?cw_log10_fgw": [-9, -7],
-    "(.*_)?cw_log10_h": [-18, -11],
-    "(.*_)?cw_phase0": [0, 2*np.pi],
-    "(.*_)?cw_psi": [0, np.pi],
+    "cw_costheta": [-1., 1.],
+    "cw_phi": [0, 2*np.pi],
+    "cw_cosinc": [-1., 1.],
+    "cw_log10_Mc": [7., 10.],
+    "cw_log10_fgw": [-9., -7.],
+    "cw_log10_h": [-18., -11.],
+    "cw_phase0": [0., 2*np.pi],
+    "cw_psi": [0, np.pi],
 }
 
 
