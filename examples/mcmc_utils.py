@@ -52,6 +52,17 @@ def create_likelihood(psrs, tspan):
         ds.makegp_fourier(psr, ds.powerlaw, 14, T=tspan, common=['gw_log10_A', 'gw_gamma'], name='gw'),
         mydelay(psr, prior, common=com, name=f'cw')
     ]) for psr in psrs])
+
+    # hd = ds.ArrayLikelihood([ds.PulsarLikelihood([psr.residuals,
+    #                                             ds.makenoise_measurement(psr, psr.noisedict),
+    #                                             ds.makegp_ecorr(psr, psr.noisedict),
+    #                                             ds.makegp_timing(psr),
+    #                                             mydelay(psr, prior, common=com, name=f'cw')]) for psr in psrs],
+    #                         ds.makecommongp_fourier(psrs, ds.powerlaw, 30, T=tspan, name='red_noise'),
+    #                         ds.makegp_fourier_global(psrs, ds.powerlaw, ds.hd_orf, 14, T=tspan, name='gw'))
+    # breakpoint()
+    #print params
+    print("sampling parameters",gl.logL.params)
     return gl
 
 def create_prior(params):
