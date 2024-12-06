@@ -29,7 +29,14 @@ jlogp = jax.jit(logprior)
 # Create log density function
 def log_density(xs, jlogl, params_dict):
     map_x = {el: xs[ii] for ii, el in enumerate(params_dict.keys())}
-    return 0.0#jlogl(map_x)
+    # time1 = time.time()
+    out = jlogl(map_x)
+    # time2 = time.time()
+    # print(f"Time to compute log likelihood: {time2 - time1}")
+    # if time2 - time1 > 0.01:
+    #     print(f"val cw: {map_x['cw_costheta']}, {map_x['cw_phi']}, {map_x['cw_cosinc']}, {map_x['cw_log10_Mc']}, {map_x['cw_log10_fgw']}, {map_x['cw_log10_h']}, {map_x['cw_phase0']}, {map_x['cw_psi']}")
+    #     print(f"val gw: {map_x['gw_log10_A']}, {map_x['gw_gamma']}")
+    return out
 
 # Gradient of the log density
 grads = jax.grad(log_density)
@@ -45,8 +52,8 @@ for par in initial_position:
 ndim = len(gl.logL.params)
 priors_in = {i: uniform_dist(bound[0], bound[1]) for i, bound in enumerate(bounds)}
 priors = ProbDistContainer(priors_in)
-nwalkers = 100
-ntemps = 10
+nwalkers = 32
+ntemps = 6
 
 # fill kwargs dictionary
 tempering_kwargs=dict(ntemps=ntemps)
@@ -54,6 +61,17 @@ tempering_kwargs=dict(ntemps=ntemps)
 coords = priors.rvs(size=(ntemps, nwalkers))
 dict_name = {param: val for param, val in zip(gl.logL.params, initial_position)}
 
+# test speed of log_density
+log_density(coords[0][0], jlogl, dict_name)
+for nw in range(nwalkers):
+    for nt in range(ntemps):
+
+        start_time = time.time()
+        log_density(coords[nt][nw], jlogl, dict_name)
+        end_time = time.time()
+        print(f"log_density execution time: {end_time - start_time} seconds, {(end_time - start_time) * nwalkers * ntemps}")
+
+# breakpoint()
 # Run MCMC
 ensemble = EnsembleSampler(
     nwalkers,
@@ -62,17 +80,16 @@ ensemble = EnsembleSampler(
     priors,
     args=[jlogl, dict_name],
     moves=[StretchMove(live_dangerously=True)],
-    tempering_kwargs=tempering_kwargs
-
+    tempering_kwargs=tempering_kwargs,
 )
 
-nsteps = 10000
+nsteps = 1000
 thin_by = 1
 out = ensemble.run_mcmc(coords, nsteps, burn=0, progress=True, thin_by=thin_by)
 
 # Extract samples and create a corner plot
 for temp in range(ntemps):
     print(temp + 1)
-    samples = ensemble_pt.get_chain()['model_0'][:, temp].reshape(-1, ndim)
-    corner.corner(samples, truths=np.full(ndim, 0.0))
+    samples = ensemble.get_chain()['model_0'][:, temp].reshape(-1, ndim)
+    corner.corner(samples, labels=gl.logL.params)
     plt.savefig(f'corner_plot_{temp}.png')
