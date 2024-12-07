@@ -484,7 +484,7 @@ class ArrayLikelihood:
         if self.commongp is None and self.globalgp is None:
             def loglike(params):
                 return sum(psl.clogL(params) for psl in self.psls)
-                loglike.params = sorted(set.union(*[set(psl.clogL.params) for psl in self.psls]))
+            loglike.params = sorted(set.union(*[set(psl.clogL.params) for psl in self.psls]))
 
             return loglike
         elif self.commongp is None:
