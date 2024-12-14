@@ -278,6 +278,36 @@ def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, co
 
 # for use in ArrayLikelihood. Same process for all pulsars.
 def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, common=[], vector=False, name='fourierCommonGP'):
+    """make a GP that gets applied to all pulsars that has the same basis length,
+    but potentially different basis elements for each pulsar.
+
+    This should be used with discovery.ArrayLikelihood.
+
+    Parameters
+    ----------
+    psrs : list
+        list of discovery.Pulsar objects.
+    prior : Callable
+        function that takes in frequencies, frequency steps, and parameters and returns a prior.
+    components : int
+        max number of components in the basis
+    T : float, or Iterable
+        time span of the data, or list of time spans for each pulsar
+    fourierbasis : Callable, optional
+        function that returns the basis, by default `fourierbasis`
+    common : list, optional
+        list of parameters that are common to all pulsars (e.g. common uncorrelated red noise),
+        by default []
+    vector : bool, optional
+        Set to True to vectorize parameters supplied, by default False
+    name : str, optional
+        a name for this model, by default 'fourierCommonGP'
+
+    Returns
+    -------
+    gp : discovery.matrix.VariableGP
+        a GP object that can be used in the ArrayLikelihood
+    """
     argspec = inspect.getfullargspec(prior)
 
     if vector:
@@ -292,20 +322,41 @@ def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, 
     if isinstance(components, dict):
         components = max(components.values())
 
-    fs, dfs, fmats = zip(*[fourierbasis(psr, components, T) for psr in psrs])
-    f, df = fs[0], dfs[0]
+    if isinstance(T, Iterable):
+        fs, dfs, fmats = zip(*[fourierbasis(psr, components, T[ii]) for ii, psr in enumerate(psrs)])
+    else:
+        fs, dfs, fmats = zip(*[fourierbasis(psr, components, T) for psr in psrs])
+    # f, df = fs[0], dfs[0]
+    fs = matrix.jnparray(fs)
+    dfs = matrix.jnparray(dfs)
 
     if vector:
-        vprior = jax.vmap(prior, in_axes=[None, None] +
-                                         [0 if f'({len(psrs)})' in arg else None for arg in argmap])
+        # different bases for each pulsar
+        if isinstance(T, Iterable):
+            in_axes = [0, 0] + [0 if f'({len(psrs)})' in arg else None for arg in argmap]
+            f = fs
+            df = dfs
+        else:
+            in_axes = [None, None] + [0 if f'({len(psrs)})' in arg else None for arg in argmap]
+            f = fs[0]
+            df = dfs[0]
+        vprior = jax.vmap(prior, in_axes=in_axes)
 
         def priorfunc(params):
             return vprior(f, df, *[params[arg] for arg in argmap])
 
         priorfunc.params = sorted(argmap)
     else:
-        vprior = jax.vmap(prior, in_axes=[None, None] +
-                                         [0 if isinstance(argmap, list) else None for argmap in argmaps])
+        # different bases for each pulsar
+        if isinstance(T, Iterable):
+            in_axes = [0, 0] + [0 if isinstance(argmap, list) else None for argmap in argmaps]
+            f = fs
+            df = dfs
+        else:
+            in_axes = [None, None] + [0 if isinstance(argmap, list) else None for argmap in argmaps]
+            f = fs[0]
+            df = dfs[0]
+        vprior = jax.vmap(prior, in_axes=in_axes)
 
         def priorfunc(params):
             vpars = [matrix.jnparray([params[arg] for arg in argmap]) if isinstance(argmap, list) else params[argmap]
