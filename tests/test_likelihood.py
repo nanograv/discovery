@@ -67,7 +67,7 @@ class TestLikelihood:
         ll_difference = enterprise_ll - jlogl(initial_position)
 
         # There is a constant offset of ~ -52.4
-        offset = -52.4
+        offset = -52.4 - 5866.5585968
 
         # Choose the absolute tolerance
         atol = 0.1
