@@ -940,7 +940,7 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
 
             return TtSy, TtST
 
-        kernelsolve.params = self.N + P_var_inv.params
+        kernelsolve.params = sorted(self.N.params + P_var_inv.params)
 
         return kernelsolve
 
