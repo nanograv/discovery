@@ -824,8 +824,6 @@ class ShermanMorrisonKernel_varNFP(VariableKernel):
             Nmy, _  = N_solve_1d(params, y)
             ytNmy = y @ Nmy
 
-            ytNmy =jnparray(ytNmy)
-
             F = F_var(params)
 
             NmF, ldN = N_solve_2d(params, F)
@@ -838,7 +836,7 @@ class ShermanMorrisonKernel_varNFP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = F_var.params + P_var_inv.params + self.N.params
+        kernelproduct.params = sorted(F_var.params + P_var_inv.params + self.N.params)
 
         return kernelproduct
 
@@ -846,7 +844,6 @@ class ShermanMorrisonKernel_varNFP(VariableKernel):
 class ShermanMorrisonKernel_varNP(VariableKernel):
     def __init__(self, N_var, F, P_var):
         self.N, self.F, self.P_var = N_var, F, P_var
-        self.params = N_var.params + P_var.params
 
     def make_kernelproduct(self, y):
         N_solve_1d = self.N.make_solve_1d()
@@ -869,9 +866,10 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
             ytXy = NmFty.T @ matrix_solve(cf, NmFty)
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
-        kernelproduct.params = self.N.params + P_var_inv.params
+        kernelproduct.params = sorted(self.N.params + P_var_inv.params)
 
         return kernelproduct
+
     def make_kernelproduct_gpcomponent(self, y):
         # -0.5 yt Nm y + yt Nm F a - 0.5 ct Ft Nm F c - 0.5 log |2 pi N| - 0.5 cT Pm c - 0.5 log |2 pi P|
         N_solve_1d = self.N.make_solve_1d()
@@ -883,6 +881,7 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
 
         cvars = list(self.index.keys())
 
+        y = jnparray(y)
 
         def kernelproduct(params):
             c = jnp.concatenate([params[cvar] for cvar in cvars])
@@ -906,17 +905,14 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
 
         return kernelproduct
 
-
-
     # probably correct, but not needed yet
     #
     def make_kernelsolve(self, y, T):
         N_solve_1d = self.N.make_solve_1d()
         N_solve_2d = self.N.make_solve_2d()
 
-
-
         P_var_inv = self.P_var.make_inv()
+        y = jnparray(y)
 
         def kernelsolve(params):
 
@@ -927,15 +923,10 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
             FtNmT = self.F.T @ NmT
 
             TtNmT  = T.T @ NmT
-            TtNmy, TtNmT = jnparray(TtNmy), jnparray(TtNmT)
 
             NmF, _ = self.N.solve_2d(self.F)
             FtNmF = self.F.T @ NmF
             TtNmF = T.T @ NmF
-
-            FtNmF, TtNmy = jnparray(FtNmF), jnparray(TtNmy)
-            FtNmT, TtNmT = jnparray(FtNmT), jnparray(TtNmT)
-            TtNmF, FtNmy = jnparray(TtNmF), jnparray(FtNmy)
 
             NmF, _ = N_solve_2d(params, self.F)
             FtNmF = self.F.T @ NmF
