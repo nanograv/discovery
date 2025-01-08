@@ -70,12 +70,12 @@ def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, selection
         toaerrs, masks = matrix.jnparray(scale * psr.toaerrs), [matrix.jnparray(mask) for mask in masks]
         if tnequad:
             def getnoise(params):
-                return sum(mask * (params[efac]**2 * toaerrs**2 + 10.0**(2 * (logscale + params[log10_tnequad])))
-                        for mask, efac, log10_tnequad in zip(masks, efacs, log10_tnequads))
+                return matrix.jnparray([mask * (params[efac]**2 * toaerrs**2 + 10.0**(2 * (logscale + params[log10_tnequad])))
+                        for mask, efac, log10_tnequad in zip(masks, efacs, log10_tnequads)]).sum(axis=0)
         else:
             def getnoise(params):
-                return sum(mask * params[efac]**2 * (toaerrs**2 + 10.0**(2 * (logscale + params[log10_t2equad])))
-                        for mask, efac, log10_t2equad in zip(masks, efacs, log10_t2equads))
+                return matrix.jnparray([mask * params[efac]**2 * (toaerrs**2 + 10.0**(2 * (logscale + params[log10_t2equad])))
+                        for mask, efac, log10_t2equad in zip(masks, efacs, log10_t2equads)]).sum(axis=0)
         getnoise.params = params
 
         return matrix.NoiseMatrix1D_var(getnoise)
@@ -156,13 +156,13 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
     logscale = np.log10(scale)
 
     if all(par in noisedict for par in params):
-        phi = sum(10.0**(2 * (logscale + noisedict[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(log10_ecorrs, pmasks))
+        phi = matrix.jnparray([10.0**(2 * (logscale + noisedict[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(log10_ecorrs, pmasks)]).sum(axis=0)
 
         return matrix.ConstantGP(matrix.NoiseMatrix1D_novar(phi), Umatall)
     else:
         pmasks = [matrix.jnparray(pmask) for pmask in pmasks]
         def getphi(params):
-            return sum(10.0**(2 * (logscale + params[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(log10_ecorrs, pmasks))
+            return matrix.jnparray([10.0**(2 * (logscale + params[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(log10_ecorrs, pmasks)]).sum(axis=0)
         getphi.params = params
 
         return matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), Umatall)
@@ -203,6 +203,9 @@ def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, varia
 # Fourier GP
 
 def getspan(psrs):
+    """
+    get time span for a list of pulsars
+    """
     if isinstance(psrs, Iterable):
         return max(psr.toas.max() for psr in psrs) - min(psr.toas.min() for psr in psrs)
     else:

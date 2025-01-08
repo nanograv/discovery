@@ -112,7 +112,9 @@ class PulsarLikelihood:
             mu, cf = cond(params)
 
             key, subkey = matrix.jnpsplit(key)
-            c = mu + matrix.jsp.linalg.solve_triangular(cf[0].T, matrix.jnpnormal(subkey, mu.shape), lower=False)
+            c = mu + matrix.jsp.linalg.solve_triangular(cf[0].T,
+                                                        matrix.jnpnormal(subkey, mu.shape),
+                                                        lower=False)
 
             return key, {par: c[sli] for par, sli in index.items()}
 
