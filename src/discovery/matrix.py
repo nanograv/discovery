@@ -1419,3 +1419,347 @@ class VectorShermanMorrisonKernel_varP(VariableKernel):
         kernelterms.params = self.P_var.params
 
         return kernelterms
+
+
+class VectorShermanMorrisonKernel_varP_deterministic_signal(VariableKernel):
+    def __init__(self, Ns, Fs, P_var):
+        self.Ns, self.Fs, self.P_var = Ns, Fs, P_var
+
+    def make_kernelproduct(self, ys, psls_indices_with_deterministic, psls_deterministic_funcs):
+
+        def get_ytNmy(y, N):
+            Nmy, _ = N.solve_1d(y)
+            return y @ Nmy
+
+        def get_NmFty(NmF, y):
+            return NmF.T @ y
+
+        # make boolean mask for deterministic indices
+        # True if psl has deterministic signal
+        mask = jnp.zeros(len(ys), dtype=jnp.bool)
+        mask = mask.at[psls_indices_with_deterministic].set(True)
+
+        NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs, )], )
+        FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+
+        # Store the values with and without deterministic delays
+        # We have to do this because indexing tuples for multiple items in parallel
+        # is not possible
+        ys_with_deterministic = [y for y, mask_val in zip(ys, mask) if mask_val]
+        ys_without_deterministic = [y for y, mask_val in zip(ys, mask) if ~mask_val]
+
+        Ns_with_deterministic = [N for N, mask_val in zip(self.Ns, mask) if mask_val]
+        Ns_without_deterministic = [N for N, mask_val in zip(self.Ns, mask) if ~mask_val]
+
+        NmFs_with_deterministic = [NmF for NmF, mask_val in zip(NmFs, mask) if mask_val]
+        NmFs_without_deterministic = [NmF for NmF, mask_val in zip(NmFs, mask) if ~mask_val]
+
+        # only finding the values for the pulsars without deterministic signals.
+        # this list just gets summed later, so we'll store the unchanging part
+        # that corresponds to the pulsars without deterministic signals.
+        #
+        # We'll sum that part, then later we'll sum and add on the part from the
+        # pulsars that have deterministic signals each time the deterministic signals
+        # gets updated.
+        if len(ys_without_deterministic)>0:
+            ytNmys = [get_ytNmy(y,N) for y, N in zip(ys_without_deterministic, Ns_without_deterministic)]
+        else:
+            ytNmys = [0.0]
+
+        NmFtys = [get_NmFty(NmF, y) for NmF, y in zip(NmFs, ys, )]
+
+        P_var_inv = self.P_var.make_inv()
+        FtNmF, NmFty_orig = jnparray(FtNmFs), jnparray(NmFtys)
+        # a hack. skip the ytNmys that will be changed
+        ytNmy_base, ldN = float(sum(ytNmys)), float(sum(ldNs))
+
+
+        def deterministic_ytNmy_update(params):
+            """Get the ytNmy update from the deterministic signals"""
+            return jnp.sum(
+                jnparray([
+                    get_ytNmy(y - delay(params), N)
+                    for y, delay, N in zip(ys_with_deterministic, psls_deterministic_funcs, Ns_with_deterministic)
+                ])
+            )
+
+        def deterministic_NmFty_update(params):
+            """Get the NmFty update from the deterministic signals"""
+            return jnparray(
+                [
+                    get_NmFty(NmF, y - delay(params))
+                    for NmF, y, delay in zip(NmFs_with_deterministic, ys_with_deterministic, psls_deterministic_funcs)
+                ]
+            )
+
+
+
+        def kernelproduct(params):
+            Pinv, ldP = P_var_inv(params)            # Pinv.shape = FtNmF.shape = [npsr, ngp, ngp]
+
+            ytNmy = ytNmy_base + deterministic_ytNmy_update(params)
+
+            NmFty = NmFty_orig.at[mask].set(deterministic_NmFty_update(params))
+
+
+            if Pinv.ndim == 2:
+                i1, i2 = jnp.diag_indices(Pinv.shape[1], ndim=2)
+                cf = matrix_factor(FtNmF.at[:,i1,i2].add(Pinv))
+            else:
+                cf = matrix_factor(FtNmF + Pinv)
+
+            # cf = jsp.linalg.cho_factor(Pinv + FtNmF)
+
+            ytXy = jnp.sum(NmFty * matrix_solve(cf, NmFty)) # was NmFty.T @ jsp.linalg.cho_solve(...)
+
+            i1, i2 = jnp.diag_indices(cf[0].shape[1], ndim=2) # it's hard to vectorize numpy.diag!
+            return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + jnp.sum(ldP) + matrix_norm * jnp.logdet(cf[0][:,i1,i2]))
+
+        # The sum() portion just flattens the nested lists
+        kernelproduct.params = P_var_inv.params + sum([func.params for func in psls_deterministic_funcs ], list())
+
+        return kernelproduct
+
+    def make_kernelproduct_gpcomponent(self, ys, transform=None, psls_indices_with_deterministic=None, psls_deterministic_funcs=None):
+        # -0.5 yt Nm y + yt Nm F a - 0.5 ct Ft Nm F c - 0.5 log |2 pi N| - 0.5 cT Pm c - 0.5 log |2 pi P|
+
+        def get_ytNmy(y, N):
+            Nmy, _ = N.solve_1d(y)
+            return y @ Nmy
+
+        def get_NmFty(NmF, y):
+            return NmF.T @ y
+
+        # make boolean mask for deterministic indices
+        # True if psl has deterministic signal
+        mask = jnp.zeros(len(ys), dtype=jnp.bool)
+        mask = mask.at[psls_indices_with_deterministic].set(True)
+
+        NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs, )], )
+        FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs, )]
+
+
+        # Store the values with and without deterministic delays
+        # We have to do this because indexing tuples for multiple items in parallel
+        # is not possible
+        ys_with_deterministic = [y for y, mask_val in zip(ys, mask) if mask_val]
+        ys_without_deterministic = [y for y, mask_val in zip(ys, mask) if ~mask_val]
+
+        Ns_with_deterministic = [N for N, mask_val in zip(self.Ns, mask) if mask_val]
+        Ns_without_deterministic = [N for N, mask_val in zip(self.Ns, mask) if ~mask_val]
+
+        NmFs_with_deterministic = [NmF for NmF, mask_val in zip(NmFs, mask) if mask_val]
+        NmFs_without_deterministic = [NmF for NmF, mask_val in zip(NmFs, mask) if ~mask_val]
+
+        # only finding the values for the pulsars without deterministic signals.
+        # this list just gets summed later, so we'll store the unchanging part
+        # that corresponds to the pulsars without deterministic signals.
+        #
+        # We'll sum that part, then later we'll sum and add on the part from the
+        # pulsars that have deterministic signals each time the deterministic signals
+        # gets updated.
+        if len(ys_without_deterministic)>0:
+            ytNmys = [get_ytNmy(y,N) for y, N in zip(ys_without_deterministic, Ns_without_deterministic)]
+        else:
+            ytNmys = [0.0]
+
+        NmFtys = [get_NmFty(NmF, y) for NmF, y in zip(NmFs, ys, )]
+
+        P_var_inv = self.P_var.make_inv()
+        FtNmF, NmFty_orig = jnparray(FtNmFs), jnparray(NmFtys)
+        # a hack. skip the ytNmys that will be changed
+        ytNmy_base, ldN = float(sum(ytNmys)), float(sum(ldNs))
+
+        def deterministic_ytNmy_update(params):
+            """Get the ytNmy update from the deterministic signals"""
+            return jnp.sum(
+                jnparray([
+                    get_ytNmy(y - delay(params), N)
+                    for y, delay, N in zip(ys_with_deterministic, psls_deterministic_funcs, Ns_with_deterministic)
+                ])
+            )
+
+        def deterministic_NmFty_update(params):
+            """Get the NmFty update from the deterministic signals"""
+            return jnparray(
+                [
+                    get_NmFty(NmF, y - delay(params))
+                    for NmF, y, delay in zip(NmFs_with_deterministic, ys_with_deterministic, psls_deterministic_funcs)
+                ]
+            )
+
+        if isinstance(self.index, list):
+            cvarsall = self.index
+        else:
+            cvarsall = [{par: sl} for par, sl in self.index.items()]
+
+        # cvarsall is a list over pulsars; each cvars is a dict over GPs
+        # make an npsr x nbasis array from a dictionary of parameter vectors
+        def fold(params):
+            return jnp.array([jnp.concatenate([params[cvar] for cvar in cvars]) for cvars in cvarsall])
+
+        # make a dictionary back from the array
+        def unfold(c):
+            cv, cnt = c.flatten(), 0
+            return {cvar: cv[cnt:(cnt := cnt + sl.stop - sl.start)]
+                    for cvars in cvarsall for cvar, sl in cvars.items()}
+
+        if hasattr(self, "prior"):
+            P_var_prior = self.prior
+
+            def kernelproduct(params):
+
+                # Deterministic signal updates
+                ytNmy = ytNmy_base + deterministic_ytNmy_update(params)
+
+                NmFty = NmFty_orig.at[mask].set(deterministic_NmFty_update(params))
+
+                c = fold(params)
+
+                if transform is not None:
+                    c, ldL = transform(params, c)
+                    params = {**params, **unfold(c)}
+                else:
+                    ldL = 0.0
+
+                logpr = P_var_prior(params)
+
+                ret = (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum("ij,ijk,ik", c, FtNmF, c)
+                       -0.5 * ldN - logpr + ldL)
+                return (ret, c) if transform is not None else ret
+
+            kernelproduct.params = sorted(set(P_var_prior.params +
+                                              sum([list(cvars) for cvars in cvarsall], []) +
+                                              ([] if transform is None else transform.params)) +
+                                          sum([func.params for func in psls_deterministic_funcs ], list()))
+        else:
+            P_var_inv = self.P_var.make_inv()
+
+            def kernelproduct(params):
+
+                # Deterministic signal updates
+                ytNmy = ytNmy_base + deterministic_ytNmy_update(params)
+
+                NmFty = NmFty_orig.at[mask].set(deterministic_NmFty_update(params))
+
+                c = fold(params)
+
+                if transform is not None:
+                    c, ldL = transform(params, c)
+                else:
+                    ldL = 0.0
+
+                # P_var_inv does not use the coefficients
+                Pm, ldP = P_var_inv(params)
+
+                ret = (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum("ij,ijk,ik", c, FtNmF, c)
+                       -0.5 * ldN - 0.5 * jnp.sum(c * Pm * c) - 0.5 * jnp.sum(ldP) + ldL) # note Pm is 1D
+                return (ret, c) if transform is not None else ret
+
+            kernelproduct.params = sorted(set(P_var_inv.params +
+                                              sum([list(cvars) for cvars in cvarsall], []) +
+                                              ([] if transform is None else transform.params)),
+                                          sum([func.params for func in psls_deterministic_funcs ], list()))
+
+        return kernelproduct
+
+    def make_kernelterms(self, ys, Ts, psls_indices_with_deterministic, psls_deterministic_funcs):
+        # Sigma = (N + F P Ft)
+        # Sigma^-1 = Nm - Nm F (P^-1 + Ft Nm F)^-1 Ft Nm
+        #
+        # yt Sigma^-1 y = yt Nm y - (yt Nm F) C^-1 (Ft Nm y)
+        # Tt Sigma^-1 y = Tt Nm y - Tt Nm F C^-1 (Ft Nm y)
+        # Tt Sigma^-1 T = Tt Nm T - (Tt Nm F) C^-1 (Ft Nm T)
+
+        # make boolean mask for deterministic indices
+        # True if psl has deterministic signal
+        mask = jnp.zeros(len(ys), dtype=jnp.bool)
+        mask = mask.at[psls_indices_with_deterministic].set(True)
+
+        # Store the values with and without deterministic delays
+        # We have to do this with a comprehension because indexing tuples for
+        # multiple items in parallel is not possible
+        ys_with_deterministic = [y for y, mask_val in zip(ys, mask) if mask_val]
+        ys_without_deterministic = [y for y, mask_val in zip(ys, mask) if ~mask_val]
+
+        Ns_with_deterministic = [N for N, mask_val in zip(self.Ns, mask) if mask_val]
+        Fs_with_deterministic = [F for F, mask_val in zip(self.Fs, mask) if mask_val]
+        Ts_with_deterministic = [T for T, mask_val in zip(Ts, mask) if mask_val]
+
+        # we need to update the ldNs later, but we need all Nmys initially
+        Nmys, ldNs = zip(*[N.solve_1d(y) for N, y in zip(self.Ns, ys, )], )
+
+        # Usual closed values
+        FtNmys = [F.T @ Nmy for F, Nmy in zip(self.Fs, Nmys, )]
+        TtNmys = [T.T @ Nmy for T, Nmy in zip(Ts, Nmys, )]
+
+        NmFs, _ = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs, )], )
+        FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs, )]
+        TtNmFs = [T.T @ NmF for T, NmF in zip(Ts, NmFs, )]
+
+        NmTs, _ = zip(*[N.solve_2d(T) for N, T in zip(self.Ns, Ts, )], )
+        FtNmTs = [F.T @ NmT for F, NmT in zip(self.Fs, NmTs, )]
+        TtNmTs = [T.T @ NmT for T, NmT in zip(Ts, NmTs, )]
+
+        # filter the base ldNs that will not change
+        ldNs_without_deterministic = [ldN for ldN, mask_val in zip(ldNs, mask) if ~mask_val]
+
+        # this only gets used to sum to a scalar, so only calculate the
+        # unchanging values
+        ytNmys_without_deterministic = [y @ Nmy for y, Nmy, mask_val in zip(ys, Nmys, mask) if ~mask_val]
+
+
+        P_var_inv = self.P_var.make_inv()
+
+        # only sum the base value
+        ldN_base, ytNmy_base = float(sum(ldNs_without_deterministic)), float(sum(ytNmys_without_deterministic))
+
+        # If a modified version of a variable will be used within the closure,
+        # we append "_orig" to the name because we cannot modify the original.
+        # This is just to make clear what is unchanging.
+        FtNmF, FtNmy_orig, FtNmT = jnparray(FtNmFs), jnparray(FtNmys), jnparray(FtNmTs)
+        TtNmy_orig, TtNmT, TtNmF = jnparray(TtNmys), jnparray(TtNmTs), jnparray(TtNmFs)
+
+        def deterministic_Nmys_ldNs_update(params):
+            """Get the Nmys and ldNs update from the deterministic signals"""
+            y_delays = [y - delay(params) for y, delay in zip(ys_with_deterministic, psls_deterministic_funcs)]
+            return zip(*[(y, *N.solve_1d(y)) for y, N in zip(y_delays, Ns_with_deterministic)],)
+
+        def deterministic_FtNmy_update(Nmys):
+            """Get the FtNmy update from the deterministic signals"""
+            return jnparray([F.T @ Nmy for F, Nmy in zip(Fs_with_deterministic, Nmys)])
+
+
+        def deterministic_TtNmy_update(Nmys):
+            """Get the TtNmy update from the deterministic signals"""
+            return jnparray([T.T @ Nmy for T, Nmy in zip(Ts_with_deterministic, Nmys)])
+
+        def kernelterms(params):
+            # Get updates for y, Nmys, and ldNs
+            y_delay, Nmys, ldNs = deterministic_Nmys_ldNs_update(params)
+
+            ytNmy = ytNmy_base + jnp.sum(jnparray([y@Nmy for y, Nmy in zip(y_delay, Nmys)]))
+            ldN = ldN_base + jnp.sum(jnparray(ldNs))
+
+            # Update the original values with the updates
+            FtNmy = FtNmy_orig.at[mask].set(deterministic_FtNmy_update(Nmys))
+            TtNmy = TtNmy_orig.at[mask].set(deterministic_TtNmy_update(Nmys))
+
+            Pinv, ldP = P_var_inv(params)
+
+            i1, i2 = jnp.diag_indices(Pinv.shape[1], ndim=2)
+            cf = matrix_factor(FtNmF.at[:,i1,i2].add(Pinv))
+
+            sol = matrix_solve(cf, FtNmy)
+            sol2 = matrix_solve(cf, FtNmT)
+
+            i1, i2 = jnp.diag_indices(cf[0].shape[1], ndim=2)
+            a = -0.5 * (ytNmy - jnp.sum(FtNmy * sol)) - 0.5 * (ldN + jnp.sum(ldP) + matrix_norm * jnp.logdet(cf[0][:,i1,i2]))
+            b = TtNmy - jnp.sum(TtNmF * sol[:, jnp.newaxis, :], axis=2)
+            c = TtNmT - TtNmF @ sol2 # fine as is!
+
+            return a, b, c
+
+        kernelterms.params = self.P_var.params + sum([func.params for func in psls_deterministic_funcs ], list())
+
+        return kernelterms
