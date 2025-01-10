@@ -498,7 +498,12 @@ class ArrayLikelihood:
             cgp = self.commongp if isinstance(self.commongp, list) else [self.commongp]
             commongp = matrix.VectorCompoundGP(cgp + [self.globalgp])
 
-        Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+        # get Kernels, residuals, and an array of indices that track which pulsars have deterministic signals
+        Ns, self.ys, self.psls_indices_with_deterministic = zip(
+            *[(psl.N, psl.y, i) if hasattr(psl, "delay") else (psl.N, psl.y, None) for i, psl in enumerate(self.psls)]
+        )
+        self.psls_indices_with_deterministic = matrix.jnp.array(self.psls_indices_with_deterministic)
+
         self.vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
         if hasattr(commongp, 'prior'):
             self.vsm.prior = commongp.prior
@@ -523,15 +528,39 @@ class ArrayLikelihood:
 
         commongp = matrix.VectorCompoundGP(self.commongp)
 
-        Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-        self.vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+
+        # get Kernels, residuals, and an array of indices that track which pulsars have deterministic signals
+        Ns, self.ys, self.psls_indices_with_deterministic, self.psls_deterministic_funcs = zip(
+            *[(psl.N, psl.y, i, psl.delay) if psl.delay else (psl.N, psl.y, None, None) for i, psl in enumerate(self.psls)]
+        )
+
+        # Get rid of Nones
+        self.psls_indices_with_deterministic = [det_ind for det_ind in self.psls_indices_with_deterministic if det_ind is not None]
+        self.psls_deterministic_funcs = [det_func for det_func in self.psls_deterministic_funcs if det_func is not None]
+
+
+        # Use deterministic version of kernel if needed
+        if len(self.psls_indices_with_deterministic)>0:
+            self.psls_indices_with_deterministic = matrix.jnp.array(self.psls_indices_with_deterministic)
+            self.vsm = matrix.VectorShermanMorrisonKernel_varP_deterministic_signal(Ns, commongp.F, commongp.Phi)
+        else:
+            self.vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+
+
         self.vsm.index = getattr(commongp, 'index', None)
 
         if self.globalgp is None:
-            loglike = self.vsm.make_kernelproduct(self.ys)
+            # Supply deterministic info if needed
+            if len(self.psls_indices_with_deterministic)>0:
+                loglike = self.vsm.make_kernelproduct(self.ys, self.psls_indices_with_deterministic, self.psls_deterministic_funcs)
+            else:
+                loglike = self.vsm.make_kernelproduct(self.ys)
         else:
             P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
-            kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs)
+            if len(self.psls_indices_with_deterministic)>0:
+                kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs, self.psls_indices_with_deterministic, self.psls_deterministic_funcs)
+            else:
+                kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs)
 
             npsr = len(self.globalgp.Fs)
             ngp = self.globalgp.Fs[0].shape[1]
