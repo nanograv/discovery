@@ -414,9 +414,7 @@ class GlobalLikelihood:
                 def cond(params):
                     Pinv, _ = P_var_inv(params)
 
-                    # Sm = (matrix.jnp.diag(Pinv) if ndim == 1 else Pinv) + FtNmF
-
-                    Sm = matrix.jnp.diag(Pinv) if ndim == 1 else Pinv
+                    Sm = matrix.jnp.diag(Pinv) if Pinv.ndim == 1 else Pinv
                     for i, FtNmF in enumerate(FtNmFs):
                         Sm = Sm.at[i*ngp:(i+1)*ngp, i*ngp:(i+1)*ngp].add(FtNmF)
 
@@ -459,10 +457,11 @@ class GlobalLikelihood:
 
 
 class ArrayLikelihood:
-    def __init__(self, psls, commongp=None, globalgp=None):
+    def __init__(self, psls, commongp=None, globalgp=None, transform=None):
         self.psls = psls
         self.commongp = commongp
         self.globalgp = globalgp
+        self.transform = transform
 
     # @functools.cached_property
     # def cloglast(self):
@@ -489,6 +488,7 @@ class ArrayLikelihood:
 
             return loglike
         elif self.commongp is None:
+            # commongp = matrix.VectorCompoundGP(self.globalgp)
             raise NotImplementedError("ArrayLikelihood does not support a globalgp without a commongp")
         elif self.globalgp is None:
             # merge common GPs if necessary
@@ -505,7 +505,7 @@ class ArrayLikelihood:
         if hasattr(commongp, 'index'):
             self.vsm.index = commongp.index
 
-        loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys)
+        loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys, transform=self.transform)
 
         return loglike
 
