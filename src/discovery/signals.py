@@ -613,6 +613,8 @@ def make_powerlaw(scale=1.0):
 
     return powerlaw
 
+def powerlaw_no_df(f, log10_A, gamma):
+    return (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma)
 
 def freespectrum(f, df, log10_rho: typing.Sequence):
     return jnp.repeat(10.0**(2.0 * log10_rho), 2)
@@ -705,3 +707,194 @@ def makedelay_deterministic(psr, delay, name='deterministic'):
     delayfunc.params = argmap
 
     return delayfunc
+
+##### FFT METHOD #####
+
+def build_piecewise_linear_B(t_fine, t_coarse):
+    """
+    Build matrix B of shape (len(t_fine), len(t_coarse)) for piecewise-linear interpolation.
+    That is, each row i corresponds to t_fine[i]; each column j is the hat function phi_j
+    that is 1 at t_coarse[j] and 0 at t_coarse[j-1], t_coarse[j+1].
+    
+    In the naive matrix approach, we do:
+      B[i,j] = phi_j(t_fine[i])
+    and phi_j(t) is the linear function that is:
+      - 0 for t < t_{j-1} or t > t_{j+1}
+      - up to 1 at t_j
+    We'll handle boundaries carefully.
+    
+    Complexity: O(N_fine * N_coarse).
+    """
+    Nf = len(t_fine)
+    Nc = len(t_coarse)
+    B = np.zeros((Nf, Nc), dtype=float)
+
+    # We'll do a naive approach: for each i in [0..Nf-1], find which segment [t_j, t_{j+1}] it falls into.
+    # Then B[i,j], B[i,j+1] are the only nonzero entries (besides boundary cases).
+    # That is O(Nf log Nc) if we do a binary search for each t_fine[i], or O(Nf + Nc) if we do a single sweep. 
+    # For now, we do a single pass with two pointers.
+    
+    j = 0  # pointer for coarse intervals
+    for i in range(Nf):
+        tf = t_fine[i]
+        
+        # move j so that t_coarse[j] <= tf < t_coarse[j+1], except boundary
+        while j < Nc-2 and tf > t_coarse[j+1]:
+            j += 1
+        
+        # Now the point t_fine[i] is between t_coarse[j] and t_coarse[j+1].
+        if j == Nc-1:
+            # We are beyond the last coarse point
+            # so we just clamp. phi_{N-1}(t) = 1 at t_{N-1}.
+            B[i, Nc-1] = 1.0
+        else:
+            # in [t_j, t_{j+1}]
+            tj = t_coarse[j]
+            tjp1 = t_coarse[j+1]
+            # the distance
+            length = tjp1 - tj
+            if length <= 0:
+                # degenerate
+                B[i,j] = 1.0
+            else:
+                # linear fraction from j to j+1
+                frac = (tf - tj)/length
+                # phi_j(t) = 1 - frac
+                # phi_{j+1}(t) = frac
+                B[i,j]   = 1.0 - frac
+                B[i,j+1] = frac
+    
+    return B
+
+
+def coarse_grained_basis(psr, components, start_time=None, T=None):
+    if T is None:
+        T = getspan(psr)
+    if start_time is None:
+        start_time = jnp.min(psr.toas)
+
+    t_coarse = jnp.linspace(start_time, start_time+T, num=components)
+    dt = t_coarse[2] - t_coarse[1]
+    t_fine = psr.toas
+    B = build_piecewise_linear_B(t_fine, t_coarse)
+
+    return t_coarse, dt, B
+
+
+# The FFT functions
+def psd_to_covariance(df, psd):
+    """
+    Convert a one-sided PSD (f >= 0) into the time-domain covariance function C(tau).
+
+    Parameters
+    ----------
+    df   : df.
+    psd : 1D array, shape (N,)
+          One-sided PSD values, psd[k] = S(f[k]).
+          Must be real and >= 0 (for a valid PSD), though not enforced here.
+    
+    Returns
+    -------
+    #tau : 1D array, shape (M = 2*N - 2,)
+    #      Time lags [seconds], running from 0 to positive.
+    Ctau: 1D array, shape (M = 2*N - 2,)
+          Covariance function samples, C(tau).
+          Real-valued.
+    """
+
+    N = len(psd)
+    if N < 2:
+        raise ValueError("Need at least two frequency points in f")
+
+    c_freq = jnp.fft.irfft(psd, norm='backward')
+    Ctau = c_freq * ((2*(N-1)) * df) / 2
+
+    return Ctau
+
+def psd_to_covfunc(psdfunc, T, n_modes, over_sample, n_fL, *params):
+    """
+    Given a frequency over-sample rate, number of course-grained times, and T
+    select the number of frequencies, fmax, delta_f, and 
+    turn a PSD function into a covariance function
+    """
+
+    if n_modes%2!=0:
+        raise ValueError("Number of coarse time-samples needs to be even")
+    
+    n_freqs = (n_modes//2 +1)*over_sample
+    fmax = (n_modes - 1)*(n_freqs - 1)/(2*n_freqs - 3)/T
+    freqs = jnp.linspace(0, fmax, n_freqs)
+    df = fmax/(n_freqs-1)
+
+    ind = int(np.ceil(1/(n_fL*T)/df))
+
+    psd = psdfunc(freqs[ind:], *params)
+    psd = jnp.concatenate([jnp.zeros(ind), psd])
+    Ctau = psd_to_covariance(df, psd)
+
+    return Ctau[:n_modes]
+
+def ctau_to_cnm(ctau):
+    """Build the matrix Cnm = C(tau[n] - tau[m]) given:
+      - tau is 1D, uniformly spaced
+      - ctau[i] = C(tau[i]),
+      - no interpolation is needed because of regular grid
+    """
+
+    N=len(ctau)
+    inds = jnp.arange(0,N)
+    n = inds[:,None]
+    m = inds[None,:]
+    nm = jnp.abs(n-m)
+
+    return ctau[nm]
+
+def psd_to_cnm(psdfunc, T, n_modes, over_sample, n_fL, *params):
+    """Take a psd function, and turn it into a coarse
+    time-domain covariance matrix
+    
+    Returns C(np.abs(u[:,None]-u[None,:]), u
+    """
+    
+    covfunc = psd_to_covfunc(psdfunc, T, n_modes, over_sample, n_fL, *params)
+
+    return ctau_to_cnm(covfunc)
+
+def makegp_coarse_grained(psr, prior, components, oversample=None, cutoff=None, start_time=None, T=None,
+                          basis_function=coarse_grained_basis, common=[], name='coarsegrainGP'):
+
+    argspec = inspect.getfullargspec(prior)
+    argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
+              (f'({components[arg] if isinstance(components, dict) else components})' if argspec.annotations.get(arg) == typing.Sequence else '')
+              for arg in argspec.args if arg not in ['f', 'df', 'fL']]
+
+    # we'll create coarse grained bases using the longest vector parameter
+    if isinstance(components, dict):
+        components = max(components.values())
+
+    if components%2!=0:
+        raise ValueError("Number of coarse time-samples needs to be even")
+    
+    if oversample is None:
+        oversample = 4
+    if cutoff is None:
+        cutoff = oversample + 1
+
+    t_coarse, _ , Bmat = basis_function(psr, components, start_time=start_time, T=T)
+
+    if T is None:
+        T = getspan(psr)
+    if start_time is None:
+        start_time = jnp.min(psr.toas)
+
+    def priorfunc(params):
+        C_nm = psd_to_cnm(prior, T, components, oversample, cutoff, *[params[arg] for arg in argmap])
+        return C_nm
+    priorfunc.params = argmap
+
+    gp = matrix.VariableGP(matrix.NoiseMatrix2D_var(priorfunc), Bmat)
+    gp.index = {f'{psr.name}_{name}_coefficients({t_coarse.size})': slice(0, t_coarse.size)}
+    gp.name, gp.pos = psr.name, psr.pos
+    gp.gpname, gp.gpcommon = name, common
+
+    return gp
