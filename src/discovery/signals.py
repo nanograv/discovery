@@ -641,7 +641,6 @@ def makepowerlaw_crn(components, crn_gamma='variable'):
     else:
         return powerlaw_crn
 
-
 def makefreespectrum_crn(components):
     if matrix.jnp == jnp:
         def freespectrum_crn(f, df, log10_rho: typing.Sequence, crn_log10_rho: typing.Sequence):
@@ -655,6 +654,25 @@ def makefreespectrum_crn(components):
             return phi
 
     return freespectrum_crn
+
+def makepowerlaw_crn_fft(components_crn, crn_gamma='variable'):
+    if matrix.jnp == jnp:
+        def powerlaw_crn(f, log10_A, gamma, crn_log10_A, crn_gamma):
+            phi = (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma)
+            phi = phi.at[:components_crn].add((10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 *
+                                            const.fyr ** (crn_gamma - 3.0) * f[:components_crn] ** (-crn_gamma))
+            return phi
+    elif matrix.jnp == np:
+        def powerlaw_crn(f, log10_A, gamma, crn_log10_A, crn_gamma):
+            phi = (10.0**(2.0 * log10_A)) / 12.0 / np.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma)
+            phi[:components_crn] += ((10.0**(2.0 * crn_log10_A)) / 12.0 / np.pi**2 *
+                                   const.fyr ** (crn_gamma - 3.0) * f[:components_crn] ** (-crn_gamma))
+            return phi
+
+    if crn_gamma != 'variable':
+        return matrix.partial(powerlaw_crn, crn_gamma=crn_gamma)
+    else:
+        return powerlaw_crn
 
 
 # ORFs: OK as numpy functions
@@ -715,14 +733,14 @@ def build_piecewise_linear_B(t_fine, t_coarse):
     Build matrix B of shape (len(t_fine), len(t_coarse)) for piecewise-linear interpolation.
     That is, each row i corresponds to t_fine[i]; each column j is the hat function phi_j
     that is 1 at t_coarse[j] and 0 at t_coarse[j-1], t_coarse[j+1].
-    
+
     In the naive matrix approach, we do:
       B[i,j] = phi_j(t_fine[i])
     and phi_j(t) is the linear function that is:
       - 0 for t < t_{j-1} or t > t_{j+1}
       - up to 1 at t_j
     We'll handle boundaries carefully.
-    
+
     Complexity: O(N_fine * N_coarse).
     """
     Nf = len(t_fine)
@@ -731,17 +749,17 @@ def build_piecewise_linear_B(t_fine, t_coarse):
 
     # We'll do a naive approach: for each i in [0..Nf-1], find which segment [t_j, t_{j+1}] it falls into.
     # Then B[i,j], B[i,j+1] are the only nonzero entries (besides boundary cases).
-    # That is O(Nf log Nc) if we do a binary search for each t_fine[i], or O(Nf + Nc) if we do a single sweep. 
+    # That is O(Nf log Nc) if we do a binary search for each t_fine[i], or O(Nf + Nc) if we do a single sweep.
     # For now, we do a single pass with two pointers.
-    
+
     j = 0  # pointer for coarse intervals
     for i in range(Nf):
         tf = t_fine[i]
-        
+
         # move j so that t_coarse[j] <= tf < t_coarse[j+1], except boundary
         while j < Nc-2 and tf > t_coarse[j+1]:
             j += 1
-        
+
         # Now the point t_fine[i] is between t_coarse[j] and t_coarse[j+1].
         if j == Nc-1:
             # We are beyond the last coarse point
@@ -763,9 +781,8 @@ def build_piecewise_linear_B(t_fine, t_coarse):
                 # phi_{j+1}(t) = frac
                 B[i,j]   = 1.0 - frac
                 B[i,j+1] = frac
-    
-    return B
 
+    return B
 
 def coarse_grained_basis(psr, components, start_time=None, T=None):
     if T is None:
@@ -792,7 +809,7 @@ def psd_to_covariance(df, psd):
     psd : 1D array, shape (N,)
           One-sided PSD values, psd[k] = S(f[k]).
           Must be real and >= 0 (for a valid PSD), though not enforced here.
-    
+
     Returns
     -------
     #tau : 1D array, shape (M = 2*N - 2,)
@@ -814,13 +831,13 @@ def psd_to_covariance(df, psd):
 def psd_to_covfunc(psdfunc, T, n_modes, over_sample, n_fL, *params):
     """
     Given a frequency over-sample rate, number of course-grained times, and T
-    select the number of frequencies, fmax, delta_f, and 
+    select the number of frequencies, fmax, delta_f, and
     turn a PSD function into a covariance function
     """
 
     if n_modes%2!=0:
         raise ValueError("Number of coarse time-samples needs to be even")
-    
+
     n_freqs = (n_modes//2 +1)*over_sample
     fmax = (n_modes - 1)*(n_freqs - 1)/(2*n_freqs - 3)/T
     freqs = jnp.linspace(0, fmax, n_freqs)
@@ -852,13 +869,14 @@ def ctau_to_cnm(ctau):
 def psd_to_cnm(psdfunc, T, n_modes, over_sample, n_fL, *params):
     """Take a psd function, and turn it into a coarse
     time-domain covariance matrix
-    
+
     Returns C(np.abs(u[:,None]-u[None,:]), u
     """
-    
+
     covfunc = psd_to_covfunc(psdfunc, T, n_modes, over_sample, n_fL, *params)
 
     return ctau_to_cnm(covfunc)
+
 
 def makegp_coarse_grained(psr, prior, components, oversample=None, cutoff=None, start_time=None, T=None,
                           basis_function=coarse_grained_basis, common=[], name='coarsegrainGP'):
@@ -866,7 +884,7 @@ def makegp_coarse_grained(psr, prior, components, oversample=None, cutoff=None, 
     argspec = inspect.getfullargspec(prior)
     argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
               (f'({components[arg] if isinstance(components, dict) else components})' if argspec.annotations.get(arg) == typing.Sequence else '')
-              for arg in argspec.args if arg not in ['f', 'df', 'fL']]
+              for arg in argspec.args if arg not in ['f']]
 
     # we'll create coarse grained bases using the longest vector parameter
     if isinstance(components, dict):
@@ -874,7 +892,7 @@ def makegp_coarse_grained(psr, prior, components, oversample=None, cutoff=None, 
 
     if components%2!=0:
         raise ValueError("Number of coarse time-samples needs to be even")
-    
+
     if oversample is None:
         oversample = 4
     if cutoff is None:
@@ -896,5 +914,66 @@ def makegp_coarse_grained(psr, prior, components, oversample=None, cutoff=None, 
     gp.index = {f'{psr.name}_{name}_coefficients({t_coarse.size})': slice(0, t_coarse.size)}
     gp.name, gp.pos = psr.name, psr.pos
     gp.gpname, gp.gpcommon = name, common
+
+    return gp
+
+
+def makecommongp_coarse_grained(psrs, prior, components, oversample=None, cutoff=None, start_time=None, T=None, basis_function=coarse_grained_basis, common=[], name='coarsegrainCommonGP', vector=False):
+    argspec = inspect.getfullargspec(prior)
+
+    if vector:
+        argmap = [arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else
+                  f'{name}_{arg}({len(psrs)})' for arg in argspec.args if arg not in ['f']]
+    else:
+        argmaps = [[(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
+                    (f'({components[arg] if isinstance(components, dict) else components})' if argspec.annotations.get(arg) == typing.Sequence else '') for psr in psrs]
+                   for arg in argspec.args if arg not in ['f']]
+
+
+    if isinstance(components, dict):
+        components = max(components.values())
+
+    if components%2!=0:
+        raise ValueError("Number of coarse time-samples needs to be even")
+
+    if oversample is None:
+        oversample = 4
+    if cutoff is None:
+        cutoff = oversample + 1
+
+    if T is None:
+        T = getspan(psrs)
+    if start_time is None:
+        start_time = min(psr.toas.min() for psr in psrs)
+
+
+    t_coarse, _ , Bmats = zip(*[basis_function(psr, components, start_time=start_time, T=T) for psr in psrs])
+    t_coarse = t_coarse[0]
+    # fs, dfs, fmats = zip(*[fourierbasis(psr, components, T) for psr in psrs])
+    # f, df = fs[0], dfs[0]
+
+    if vector:
+        vpsd_to_cnm = jax.vmap(psd_to_cnm, in_axes=[None]*5 +
+                                         [0 if f'({len(psrs)})' in arg else None for arg in argmap])
+
+        def priorfunc(params):
+            return vpsd_to_cnm(prior, T, components, oversample, cutoff, *[params[arg] for arg in argmap])
+
+        priorfunc.params = sorted(argmap)
+    else:
+        # vprior = jax.vmap(prior, in_axes=[None, None] +
+        #                                  [0 if isinstance(argmap, list) else None for argmap in argmaps])
+        vpsd_to_cnm = jax.vmap(psd_to_cnm, in_axes=[None]*5 +
+                                         [0 if isinstance(argmap, list) else None for argmap in argmaps])
+        def priorfunc(params):
+            vpars = [matrix.jnparray([params[arg] for arg in argmap]) if isinstance(argmap, list) else params[argmap]
+                    for argmap in argmaps]
+            return vpsd_to_cnm(prior, T, components, oversample, cutoff, *vpars)
+
+        priorfunc.params = sorted(set(sum([argmap if isinstance(argmap, list) else [argmap] for argmap in argmaps], [])))
+
+    gp = matrix.VariableGP(matrix.VectorNoiseMatrix2D_var(priorfunc), Bmats)
+    gp.index = {f'{psr.name}_{name}_coefficients({t_coarse.size})': slice(t_coarse.size*i,t_coarse.size*(i+1))
+                for i, psr in enumerate(psrs)}
 
     return gp
