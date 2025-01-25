@@ -835,10 +835,14 @@ def psd_to_covariance(df, psd):
     if N < 2:
         raise ValueError("Need at least two frequency points in f")
 
-    c_freq = jnp.fft.irfft(psd, norm='backward')
-    Ctau = c_freq * ((2*(N-1)) * df) / 2
+    psd_mirror = psd[1:-1][::-1]                    # shape (N-2,)
+    full_psd = jnp.concatenate((psd, psd_mirror))    # shape (2N - 2,)
+    M = len(full_psd)
 
-    return Ctau
+    c_freq = jnp.fft.ifft(full_psd, norm='backward')
+    Ctau = c_freq * M * df / 2
+
+    return Ctau.real
 
 def psd_to_covfunc(psdfunc, T, n_modes, over_sample, n_fL, *params):
     """
@@ -847,14 +851,14 @@ def psd_to_covfunc(psdfunc, T, n_modes, over_sample, n_fL, *params):
     turn a PSD function into a covariance function
     """
 
-    if n_modes%2!=0:
-        raise ValueError("Number of coarse time-samples needs to be even")
+    if n_modes%2==0:
+        raise ValueError("Number of coarse time-samples needs to be odd")
 
-    n_freqs = (n_modes//2 +1)*over_sample
-    fmax = (n_modes - 1)*(n_freqs - 1)/(2*n_freqs - 3)/T
+    n_freqs = (n_modes//2 + 1 ) * over_sample
+    fmax = (n_modes - 1)/(2*T)
     freqs = jnp.linspace(0, fmax, n_freqs)
     df = fmax/(n_freqs-1)
-
+    
     ind = int(np.ceil(1/(n_fL*T)/df))
 
     psd = psdfunc(freqs[ind:], *params)
@@ -902,11 +906,11 @@ def makegp_coarse_grained(psr, prior, components, oversample=None, cutoff=None, 
     if isinstance(components, dict):
         components = max(components.values())
 
-    if components%2!=0:
-        raise ValueError("Number of coarse time-samples needs to be even")
+    if components%2==0:
+        raise ValueError("Number of coarse time-samples needs to be odd")
 
     if oversample is None:
-        oversample = 4
+        oversample = 2
     if cutoff is None:
         cutoff = oversample + 1
 
@@ -945,11 +949,11 @@ def makecommongp_coarse_grained(psrs, prior, components, oversample=None, cutoff
     if isinstance(components, dict):
         components = max(components.values())
 
-    if components%2!=0:
-        raise ValueError("Number of coarse time-samples needs to be even")
+    if components%2==0:
+        raise ValueError("Number of coarse time-samples needs to be odd")
 
     if oversample is None:
-        oversample = 4
+        oversample = 2
     if cutoff is None:
         cutoff = oversample + 1
 
