@@ -11,7 +11,7 @@ import jax.tree_util
 
 def config(**kwargs):
     global jnp, jsp, jnparray, jnpzeros, intarray, jnpkey, jnpsplit, jnpnormal
-    global matrix_factor, matrix_solve, matrix_norm
+    global matrix_factor, matrix_solve, matrix_norm, partial
 
     np.logdet = lambda a: np.sum(np.log(np.abs(a)))
     jax.numpy.logdet = lambda a: jax.numpy.sum(jax.numpy.log(jax.numpy.abs(a)))
