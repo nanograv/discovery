@@ -414,9 +414,7 @@ class GlobalLikelihood:
                 def cond(params):
                     Pinv, _ = P_var_inv(params)
 
-                    # Sm = (matrix.jnp.diag(Pinv) if ndim == 1 else Pinv) + FtNmF
-
-                    Sm = matrix.jnp.diag(Pinv) if ndim == 1 else Pinv
+                    Sm = matrix.jnp.diag(Pinv) if Pinv.ndim == 1 else Pinv
                     for i, FtNmF in enumerate(FtNmFs):
                         Sm = Sm.at[i*ngp:(i+1)*ngp, i*ngp:(i+1)*ngp].add(FtNmF)
 
@@ -459,26 +457,44 @@ class GlobalLikelihood:
 
 
 class ArrayLikelihood:
-    def __init__(self, psls, commongp=None, globalgp=None):
+    def __init__(self, psls, commongp=None, globalgp=None, transform=None):
         self.psls = psls
         self.commongp = commongp
         self.globalgp = globalgp
+        self.transform = transform
+
+    # @functools.cached_property
+    # def cloglast(self):
+    #     commongp = matrix.VectorCompoundGP(self.commongp[:-1])
+    #     lastgp = self.commongp[-1]
+
+    #     Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+    #     csm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+
+    #     vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, lastgp.F, lastgp.Phi)
+    #     if hasattr(lastgp, 'prior'):
+    #         vsm.prior = lastgp.prior
+    #     if hasattr(lastgp, 'index'):
+    #         vsm.index = lastgp.index
+
+    #     return vsm.make_kernelproduct_gpcomponent(self.ys)
 
     @functools.cached_property
     def clogL(self):
-        if self.commongp is None:
-            if self.globalgp is None:
-                def loglike(params):
-                    return sum(psl.clogL(params) for psl in self.psls)
+        if self.commongp is None and self.globalgp is None:
+            def loglike(params):
+                return sum(psl.clogL(params) for psl in self.psls)
                 loglike.params = sorted(set.union(*[set(psl.clogL.params) for psl in self.psls]))
 
-                return loglike
-            else:
-                raise NotImplementedError("Currently ArrayLikelihood does not support a globalgp without a commongp")
-
-        if self.globalgp is None:
+            return loglike
+        elif self.commongp is None:
+            # commongp = matrix.VectorCompoundGP(self.globalgp)
+            raise NotImplementedError("ArrayLikelihood does not support a globalgp without a commongp")
+        elif self.globalgp is None:
+            # merge common GPs if necessary
             commongp = matrix.VectorCompoundGP(self.commongp)
         else:
+            # merge common GPs and global GP
             cgp = self.commongp if isinstance(self.commongp, list) else [self.commongp]
             commongp = matrix.VectorCompoundGP(cgp + [self.globalgp])
 
@@ -489,7 +505,7 @@ class ArrayLikelihood:
         if hasattr(commongp, 'index'):
             self.vsm.index = commongp.index
 
-        loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys)
+        loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys, transform=self.transform)
 
         return loglike
 

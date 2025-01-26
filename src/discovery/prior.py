@@ -17,6 +17,7 @@ priordict_standard = {
     "(.*_)?efac": [0.9, 1.1],
     "(.*_)?t2equad": [-8.5, -5],
     "(.*_)?tnequad": [-8.5, -5],
+    "(.*_)?log10_ecorr": [-8.5, -5],
     "(.*_)?rednoise_log10_A.*": [-20, -11],
     "(.*_)?rednoise_gamma.*": [0, 7],
     "(.*_)?red_noise_log10_A.*": [-20, -11],  # deprecated
@@ -30,6 +31,8 @@ priordict_standard = {
     "(.*_)?dmgp_alpha": [1, 3],
     "crn_log10_rho": [-9, -4],
     "gw_(.*_)?log10_rho": [-9, -4],
+    "(.*_)?red_noise_log10_rho\(([0-9]*)\)": [-9, -4],
+    "(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4]
 }
 
 
