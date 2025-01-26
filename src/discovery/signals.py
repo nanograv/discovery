@@ -655,18 +655,23 @@ def makefreespectrum_crn(components):
 
     return freespectrum_crn
 
-def makepowerlaw_crn_fft(components_crn, crn_gamma='variable'):
+def makepowerlaw_crn_fft(components_crn, oversample_crn=None, crn_gamma='variable'):
+
+    if oversample_crn is None:
+        oversample_crn = 2
+
+    n_freqs_crn = (components_crn//2 + 1 ) * oversample_crn
     if matrix.jnp == jnp:
         def powerlaw_crn(f, log10_A, gamma, crn_log10_A, crn_gamma):
             phi = (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma)
-            phi = phi.at[:components_crn].add((10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 *
-                                            const.fyr ** (crn_gamma - 3.0) * f[:components_crn] ** (-crn_gamma))
+            phi = phi.at[:n_freqs_crn].add((10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 *
+                                            const.fyr ** (crn_gamma - 3.0) * f[:n_freqs_crn] ** (-crn_gamma))
             return phi
     elif matrix.jnp == np:
         def powerlaw_crn(f, log10_A, gamma, crn_log10_A, crn_gamma):
             phi = (10.0**(2.0 * log10_A)) / 12.0 / np.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma)
-            phi[:components_crn] += ((10.0**(2.0 * crn_log10_A)) / 12.0 / np.pi**2 *
-                                   const.fyr ** (crn_gamma - 3.0) * f[:components_crn] ** (-crn_gamma))
+            phi[:n_freqs_crn] += ((10.0**(2.0 * crn_log10_A)) / 12.0 / np.pi**2 *
+                                   const.fyr ** (crn_gamma - 3.0) * f[:n_freqs_crn] ** (-crn_gamma))
             return phi
 
     if crn_gamma != 'variable':
