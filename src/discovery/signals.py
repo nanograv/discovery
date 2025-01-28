@@ -705,6 +705,20 @@ def makepowerlaw_crn_fft_samedim_const(crn_gamma='variable'):
     else:
         return powerlaw_crn
 
+def makepowerlaw_crn_samedim_const(crn_gamma='variable'):
+    def powerlaw_crn(f, df, log10_A, gamma, crn_log10_A, crn_gamma, crn_log10_const):
+        phi = (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma) * df
+        phi = phi + (10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 * \
+                    const.fyr ** (crn_gamma - 3.0) * f ** (-crn_gamma) * df + \
+                    (10.0**(2.0 * crn_log10_const)) / 12.0 / jnp.pi**2 * \
+                    const.fyr ** (- 3.0) * df
+        return phi
+    
+    if crn_gamma != 'variable':
+        return matrix.partial(powerlaw_crn, crn_gamma=crn_gamma)
+    else:
+        return powerlaw_crn
+
 
 # ORFs: OK as numpy functions
 
