@@ -674,8 +674,8 @@ def makepowerlaw_crn_samedim_broken_powerlaw(crn_gamma='variable'):
         #crn_log10_fb: log10 transition frequency at which slope switches from gamma to zero
         kappa=0.1 # smoothness of transition
         phi = (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma) * df
-        phi = phi + (10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (crn_gamma - 3.0) * df *\
-                    (1 + (f / 10**crn_log10_fb) ** (1 / kappa)) ** (- kappa * crn_gamma / 2)
+        phi = phi + (10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (crn_gamma - 3.0) *\
+             f ** (-crn_gamma) * df * (1 + (f / 10**crn_log10_fb) ** (1 / kappa)) ** (kappa * crn_gamma)
         return phi
     
     if crn_gamma != 'variable':
@@ -742,8 +742,7 @@ def makepowerlaw_crn_fft_samedim_broken_powerlaw(crn_gamma='variable'):
         kappa=0.1 # smoothness of transition
         phi = (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma)
         phi = phi + (10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (crn_gamma - 3.0) *\
-                    (1 + (f / 10**crn_log10_fb) ** (1 / kappa)) ** (- kappa * crn_gamma / 2)
-
+             f ** (-crn_gamma) * (1 + (f / 10**crn_log10_fb) ** (1 / kappa)) ** (kappa * crn_gamma)
         return phi
     
     if crn_gamma != 'variable':
