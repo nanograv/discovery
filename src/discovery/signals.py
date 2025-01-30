@@ -669,7 +669,7 @@ def makepowerlaw_crn_samedim_const(crn_gamma='variable'):
     else:
         return powerlaw_crn
 
-def makepowerlaw_crn_samedim_broken_powerlaw(crn_gamma='variable'):
+def makepowerlaw_crn_samedim_broken_powerlaw(**constants):
     def powerlaw_crn(f, df, log10_A, gamma, crn_log10_A, crn_gamma, crn_log10_fb):
         #crn_log10_fb: log10 transition frequency at which slope switches from gamma to zero
         kappa=0.1 # smoothness of transition
@@ -678,8 +678,10 @@ def makepowerlaw_crn_samedim_broken_powerlaw(crn_gamma='variable'):
              f ** (-crn_gamma) * df * (1 + (f / 10**crn_log10_fb) ** (1 / kappa)) ** (kappa * crn_gamma)
         return phi
     
-    if crn_gamma != 'variable':
-        return matrix.partial(powerlaw_crn, crn_gamma=crn_gamma)
+    constants = {varname: value for varname, value in constants.items()
+                                if value != 'variable'}
+    if constants:
+        return matrix.partial(powerlaw_crn, **constants)
     else:
         return powerlaw_crn
 
@@ -736,7 +738,7 @@ def makepowerlaw_crn_fft_samedim_const(crn_gamma='variable'):
     else:
         return powerlaw_crn
 
-def makepowerlaw_crn_fft_samedim_broken_powerlaw(crn_gamma='variable'):
+def makepowerlaw_crn_fft_samedim_broken_powerlaw(**constants):
     def powerlaw_crn(f, log10_A, gamma, crn_log10_A, crn_gamma, crn_log10_fb):
         #crn_log10_fb: log10 transition frequency at which slope switches from gamma to zero
         kappa=0.1 # smoothness of transition
@@ -745,8 +747,10 @@ def makepowerlaw_crn_fft_samedim_broken_powerlaw(crn_gamma='variable'):
              f ** (-crn_gamma) * (1 + (f / 10**crn_log10_fb) ** (1 / kappa)) ** (kappa * crn_gamma)
         return phi
     
-    if crn_gamma != 'variable':
-        return matrix.partial(powerlaw_crn, crn_gamma=crn_gamma)
+    constants = {varname: value for varname, value in constants.items()
+                                if value != 'variable'}
+    if constants:
+        return matrix.partial(powerlaw_crn, **constants)
     else:
         return powerlaw_crn
 
