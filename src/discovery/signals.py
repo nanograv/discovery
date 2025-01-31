@@ -808,72 +808,28 @@ def makedelay_deterministic(psr, delay, name='deterministic'):
 
 ##### FFT METHOD #####
 
-def build_piecewise_linear_B(t_fine, t_coarse):
-    """
-    Build matrix B of shape (len(t_fine), len(t_coarse)) for piecewise-linear interpolation.
-    That is, each row i corresponds to t_fine[i]; each column j is the hat function phi_j
-    that is 1 at t_coarse[j] and 0 at t_coarse[j-1], t_coarse[j+1].
-
-    In the naive matrix approach, we do:
-      B[i,j] = phi_j(t_fine[i])
-    and phi_j(t) is the linear function that is:
-      - 0 for t < t_{j-1} or t > t_{j+1}
-      - up to 1 at t_j
-    We'll handle boundaries carefully.
-
-    Complexity: O(N_fine * N_coarse).
-    """
-    Nf = len(t_fine)
-    Nc = len(t_coarse)
-    B = np.zeros((Nf, Nc), dtype=float)
-
-    # We'll do a naive approach: for each i in [0..Nf-1], find which segment [t_j, t_{j+1}] it falls into.
-    # Then B[i,j], B[i,j+1] are the only nonzero entries (besides boundary cases).
-    # That is O(Nf log Nc) if we do a binary search for each t_fine[i], or O(Nf + Nc) if we do a single sweep.
-    # For now, we do a single pass with two pointers.
-
-    j = 0  # pointer for coarse intervals
-    for i in range(Nf):
-        tf = t_fine[i]
-
-        # move j so that t_coarse[j] <= tf < t_coarse[j+1], except boundary
-        while j < Nc-2 and tf > t_coarse[j+1]:
-            j += 1
-
-        # Now the point t_fine[i] is between t_coarse[j] and t_coarse[j+1].
-        if j == Nc-1:
-            # We are beyond the last coarse point
-            # so we just clamp. phi_{N-1}(t) = 1 at t_{N-1}.
-            B[i, Nc-1] = 1.0
-        else:
-            # in [t_j, t_{j+1}]
-            tj = t_coarse[j]
-            tjp1 = t_coarse[j+1]
-            # the distance
-            length = tjp1 - tj
-            if length <= 0:
-                # degenerate
-                B[i,j] = 1.0
-            else:
-                # linear fraction from j to j+1
-                frac = (tf - tj)/length
-                # phi_j(t) = 1 - frac
-                # phi_{j+1}(t) = frac
-                B[i,j]   = 1.0 - frac
-                B[i,j+1] = frac
-
-    return B
-
 def coarse_grained_basis(psr, components, start_time=None, T=None):
+    if start_time is None:
+        start_time = np.min(psr.toas)
+    else:
+        if start_time > np.min(psr.toas):
+            raise ValueError('Coarse time basis start must be earlier than earliest TOA.')
+    
     if T is None:
         T = getspan(psr)
-    if start_time is None:
-        start_time = jnp.min(psr.toas)
-
-    t_coarse = jnp.linspace(start_time, start_time+T, num=components)
-    dt = t_coarse[2] - t_coarse[1]
+    
     t_fine = psr.toas
-    B = build_piecewise_linear_B(t_fine, t_coarse)
+    t_coarse = np.linspace(start_time, start_time + T, components)
+    dt = t_coarse[1] - t_coarse[0]
+
+    idx = np.arange(len(t_fine))
+    idy = np.searchsorted(t_coarse, t_fine)
+    idy[idy == 0] = 1
+    
+    B = np.zeros((len(t_fine), len(t_coarse)), 'd')
+    
+    B[idx, idy] = (t_fine - t_coarse[idy - 1]) / dt
+    B[idx, idy - 1] = (t_coarse[idy] - t_fine) / dt
 
     return t_coarse, dt, B
 
