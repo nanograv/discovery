@@ -57,7 +57,8 @@ class Pulsar:
     tensor_columns = ['planetssb']
     # flags are done separately
 
-    metadata = ['name', 'dm', 'dmx', 'pdist', 'pos', 'phi', 'theta']
+    # what is _pdist, set in enterprise?
+    metadata = ['name', 'dm', 'dmx', 'pdist', 'pos', 'phi', 'theta', 'fitpars', 'setpars']
 
     def __init__(self):
         pass
@@ -96,8 +97,8 @@ class Pulsar:
         for attr in Pulsar.metadata:
             if attr in meta:
                 setattr(self, attr, meta[attr])
-            else:
-                print(f'Pulsar.read_feather: cannot find {attr} in feather file {filename}.')
+            # else:
+            #     print(f'Pulsar.read_feather: cannot find {attr} in feather file {filename}.')
 
         if 'noisedict' in meta:
             setattr(self, 'noisedict', meta['noisedict'])
@@ -123,8 +124,8 @@ class Pulsar:
         for attr in Pulsar.metadata:
             if hasattr(self, attr):
                 meta[attr] = Pulsar.to_list(getattr(self, attr))
-            else:
-                print(f'Pulsar.save_feather: cannot find {attr} in Pulsar {self.name}.')
+            # else:
+            #     print(f'Pulsar.save_feather: cannot find {attr} in Pulsar {self.name}.')
 
         # use attribute if present
         noisedict = getattr(self, 'noisedict', None) if noisedict is None else noisedict
