@@ -1,7 +1,6 @@
 import os
 import re
 import inspect
-import types
 import typing
 from collections.abc import Iterable
 
@@ -259,6 +258,21 @@ def dmfourierbasis(psr, components, T=None, fref=1400.0):
     Dm = (fref / psr.freqs)**2
 
     return f, df, fmat * Dm[:, None]
+    
+#FF: modified to add the dm, chromatic and tndm
+def make_dmfourierbasis(alpha=2.0, tndm=False):
+
+    def basis(psr, components, T=None, fref=1400.0):
+        f, df, fmat = fourierbasis(psr, components, T)
+
+        if tndm:
+            Dm = (fref / psr.freqs) ** alpha * np.sqrt(12) * np.pi / 1400.0 / 1400.0 / 2.41e-4
+        else:
+            Dm = (fref / psr.freqs) ** alpha
+
+        return f, df, fmat * Dm[:, None]
+
+    return basis
 
 def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
     f, df, fmat = fourierbasis(psr, components, T)
@@ -269,11 +283,11 @@ def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
 
     return f, df, fmatfunc
 
-def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], name='fourierGP'):
+def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, common=[], name='fourierGP'):
     argspec = inspect.getfullargspec(prior)
     argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
               (f'({components[arg] if isinstance(components, dict) else components})' if argspec.annotations.get(arg) == typing.Sequence else '')
-              for arg in argspec.args if arg not in exclude]
+              for arg in argspec.args if arg not in ['f', 'df']]
 
     # we'll create frequency bases using the longest vector parameter (e.g., for makefreespectrum_crn)
     if isinstance(components, dict):
@@ -306,16 +320,16 @@ def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, co
 
 
 # for use in ArrayLikelihood. Same process for all pulsars.
-def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], vector=False, name='fourierCommonGP'):
+def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, common=[], vector=False, name='fourierCommonGP'):
     argspec = inspect.getfullargspec(prior)
 
     if vector:
         argmap = [arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else
-                  f'{name}_{arg}({len(psrs)})' for arg in argspec.args if arg not in exclude]
+                  f'{name}_{arg}({len(psrs)})' for arg in argspec.args if arg not in ['f', 'df']]
     else:
         argmaps = [[(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
                     (f'({components[arg] if isinstance(components, dict) else components})' if argspec.annotations.get(arg) == typing.Sequence else '') for psr in psrs]
-                   for arg in argspec.args if arg not in exclude]
+                   for arg in argspec.args if arg not in ['f', 'df']]
 
     # we'll create frequency bases using the longest vector parameter (e.g., for makefreespectrum_crn)
     if isinstance(components, dict):
@@ -413,7 +427,7 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
     return gp
 
 
-def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourierbasis, exclude=['f', 'df'],  name='fourierGlobalGP'):
+def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourierbasis, name='fourierGlobalGP'):
     priors = priors if isinstance(priors, list) else [priors]
     orfs   = orfs   if isinstance(orfs, list)   else [orfs]
 
@@ -422,7 +436,7 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
         argspec = inspect.getfullargspec(prior)
         priorname = f'{name}' if len(priors) == 1 else f'{name}_{re.sub("_", "", orf.__name__)}'
         argmaps.append([f'{priorname}_{arg}' + (f'({components})' if argspec.annotations.get(arg) == typing.Sequence else '')
-                        for arg in argspec.args if arg not in exclude])
+                        for arg in argspec.args if arg not in ['f', 'df']])
 
     fs, dfs, fmats = zip(*[fourierbasis(psr, components, T) for psr in psrs])
     f, df = matrix.jnparray(fs[0]), matrix.jnparray(dfs[0])
@@ -480,47 +494,6 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
     return gp
 
 makegp_fourier_global = makeglobalgp_fourier
-
-
-# epoch-averaged covariance matrix from covfunc(t1, t2, *args)
-
-def epochavgbasis(psr, components, T=None, dt=1.0):
-    bins = quantize(psr.toas, dt)
-    Umat = np.vstack([bins == i for i in range(bins.max() + 1)]).T.astype('d')
-    t_avg = psr.toas @ Umat / Umat.sum(axis=0)
-
-    return t_avg, None, Umat
-
-def cov2cov(covfunc):
-    argspec = inspect.getfullargspec(covfunc)
-    arglist = argspec.args
-
-    if arglist[0] == 't1' and arglist[1] == 't2':
-        def covmat(f, df, *args):
-            return covfunc(f, f, *args)
-    elif arglist[0] == 'tau':
-        def covmat(f, df, *args):
-            return covfunc(jnp.abs(f[:, jnp.newaxis] - f[jnp.newaxis, :]), *args)
-    else:
-        raise ValueError('cov2avg() must take a covariance function with arguments t1, t2 or tau.')
-
-    covmat.__signature__ = inspect.signature(covfunc)
-    covmat.type = jax.Array
-
-    return covmat
-
-def makegp_avgcov(psr, prior, epochavgbasis=epochavgbasis, common=[], name='avgcovGP'):
-    # assume prior(t1, t2, *args) or prior(tau, *args) returns a covariance matrix
-    return makegp_fourier(psr, cov2cov(prior), components=0, T=1.0, fourierbasis=epochavgbasis,
-                          common=common, exclude=['t1', 't2', 'tau'], name=name)
-
-def makecommongp_avgcov(psrs, prior, epochavgbasis=epochavgbasis, common=[], vector=False, name='avgcovCommonGP'):
-    return makecommongp_fourier(psr, cov2cov(prior), components=0, T=1.0, fourierbasis=epochavgbasis,
-                                common=common, exclude=['t1', 't2', 'tau'], name=name)
-
-def makeglobalgp_avgcov(psrs, prior, epochavgbasis=epochavgbasis, common=[], vector=False, name='avgcovCommonGP'):
-    return makeglobalgp_fourier(psr, cov2cov(prior), components=0, T=1.0, fourierbasis=epochavgbasis,
-                                exclude=['t1', 't2', 'tau'], name=name)
 
 
 # time-interpolated covariance matrix from FFT
@@ -601,7 +574,9 @@ def psd2cov(psdfunc, components, T, oversample=3, cutoff=1):
     return covmat
 
 def makegp_fftcov(psr, prior, components, T=None, timeinterpbasis=timeinterpbasis, oversample=3, cutoff=1, common=[], name='fftcovGP'):
-    T = getspan(psr) if T is None else T
+    if T is None:
+        T = getspan(psr)
+
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, cutoff),
                           components, T=T, fourierbasis=timeinterpbasis, common=common, name=name)
 
@@ -612,22 +587,6 @@ def makecommongp_fftcov(psrs, prior, components, T, timeinterpbasis=timeinterpba
 def makeglobalgp_fftcov(psrs, prior, orf, components, T, timeinterpbasis=timeinterpbasis, oversample=3, cutoff=1, name='fftcovGlobalGP'):
     return makeglobalgp_fourier(psrs, psd2cov(prior, components, T, oversample, cutoff), orf,
                                 components, T, fourierbasis=timeinterpbasis, name=name)
-
-
-# time-interpolated covariance matrix from time-domain
-
-def makegp_intcov(psr, prior, components, T=None, timeinterpbasis=timeinterpbasis, common=[], name='intcovGP'):
-    T = getspan(psr) if T is None else T
-    return makegp_fourier(psr, cov2cov(prior),
-                          components, T, fourierbasis=timeinterpbasis, common=common, exclude=['t1', 't2', 'tau'], name=name)
-
-def makecommongp_intcov(psr, prior, components, T, timeinterpbasis=timeinterpbasis, common=[], name='intcovCommonGP'):
-    return makecommongp_fourier(psr, cov2cov(prior),
-                                components, T, fourierbasis=timeinterpbasis, common=common, exclude=['t1', 't2', 'tau'], name=name)
-
-def makeglobalgp_intcov(psr, prior, orf, components, T, timeinterpbasis=timeinterpbasis, common=[], name='intcovGlobalGP'):
-    return makeglobalgp_fourier(psr, cov2cov(prior), orf,
-                                components, T, fourierbasis=timeinterpbasis, exclude=['t1', 't2', 'tau'], name=name)
 
 
 # single powerlaws

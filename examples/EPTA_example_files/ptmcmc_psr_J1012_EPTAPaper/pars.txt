@@ -1,0 +1,4 @@
+J1012+5307_dm_gp_gamma
+J1012+5307_dm_gp_log10_A
+J1012+5307_red_noise_gamma
+J1012+5307_red_noise_log10_A

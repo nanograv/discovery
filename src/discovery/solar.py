@@ -43,13 +43,16 @@ def chromaticdelay(toas, freqs, t0, log10_Amp, log10_tau, idx):
 
     return matrix.jnp.where(dt > 0.0, -1.0 * (10**log10_Amp) * matrix.jnp.exp(-dt / (10**log10_tau)) * invnormfreqs**idx, 0.0)
 
-def make_chromaticdelay(psr):
+# FF: Let's fix the index --> idx = 4,1 (paper II 2023)
+# FF: I added the two indices for the events, just put the numbers in 'idx'
+def make_chromaticdecay(psr, idx):
     """From enterprise_extensions: calculate chromatic exponential-dip delay."""
 
-    toadays, invnormfreqs = matrix.jnparray(psr.toas / const.day), matrix.jnparray(1400.0 / psr.freqs)
+    toadays, normfreqs = matrix.jnparray(psr.toas / const.day), matrix.jnparray(1400.0 / psr.freqs)
 
-    def decay(t0, log10_Amp, log10_tau, idx):
+    #def decay(t0, log10_Amp, log10_tau, idx): #ORIG
+    def decay(t0, log10_Amp, log10_tau):
         dt = toadays - t0
-        return matrix.jnp.where(dt > 0.0, -1.0 * (10**log10_Amp) * matrix.jnp.exp(-dt / (10**log10_tau)) * invnormfreqs**idx, 0.0)
-
+        return matrix.jnp.where(dt > 0.0, -1.0 * (10**log10_Amp) * matrix.jnp.exp(-dt / (10**log10_tau)) * normfreqs**idx, 0.0)
+ 
     return decay
