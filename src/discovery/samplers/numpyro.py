@@ -4,7 +4,7 @@ import numpyro
 from numpyro import infer
 from numpyro import distributions as dist
 
-from discovery import prior
+from .. import prior
 
 
 def makemodel_transformed(mylogl, transform=prior.makelogtransform_uniform, priordict={}):
@@ -38,8 +38,6 @@ def makesampler_nuts(numpyro_model, num_warmup=512, num_samples=1024, num_chains
                     forward_mode_differentiation=False, target_accept_prob=0.8,
                     **{arg: val for arg in kwargs.items() if arg in inspect.getfullargspec(infer.NUTS).args})
                     
-    # FF modification:
-    #mcmcargs = dict(num_warmup=512, num_samples=1024, num_chains=1, # ORIG
     mcmcargs = dict(num_warmup=num_warmup, num_samples=num_samples, num_chains=num_chains,
                     chain_method='vectorized', progress_bar=True,
                     **{arg: val for arg in kwargs.items() if arg in inspect.getfullargspec(infer.MCMC).kwonlyargs})

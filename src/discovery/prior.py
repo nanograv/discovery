@@ -12,7 +12,6 @@ def uniform(par, a, b):
 
     return logpriorfunc
 
-# FF: I added two standard prior for the dmexp
 priordict_standard = {
     "(.*_)?efac": [0.9, 1.1],
     "(.*_)?t2equad": [-8.5, -5],
@@ -36,9 +35,7 @@ priordict_standard = {
     "(.*_)?log10_Amp": [-10, -2],
     "(.*_)?log10_tau": [0, 2.5],
     "(.*_)?2_t0": [54650, 54850],
-    "(.*_)?1_t0": [57490, 57530],
-    "index":[-0.5, 1.5], # Hypermodels with n_models = 2
-    "gw_lam": [0,1]
+    "(.*_)?1_t0": [57490, 57530]
 }
 
 
@@ -188,7 +185,7 @@ def makelogtransform_classic(func, priordict={}):
     return transformed
 
 
-def sample_uniform(params, priordict={}, n=1):
+def sample_uniform(params, priordict={}, n=1, fail = True):
     priordict = {**priordict_standard, **priordict}
 
     sample = {}
