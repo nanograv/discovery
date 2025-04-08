@@ -12,41 +12,35 @@ def uniform(par, a, b):
 
     return logpriorfunc
 
-
+# FF: I added two standard prior for the dmexp
 priordict_standard = {
     "(.*_)?efac": [0.9, 1.1],
     "(.*_)?t2equad": [-8.5, -5],
     "(.*_)?tnequad": [-8.5, -5],
     "(.*_)?log10_ecorr": [-8.5, -5],
-    "(.*_)?rednoise_log10_A.*": [-20, -11],
+    "(.*_)?rednoise_log10_A.*": [-18, -10],
     "(.*_)?rednoise_gamma.*": [0, 7],
-    "(.*_)?rednoise_log10_fb": [-9, -6],
-    "(.*_)?red_noise_log10_A.*": [-20, -11],  # deprecated
+    "(.*_)?red_noise_log10_A.*": [-18, -10],  # deprecated
     "(.*_)?red_noise_gamma.*": [0, 7],  # deprecated
-    "(.*_)?red_noise_log10_fb": [-9, -6],
     "crn_log10_A.*": [-18, -11],
     "crn_gamma.*": [0, 7],
-    "crn_log10_fb": [-9, -6],
     "gw_(.*_)?log10_A": [-18, -11],
     "gw_(.*_)?gamma": [0, 7],
-    "gw_log10_fb": [-9, -6],
-    "(.*_)?dmgp_log10_A": [-20, -11],
-    "(.*_)?dmgp_gamma": [0, 7],
-    "(.*_)?dmgp_alpha": [1, 3],
+    "(.*_)?gp_log10_A": [-18, -10],
+    "(.*_)?gp_gamma": [0, 7],
+    "(.*_)?gp_alpha": [1, 3],
     "crn_log10_rho": [-9, -4],
     "gw_(.*_)?log10_rho": [-9, -4],
-    r"(.*_)?red_noise_log10_rho\(([0-9]*)\)": [-9, -4],
-    r"(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4]
+    "(.*_)?red_noise_log10_rho\(([0-9]*)\)": [-9, -4],
+    "(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4],
+    "(.*_)?log10_Amp": [-10, -2],
+    "(.*_)?log10_tau": [0, 2.5],
+    "(.*_)?2_t0": [54650, 54850],
+    "(.*_)?1_t0": [57490, 57530],
+    "index":[-0.5, 1.5], # Hypermodels with n_models = 2
+    "gw_lam": [0,1]
 }
 
-def getprior_uniform(par, priordict={}):
-    priordict = {**priordict_standard, **priordict}
-
-    for parname, range in priordict.items():
-        if re.match(parname, par):
-            return range
-
-    raise KeyError(f'getprior_uniform: no prior for parameter {par}.')
 
 def makelogprior_uniform(params, priordict={}):
     priordict = {**priordict_standard, **priordict}
@@ -70,17 +64,9 @@ def makelogtransform_uniform(func, priordict={}):
     # figure out slices when there are vector arguments
     slices, offset = [], 0
     for par in func.params:
-        # l = int(par[par.index('(')+1:par.index(')')]) if '(' in par else 1
-        # slices.append(slice(offset, offset+l))
-        # offset = offset + l
-
-        if '(' in par:
-            l = int(par[par.index('(')+1:par.index(')')]) if '(' in par else 1
-            slices.append(slice(offset, offset+l))
-            offset = offset + l
-        else:
-            slices.append(offset)
-            offset = offset + 1
+        l = int(par[par.index('(')+1:par.index(')')]) if '(' in par else 1
+        slices.append(slice(offset, offset+l))
+        offset = offset + l
 
     # build vectors of DF column names and of lower and upper uniform limits
     a, b = [], []
@@ -202,7 +188,7 @@ def makelogtransform_classic(func, priordict={}):
     return transformed
 
 
-def sample_uniform(params, priordict={}, n=1, fail=True):
+def sample_uniform(params, priordict={}, n=1):
     priordict = {**priordict_standard, **priordict}
 
     sample = {}
@@ -219,7 +205,6 @@ def sample_uniform(params, priordict={}, n=1, fail=True):
                     sample[par] = np.random.uniform(*range) if n == 1 else np.random.uniform(*range, size=n)
                 break
         else:
-            if fail:
-                raise KeyError(f"No known prior for {par}.")
+            raise KeyError(f"No known prior for {par}.")
 
     return sample

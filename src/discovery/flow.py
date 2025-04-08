@@ -208,7 +208,8 @@ class display_flow:
 
         # ps = logx.to_df(flow.sample(train_key, sample_shape=(2*4096,)))
 
-        train_key = jax.random.PRNGKey(42)
+        #train_key = jax.random.PRNGKey(42) # ORIG
+        train_key = jax.random.key(42)
 
         if self.vlogx is None:
             ps = self.logx.to_df(flow.sample(train_key, sample_shape=(2*4096,)))

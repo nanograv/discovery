@@ -299,7 +299,7 @@ def CompoundGP(gplist):
 
 def CompoundDelay(residuals, delays):
     def delayfunc(params):
-        return residuals - sum(delay(params) for delay in delays)
+        return residuals - sum(delay(params) for delay in delays)  # ORIG: residuals - sum(delay...)
     delayfunc.params = sorted(set.union(*[set(delay.params) for delay in delays]))
 
     return delayfunc
