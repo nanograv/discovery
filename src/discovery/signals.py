@@ -569,12 +569,16 @@ def make_timeinterpbasis(start_time=None, order=1):
 
     return timeinterpbasis
 
-def psd2cov(psdfunc, components, T, oversample=3, cutoff=1):
-    if components % 2 == 0:
-        raise ValueError('psd2cov number of components must be odd.')
+def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
+    if not (isinstance(oversample, int) and isinstance(fmax_factor, int) and isinstance(cutoff, int)):
+        raise ValueError('psd2cov: oversample, fmax_factor and cutoff must be integers.')
 
-    n_freqs = int((components - 1) / 2 * oversample + 1)
-    fmax = (components - 1) / T / 2
+    if components % 2 == 0:
+        raise ValueError('psd2cov: number of components must be odd.')
+
+    scaled_components = (components - 1) * fmax_factor + 1
+    n_freqs = int((scaled_components - 1) / 2 * oversample + 1)
+    fmax = (scaled_components - 1) / T / 2
     freqs = np.linspace(0, fmax, n_freqs)
     df = 1 / T / oversample
 
@@ -594,23 +598,23 @@ def psd2cov(psdfunc, components, T, oversample=3, cutoff=1):
         Cfreq = jnp.fft.ifft(fullpsd, norm='backward')
         Ctau = Cfreq.real * len(fullpsd) * df / 2
 
-        return matrix.jsp.linalg.toeplitz(Ctau[:components])
+        return matrix.jsp.linalg.toeplitz(Ctau[:scaled_components:fmax_factor])
     covmat.__signature__ = inspect.signature(psdfunc)
     covmat.type = jax.Array
 
     return covmat
 
-def makegp_fftcov(psr, prior, components, T=None, timeinterpbasis=timeinterpbasis, oversample=3, cutoff=1, common=[], name='fftcovGP'):
+def makegp_fftcov(psr, prior, components, T=None, timeinterpbasis=timeinterpbasis, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP'):
     T = getspan(psr) if T is None else T
-    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, cutoff),
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=timeinterpbasis, common=common, name=name)
 
-def makecommongp_fftcov(psrs, prior, components, T, timeinterpbasis=timeinterpbasis, oversample=3, cutoff=1, common=[], vector=False, name='fftcovCommonGP'):
-    return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, cutoff),
+def makecommongp_fftcov(psrs, prior, components, T, timeinterpbasis=timeinterpbasis, oversample=3, fmax_factor=1, cutoff=1, common=[], vector=False, name='fftcovCommonGP'):
+    return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                                 components, T, fourierbasis=timeinterpbasis, common=common, vector=vector, name=name)
 
-def makeglobalgp_fftcov(psrs, prior, orf, components, T, timeinterpbasis=timeinterpbasis, oversample=3, cutoff=1, name='fftcovGlobalGP'):
-    return makeglobalgp_fourier(psrs, psd2cov(prior, components, T, oversample, cutoff), orf,
+def makeglobalgp_fftcov(psrs, prior, orf, components, T, timeinterpbasis=timeinterpbasis, oversample=3, fmax_factor=1, cutoff=1, name='fftcovGlobalGP'):
+    return makeglobalgp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), orf,
                                 components, T, fourierbasis=timeinterpbasis, name=name)
 
 
