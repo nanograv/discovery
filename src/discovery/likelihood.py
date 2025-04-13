@@ -256,8 +256,10 @@ class GlobalLikelihood:
                     'if you provided them using a generator, it may have been consumed already. ' +
                     'In that case you can use a list.')
 
-            npsr = len(self.globalgp.Fs)
-            ngp = self.globalgp.Fs[0].shape[1]
+            # npsr = len(self.globalgp.Fs)
+            # ngp = self.globalgp.Fs[0].shape[1]
+
+            kmeans = getattr(self.globalgp, 'means', None)
 
             def loglike(params):
                 terms = [kterm(params) for kterm in kterms]
@@ -267,16 +269,30 @@ class GlobalLikelihood:
 
                 Pinv, ldP = P_var_inv(params)
 
-                #for i, term in enumerate(terms):
-                #    Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(term[2])
-                #cf = matrix.jsp.linalg.cho_factor(Pinv)
+                # for i, term in enumerate(terms):
+                #     Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(term[2])
+                # cf = matrix.jsp.linalg.cho_factor(Pinv)
 
                 # this seems a bit slower than the .at/.set scheme in plogL below
-                cf = matrix.jsp.linalg.cho_factor(Pinv + matrix.jsp.linalg.block_diag(*[term[2] for term in terms]))
+                FtNmF = matrix.jsp.linalg.block_diag(*[term[2] for term in terms])
+                cf = matrix.jsp.linalg.cho_factor(Pinv + FtNmF)
 
-                return p0 + 0.5 * (FtNmy.T @ matrix.jsp.linalg.cho_solve(cf, FtNmy) - ldP - 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
+                logp = p0 + 0.5 * (FtNmy.T @ matrix.jsp.linalg.cho_solve(cf, FtNmy) - ldP - 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
 
-            loglike.params = sorted(sorted(set.union(*[set(kterm.params) for kterm in kterms])) + P_var_inv.params)
+                if kmeans is not None:
+                    # -0.5 a0t.FtNmF.a0 + 0.5 a0t.FtNmF.Sm.FtNmF.a0 + a0t.FtNmy - a0t.FtNmF.Sm.FtNmy
+                    # -0.5 (a0t.FtNmF).a0 + (FtNmy)t.a0 + 0.5 (a0t.FtNmF).Sm.FtNmF.a0 - (FtNmy)t.Sm.FtNmF.a0
+                    # -0.5 (a0t.FtNmF).(a0 - Sm.FtNmF.a0) + (FtNmy)t.(a0 - Sm.FtNmF.a0)
+
+                    a0 = kmeans(params)
+                    FtNmFa0 = FtNmF @ a0
+                    logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
+
+                return logp
+
+            params_kterms = list(set.union(*[set(kterm.params) for kterm in kterms]))
+            params_kmeans = kmeans.params if kmeans is not None else []
+            loglike.params = sorted(params_kterms + params_kmeans + P_var_inv.params)
 
         return loglike
 
@@ -528,6 +544,8 @@ class ArrayLikelihood:
             npsr = len(self.globalgp.Fs)
             ngp = self.globalgp.Fs[0].shape[1]
 
+            kmeans = getattr(self.globalgp, 'means', None)
+
             def loglike(params):
                 terms = kterms(params)
 
@@ -549,10 +567,19 @@ class ArrayLikelihood:
                 #               Pinv)
                 #    cf = matrix.jsp.linalg.cho_factor(Pinv)
 
-                cf = matrix.matrix_factor(Pinv + matrix.jsp.linalg.block_diag(*terms[2]))
+                FtNmF = matrix.jsp.linalg.block_diag(*terms[2])
+                cf = matrix.matrix_factor(Pinv + FtNmF)
 
-                return p0 + 0.5 * (FtNmy.T @ matrix.matrix_solve(cf, FtNmy) - ldP - matrix.matrix_norm * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
+                logp = p0 + 0.5 * (FtNmy.T @ matrix.matrix_solve(cf, FtNmy) - ldP - matrix.matrix_norm * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
 
-            loglike.params = sorted(kterms.params + P_var_inv.params)
+                if kmeans is not None:
+                    a0 = kmeans(params)
+                    FtNmFa0 = FtNmF @ a0
+                    logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
+
+                return logp
+
+            params_kmeans = kmeans.params if kmeans is not None else []
+            loglike.params = sorted(kterms.params + params_kmeans + P_var_inv.params)
 
         return loglike

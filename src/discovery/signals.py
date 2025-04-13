@@ -413,7 +413,7 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
     return gp
 
 
-def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourierbasis, exclude=['f', 'df'],  name='fourierGlobalGP'):
+def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierbasis=fourierbasis, exclude=['f', 'df'],  name='fourierGlobalGP'):
     priors = priors if isinstance(priors, list) else [priors]
     orfs   = orfs   if isinstance(orfs, list)   else [orfs]
 
@@ -476,6 +476,20 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
                 slice(len(f)*i, len(f)*(i+1)) for i, psr in enumerate(psrs)}
     gp.pos = [psr.pos for psr in psrs]
     gp.name = [psr.name for psr in psrs]
+
+    if means is not None:
+        margspec = inspect.getfullargspec(means)
+        margmap = [f'{name}_{arg}' for arg in margspec.args if not hasattr(psrs[0], arg) and arg not in exclude]
+
+        psrpars = {arg: matrix.jnparray([getattr(psr, arg) for psr in psrs])
+                   for arg in margspec.args if hasattr(psrs[0], arg)}
+        vmeanfunc = jax.vmap(means, in_axes=([None] * 2 + [0] * len(psrpars) + [None] * len(margmap)))
+
+        def meanfunc(params):
+            return vmeanfunc(f, df, *psrpars.values(), *[params[arg] for arg in margmap]).flatten()
+        meanfunc.params = margmap
+
+        gp.means = meanfunc
 
     return gp
 
