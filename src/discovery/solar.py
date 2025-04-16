@@ -1,4 +1,5 @@
 import numpy as np
+import functools
 
 from . import const
 from . import matrix
@@ -43,13 +44,16 @@ def chromaticdelay(toas, freqs, t0, log10_Amp, log10_tau, idx):
 
     return matrix.jnp.where(dt > 0.0, -1.0 * (10**log10_Amp) * matrix.jnp.exp(-dt / (10**log10_tau)) * invnormfreqs**idx, 0.0)
 
-def make_chromaticdelay(psr):
-    """From enterprise_extensions: calculate chromatic exponential-dip delay."""
+def make_chromaticdelay(psr, idx=None):
+    """From enterprise_extensions: pre-calculate chromatic exponential-dip delay."""
 
     toadays, invnormfreqs = matrix.jnparray(psr.toas / const.day), matrix.jnparray(1400.0 / psr.freqs)
 
     def decay(t0, log10_Amp, log10_tau, idx):
         dt = toadays - t0
         return matrix.jnp.where(dt > 0.0, -1.0 * (10**log10_Amp) * matrix.jnp.exp(-dt / (10**log10_tau)) * invnormfreqs**idx, 0.0)
+
+    if idx is not None:
+        decay = functools.partial(decay, idx=idx)
 
     return decay

@@ -278,7 +278,7 @@ def make_dmfourierbasis(alpha=2.0, tndm=False):
         else:
             Dm = (fref / psr.freqs) ** alpha
 
-       return f, df, fmat * Dm[:, None]
+        return f, df, fmat * Dm[:, None]
 
     return basis
 
