@@ -269,6 +269,19 @@ def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
 
     return f, df, fmatfunc
 
+def make_dmfourierbasis(alpha=2.0, tndm=False):
+    def basis(psr, components, T=None, fref=1400.0):
+        f, df, fmat = fourierbasis(psr, components, T)
+
+        if tndm:
+            Dm = (fref / psr.freqs) ** alpha * np.sqrt(12.0) * np.pi / 1400.0 / 1400.0 / 2.41e-4
+        else:
+            Dm = (fref / psr.freqs) ** alpha
+
+       return f, df, fmat * Dm[:, None]
+
+    return basis
+
 def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], name='fourierGP'):
     argspec = inspect.getfullargspec(prior)
     argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +

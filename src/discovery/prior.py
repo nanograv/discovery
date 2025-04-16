@@ -70,10 +70,6 @@ def makelogtransform_uniform(func, priordict={}):
     # figure out slices when there are vector arguments
     slices, offset = [], 0
     for par in func.params:
-        # l = int(par[par.index('(')+1:par.index(')')]) if '(' in par else 1
-        # slices.append(slice(offset, offset+l))
-        # offset = offset + l
-
         if '(' in par:
             l = int(par[par.index('(')+1:par.index(')')]) if '(' in par else 1
             slices.append(slice(offset, offset+l))

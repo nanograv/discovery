@@ -12,11 +12,11 @@ def makemodel_curn(psrs, rn_components=30, crn_components=14, gamma='variable'):
                                               signals.makegp_timing(psr, svd=True)]) for psr in psrs]
 
     # note red_noise is backward-compatible with nanograv chains, "rednoise" is better in discovery
-    curngp = signals.makecommongp_fourier(psrs, signals.makepowerlaw_crn(rn_components, crn_gamma=gamma), rn_components, T=Tspan,
+    curngp = signals.makecommongp_fourier(psrs, signals.makepowerlaw_crn(crn_components, crn_gamma=gamma), rn_components, T=Tspan,
                                           common=['crn_log10_A'] + (['crn_gamma'] if gamma == 'variable' else []),
                                           name='red_noise')
 
-    return likelihood.ArrayLikelihood(pslmodels, commongp = curngp)
+    return likelihood.ArrayLikelihood(pslmodels, commongp=curngp)
 
 
 # HD model from 15yr NANOGrav analysis (= model 3a in 12.5yr analysis)
