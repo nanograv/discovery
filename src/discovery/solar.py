@@ -5,6 +5,7 @@ import jax.numpy as jnp
 from . import const
 from . import matrix
 from . import fourierbasis
+from . import quantize
 
 AU_light_sec = const.AU / const.c  # 1 AU in light seconds
 AU_pc = const.AU / const.pc        # 1 AU in parsecs (for DM normalization)
