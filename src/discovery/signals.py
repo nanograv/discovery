@@ -201,13 +201,21 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
 
 def makegp_improper(psr, fmat, constant=1.0e40, name='improperGP', variable=False):
     if variable:
+        phi = matrix.jnparray(constant * np.ones(fmat.shape[1]))
+
         def getphi(params):
-            return constant * jnp.ones(fmat.shape[1])
+            return phi
         getphi.params = []
 
-        return matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
+        gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
+        gp.index = {f'{psr.name}_{name}_coefficients({fmat.shape[1]})': slice(0, fmat.shape[1])}
     else:
-        return matrix.ConstantGP(matrix.NoiseMatrix1D_novar(constant * np.ones(fmat.shape[1])), fmat)
+        gp = matrix.ConstantGP(matrix.NoiseMatrix1D_novar(constant * np.ones(fmat.shape[1])), fmat)
+
+    gp.name = psr.name
+    gp.gpname = name
+
+    return gp
 
 def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, variable=False):
     if svd:
@@ -226,9 +234,7 @@ def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, varia
         else:
             raise ValueError("signals.makegp_timing() can take a specification of _either_ `constant` or `variance`.")
 
-    gp = makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
-    gp.name = psr.name
-    return gp
+    return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
 
 
 # Fourier GP
