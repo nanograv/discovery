@@ -897,18 +897,16 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
 
         def kernelproduct(params):
             c = jnp.concatenate([params[cvar] for cvar in cvars])
+            mean_residuals = Fmat @ c
 
-            NmF, ldN = N_solve_2d(params, Fmat)
-            FtNmF = Fmat.T @ NmF
-            NmFty = NmF.T @ y
-
-            Nmy, ldN = N_solve_1d(params, y)
-            ytNmy = y @ Nmy
+            yprime = y - mean_residuals
+            Nmyp, ldN = N_solve_1d(params, yprime)
+            ypNmyp = yprime @ Nmyp
 
             Pmc, ldP = P_solve(params, c)
+            cPmc = c @ Pmc
 
-            return (-0.5 * ytNmy + c @ NmFty - 0.5 * c @ (FtNmF @ c)
-                    -0.5 * ldN - 0.5 * c @ Pmc - 0.5 * ldP)    # c @ Pmc was c @ (Pm @ c)
+            return -0.5 * (ypNmyp + cPmc + ldP + ldN)
 
         kernelproduct.params = sorted(self.N.params + self.P_var.params + cvars)
 
