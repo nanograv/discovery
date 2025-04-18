@@ -205,7 +205,10 @@ def makegp_improper(psr, fmat, constant=1.0e40, name='improperGP', variable=Fals
             return constant * jnp.ones(fmat.shape[1])
         getphi.params = []
 
-        return matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
+        gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
+        gp.gpname = name
+        gp.index = {f'{psr.name}_{name}_coefficients({fmat.shape[1]})': slice(0, fmat.shape[1])}
+        return gp
     else:
         return matrix.ConstantGP(matrix.NoiseMatrix1D_novar(constant * np.ones(fmat.shape[1])), fmat)
 
