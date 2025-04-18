@@ -884,11 +884,9 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
         return kernelproduct
 
     def make_kernelproduct_gpcomponent(self, y):
-        # -0.5 yt Nm y + yt Nm F a - 0.5 ct Ft Nm F c - 0.5 log |2 pi N| - 0.5 cT Pm c - 0.5 log |2 pi P|
+        # -0.5 (y - F a)^T N^-1 (y - F a) - 0.5 a^T P^-1 a
 
         N_solve_1d = self.N.make_solve_1d()
-        N_solve_2d = self.N.make_solve_2d()
-
         P_solve = self.P_var.make_solve_1d()
 
         cvars = list(self.index.keys())
@@ -897,18 +895,12 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
 
         def kernelproduct(params):
             c = jnp.concatenate([params[cvar] for cvar in cvars])
-
-            NmF, ldN = N_solve_2d(params, Fmat)
-            FtNmF = Fmat.T @ NmF
-            NmFty = NmF.T @ y
-
-            Nmy, ldN = N_solve_1d(params, y)
-            ytNmy = y @ Nmy
-
             Pmc, ldP = P_solve(params, c)
 
-            return (-0.5 * ytNmy + c @ NmFty - 0.5 * c @ (FtNmF @ c)
-                    -0.5 * ldN - 0.5 * c @ Pmc - 0.5 * ldP)    # c @ Pmc was c @ (Pm @ c)
+            yp = y - Fmat @ c
+            Nmyp, ldN = N_solve_1d(params, yp)
+
+            return -0.5 * (yp @ Nmyp + c @ Pmc + ldP + ldN)
 
         kernelproduct.params = sorted(self.N.params + self.P_var.params + cvars)
 
