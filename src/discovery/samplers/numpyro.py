@@ -13,12 +13,19 @@ def makemodel_transformed(mylogl, transform=prior.makelogtransform_uniform, prio
     parlen = sum(int(par[par.index('(')+1:par.index(')')]) if '(' in par else 1 for par in logx.params)
 
     def numpyro_model():
-        pars = numpyro.sample('pars', dist.Normal(-10,10).expand([parlen]))
+        pars = numpyro.sample('pars', dist.Normal(-10, 10).expand([parlen]))
         logl = logx(pars)
 
+        numpyro.deterministic('logl_det', logl)
         numpyro.factor('logl', logl)
-    numpyro_model.to_df = lambda chain: logx.to_df(chain['pars'])
 
+    def to_df(chain_samples):
+        df = logx.to_df(chain_samples['pars'])
+        logl_arr = chain_samples['logl_det']
+        df['logl'] = logl_arr.reshape(-1)
+        return df
+
+    numpyro_model.to_df = to_df
     return numpyro_model
 
 
@@ -27,8 +34,16 @@ def makemodel(mylogl, priordict={}):
         logl = mylogl({par: numpyro.sample(par, dist.Uniform(*prior.getprior_uniform(par, priordict)))
                        for par in mylogl.params})
 
+        numpyro.deterministic('logl_det', logl)
         numpyro.factor('logl', logl)
-    numpyro_model.to_df = lambda chain: pd.DataFrame(chain)
+
+    def to_df(chain_samples):
+        df = pd.DataFrame(chain_samples)
+        logl_arr = chain_samples['logl_det']
+        df['logl'] = logl_arr.reshape(-1)
+        return df
+
+    numpyro_model.to_df = to_df
 
     return numpyro_model
 
