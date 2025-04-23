@@ -46,7 +46,7 @@ def selection_backend_flags(psr):
     return psr.backend_flags
 
 
-def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, selection=selection_backend_flags, vectorize=True):
+def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, ecorr=False, selection=selection_backend_flags, vectorize=True):
     backend_flags = selection(psr)
     backends = [b for b in sorted(set(backend_flags)) if b != '']
 
@@ -69,7 +69,11 @@ def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, selection
             noise = sum(mask * noisedict[efac]**2 * ((scale * psr.toaerrs)**2 + 10.0**(2 * (logscale + noisedict[log10_t2equad])))
                         for mask, efac, log10_t2equad in zip(masks, efacs, log10_t2equads))
 
-        return matrix.NoiseMatrix1D_novar(noise)
+        if ecorr:
+            egp = makegp_ecorr(psr, noisedict=noisedict, enterprise=True, scale=scale, selection=selection)
+            return matrix.NoiseMatrixSM_novar(noise, egp.F, egp.Phi.N)
+        else:
+            return matrix.NoiseMatrix1D_novar(noise)
     else:
         if vectorize:
             toaerrs2, masks = matrix.jnparray(scale**2 * psr.toaerrs**2), matrix.jnparray([mask for mask in masks])
@@ -99,8 +103,11 @@ def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, selection
 
         getnoise.params = params
 
-
-        return matrix.NoiseMatrix1D_var(getnoise)
+        if ecorr:
+            egp = makegp_ecorr(psr, noisedict={}, enterprise=True, scale=scale, selection=selection)
+            return matrix.NoiseMatrixSM_var(getnoise, egp.F, egp.Phi.getN)
+        else:
+            return matrix.NoiseMatrix1D_var(getnoise)
 
 
 # ECORR

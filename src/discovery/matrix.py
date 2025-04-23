@@ -388,6 +388,73 @@ class NoiseMatrix1D_novar(ConstantKernel):
         return sample
 
 
+# fused, per chatgpt
+
+def SM_1d_fused(y, N, F, P):
+    Amb = y / N                  # shape (d,)
+    Amu = F / N[:, None]         # shape (d, k)
+
+    vtAmb = P * jnp.einsum("ij,i->j", F, Amb)       # shape (k,)
+    vtAmu = P * jnp.einsum("ij,ij->j", F, Amu)      # shape (k,)
+
+    scale = vtAmb / (1.0 + vtAmu)                   # shape (k,)
+    delta = jnp.einsum("ij,j->i", Amu, scale)       # shape (d,)
+
+    return Amb - delta, jnp.sum(jnp.log(N)) + jnp.sum(jnp.log1p(vtAmu))
+
+def SM_2d_fused(Y, N, F, P):
+    AmB = Y / N[None, :]  # shape (B, d)
+    Amu = F / N[:, None]  # shape (d, k)
+
+    vtAmB = P[None, :] * jnp.einsum("dk,bd->bk", F, AmB)          # shape (B, k)
+    vtAmu = P[None, :] * jnp.einsum("dk,dk->k", F, Amu)[None, :]  # shape (1, k), broadcast over B
+
+    scale = vtAmB / (1.0 + vtAmu)  # shape (B, k)
+    delta = jnp.einsum("dk,bk->bd", Amu, scale)  # shape (B, d)
+
+    return AmB - delta, jnp.sum(jnp.log(N)) + jnp.sum(jnp.log1p(vtAmu))
+
+
+class NoiseMatrixSM_novar(ConstantKernel):
+    def __init__(self, N, F, P):
+        self.N, self.F, self.P = N, F, P
+
+    def solve_1d(self, y):
+        Kmy, logK = SM_1d_fused(y, self.N, self.F, self.P)
+        return Kmy, logK
+
+    def solve_2d(self, T):
+        KmT, logK = SM_2d_fused(T.T, self.N, self.F, self.P)
+        return KmT.T, logK
+
+class NoiseMatrixSM_var(VariableKernel):
+    def __init__(self, getN, F, getP):
+        self.getN, self.F, self.getP = getN, F, getP
+        self.params = sorted(set(self.getN.params + self.getP.params))
+
+    def make_solve_1d(self):
+        getN, F, getP = self.getN, jnp.array(self.F), self.getP
+
+        # closes on getN, F, getP
+        def solve_1d(params, y):
+            Kmy, logK = SM_1d_fused(y, getN(params), F, getP(params))
+            return Kmy, logK
+        solve_1d.params = self.params
+
+        return solve_1d
+
+    def make_solve_2d(self):
+        getN, F, getP = self.getN, jnp.array(self.F), self.getP
+
+        # closes on getN, F, getP
+        def solve_2d(params, T):
+            KmT, logK = SM_2d_fused(T.T, getN(params), F, getP(params))
+            return KmT.T, logK
+        solve_2d.params = self.params
+
+        return solve_2d
+
+
 class NoiseMatrix1D_var(VariableKernel):
     def __init__(self, getN):
         self.getN = getN
@@ -461,6 +528,7 @@ class NoiseMatrix1D_var(VariableKernel):
             N = getN(params)
 
             return y / N, jnp.logdet(N)
+        solve_1d.params = getN.params
 
         return solve_1d
 
@@ -471,6 +539,7 @@ class NoiseMatrix1D_var(VariableKernel):
             N = getN(params)
 
             return T / N[:, jnp.newaxis], jnp.logdet(N)
+        solve_2d.params = getN.params
 
         return solve_2d
 
@@ -613,24 +682,24 @@ class VectorNoiseMatrix2D_var(VariableKernel):
 #         raise TypeError("N must be a ConstantKernel and P a VariableKernel")
 
 
-def ShermanMorrisonKernel(N, F, P):
+def WoodburyKernel(N, F, P):
     if isinstance(N, ConstantKernel) and isinstance(P, ConstantKernel):
-        return ShermanMorrisonKernel_novar(N, F, P)
+        return WoodburyKernel_novar(N, F, P)
     elif isinstance(N, ConstantKernel) and isinstance(P, VariableKernel):
         if not callable(F):
-            return ShermanMorrisonKernel_varP(N, F, P)
+            return WoodburyKernel_varP(N, F, P)
         else:
-            return ShermanMorrisonKernel_varFP(N, F, P)
+            return WoodburyKernel_varFP(N, F, P)
     elif isinstance(N, VariableKernel) and isinstance(P, ConstantKernel):
-        return ShermanMorrisonKernel_varN(N, F, P)
+        return WoodburyKernel_varN(N, F, P)
     elif isinstance(N, VariableKernel) and isinstance(P, VariableKernel):
         # should be able to handle also _varNFP
-        return ShermanMorrisonKernel_varNP(N, F, P)
+        return WoodburyKernel_varNP(N, F, P)
     else:
         raise TypeError("N and P must be ConstantKernel or VariableKernel instances")
 
 
-class ShermanMorrisonKernel_novar(ConstantKernel):
+class WoodburyKernel_novar(ConstantKernel):
     def __init__(self, N, F, P):
         # (N + F P F^T)^-1 = N^-1 - N^-1 F (P^-1 + F^T N^-1 F)^-1 F^T N^-1
         # |N + F P F^T| = |N| |P| |P^-1 + F^T N^-1 F|
@@ -641,7 +710,7 @@ class ShermanMorrisonKernel_novar(ConstantKernel):
 
         Pinv, ldP = P.inv()
         self.cf = sp.linalg.cho_factor(Pinv + FtNmF)
-        self.ld = ldN + ldP + np.logdet(np.diag(self.cf[0]))
+        self.ld = ldN + ldP + 2.0 * np.logdet(np.diag(self.cf[0]))
 
         self.params = []
 
@@ -805,7 +874,7 @@ class ShermanMorrisonKernel_novar(ConstantKernel):
 # it defines make_kernelproduct() which is effectively the model 2A likelihood for fixed y
 #        and make_kernelterms() which is used in the multi-pulsar likelihood
 # it could also handle variable y via a make_kernel(self) method
-# or a separate ShermanMorrisonKernel_vary_varP class
+# or a separate WoodburyKernel_vary_varP class
 
 # now the make_* methods return a function that closes on jax arrays (either CPU or GPU)
 # and also (in this case) on self.P_var.inv. If P_var is NoiseMatrix1D_var, then inv will
@@ -816,7 +885,7 @@ class ShermanMorrisonKernel_novar(ConstantKernel):
 # unless anything that is constant is numpy, and anything that will take parameters
 # is either jax from the start
 
-class ShermanMorrisonKernel_varFP(VariableKernel):
+class WoodburyKernel_varFP(VariableKernel):
     def __init__(self, N, F_var, P_var):
         self.N, self.F, self.P_var = N, F_var, P_var
 
@@ -845,24 +914,24 @@ class ShermanMorrisonKernel_varFP(VariableKernel):
         return kernelproduct
 
 
-class ShermanMorrisonKernel_varNP(VariableKernel):
+class WoodburyKernel_varNP(VariableKernel):
     def __init__(self, N_var, F, P_var):
         self.N, self.F, self.P_var = N_var, F, P_var
 
     def make_kernelproduct(self, y):
+        y = jnparray(y)
+
         N_solve_1d = self.N.make_solve_1d()
         N_solve_2d = self.N.make_solve_2d()
 
-        P_var_inv = self.P_var.make_inv()
-
-        y = jnparray(y)
-
-        # avoid a separate ShermanMorrisonKernel_varNFP
+        # avoid a separate WoodburyKernel_varNFP
         if callable(self.F):
             Ffunc = self.F
         else:
             Fmat = jnparray(self.F)
             Ffunc = lambda params: Fmat
+
+        P_var_inv = self.P_var.make_inv()
 
         def kernelproduct(params):
             Nmy, ldN = N_solve_1d(params, y)
@@ -879,6 +948,7 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
             ytXy = NmFty.T @ matrix_solve(cf, NmFty)
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
+
         kernelproduct.params = sorted(self.N.params + P_var_inv.params)
 
         return kernelproduct
@@ -940,7 +1010,7 @@ class ShermanMorrisonKernel_varNP(VariableKernel):
         return kernelsolve
 
 
-class ShermanMorrisonKernel_varP(VariableKernel):
+class WoodburyKernel_varP(VariableKernel):
     def __init__(self, N, F, P_var):
         self.N, self.F, self.P_var = N, F, P_var
 
@@ -1033,7 +1103,7 @@ class ShermanMorrisonKernel_varP(VariableKernel):
         NmF, ldN = self.N.solve_2d(self.F)
         FtNmF = self.F.T @ NmF
 
-        Nmy, _  = self.N.solve_1d(y)
+        Nmy, ldN = self.N.solve_1d(y)
         ytNmy = y @ Nmy
         NmFty = NmF.T @ y
 
@@ -1186,7 +1256,7 @@ class ShermanMorrisonKernel_varP(VariableKernel):
         return kernelterms
 
 
-class ShermanMorrisonKernel_varN(VariableKernel):
+class WoodburyKernel_varN(VariableKernel):
     def __init__(self, N_var, F, P):
         self.N_var, self.F, self.P = N_var, F, P
         self.Pinv, self.ldP = P.inv()
@@ -1327,7 +1397,7 @@ class ShermanMorrisonKernel_varN(VariableKernel):
         NmFty = NmF.T @ y
 
         cf = sp.linalg.cho_factor(self.Pinv + self.F.T @ NmF)
-        ld = ldN + self.ldP + jnp.logdet(np.diag(cf[0]))
+        ld = ldN + self.ldP + 2.0 * jnp.logdet(np.diag(cf[0]))
 
         return self.N_var.solve_1d(params, y)[0] - NmF @ sp.linalg.cho_solve(cf, NmFty), ld
 
@@ -1353,14 +1423,12 @@ class ShermanMorrisonKernel_varN(VariableKernel):
         NmFltFr = NmFl.T @ Fr
 
         cf = sp.linalg.cho_factor(self.Pinv + self.F.T @ NmFl)
-        ld = ldN + self.ldP + np.logdet(np.diag(cf[0]))
+        ld = ldN + self.ldP + 2.0 * np.logdet(np.diag(cf[0]))
 
         return self.N_var.solve_2d(params, Fr)[0] - NmFl @ sp.linalg.cho_solve(cf, NmFltFr), ld
 
     def make_solve_2d(self):
         N_solve_2d = self.N_var.make_solve_2d()
-
-        N_var_inv = self.N_var.make_inv()
         Pinv, ldP = self.P.inv()
 
         Fl, Pinv, ldP = jnparray(self.F), jnparray(self.Pinv), jnparray(self.ldP)
@@ -1377,7 +1445,7 @@ class ShermanMorrisonKernel_varN(VariableKernel):
         return solve_2d
 
 
-class VectorShermanMorrisonKernel_varP(VariableKernel):
+class VectorWoodburyKernel_varP(VariableKernel):
     def __init__(self, Ns, Fs, P_var):
         self.Ns, self.Fs, self.P_var = Ns, Fs, P_var
 
