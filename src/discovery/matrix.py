@@ -12,7 +12,7 @@ import jax.tree_util
 
 def config(**kwargs):
     global jnp, jsp, jnparray, jnpzeros, intarray, jnpkey, jnpsplit, jnpnormal
-    global matrix_factor, matrix_solve, matrix_norm, partial
+    global matrix_factor, matrix_solve, matrix_norm, partial, SM_algorithm
 
     np.logdet = lambda a: np.sum(np.log(np.abs(a)))
     jax.numpy.logdet = lambda a: jax.numpy.sum(jax.numpy.log(jax.numpy.abs(a)))
@@ -57,6 +57,8 @@ def config(**kwargs):
         matrix_factor = jsp.linalg.lu_factor
         matrix_solve  = jsp.linalg.lu_solve
         matrix_norm   = 1.0
+
+    SM_algorithm = 'fused'
 
 config(backend='jax', factor='cholesky')
 
@@ -414,6 +416,52 @@ def SM_2d_fused(Y, N, F, P):
 
     return AmB - delta, jnp.sum(jnp.log(N)) + jnp.sum(jnp.log1p(vtAmu))
 
+# indexed, carefully handwritten
+
+def make_uind(U):
+    Uind = np.zeros((U.shape[1], jnp.max(jnp.sum(U, axis=0)) + 1), 'i')
+
+    for i in range(U.shape[1]):
+        ind = np.where(U[:,i])[0]
+        Uind[i,0:len(ind)] = ind + 1
+
+    return Uind
+
+def smup_ind(A, l, Amb, ind):
+    Amu = 1.0 / A[ind]
+
+    vtAmb = l * jnp.sum(Amb[ind])
+    vtAmu = l * jnp.sum(Amu)
+
+    return Amu * (vtAmb / (1.0 + vtAmu))
+
+def smdp_ind(A, l, ind):
+    Amu = 1.0 / A[ind]
+    vtAmu = l * jnp.sum(Amu)
+
+    return jnp.log1p(vtAmu)
+
+vsmup_ind = jax.vmap(smup_ind, in_axes=(None, 0, None, 0))
+vsmdp_ind = jax.vmap(smdp_ind, in_axes=(None, 0, 0))
+
+def smup_ind_correct(yp, Np, Uind, P):
+    corrections = vsmup_ind(Np, P, yp / Np, Uind)
+    return (yp / Np).at[Uind.reshape(-1)].add(-corrections.reshape(-1))[1:]
+
+vsmup_ind_correct = jax.vmap(smup_ind_correct, in_axes=(0, None, None, None))
+
+def SM_1d_indexed(y, N, Uind, P):
+    yp = jnp.pad(y, ((1,0),), constant_values=0.0)
+    Np = jnp.pad(N, ((1,0),), constant_values=jnp.inf)
+
+    return smup_ind_correct(yp, Np, Uind, P), jnp.sum(jnp.log(N)) + jnp.sum(vsmdp_ind(Np, P, Uind))
+
+def SM_2d_indexed(T, N, Uind, P):
+    Tp = jnp.pad(T, ((0,0),(1,0)), constant_values=0.0)
+    Np = jnp.pad(N, ((1,0),), constant_values=jnp.inf)
+
+    return vsmup_ind_correct(Tp, Np, Uind, P), jnp.sum(jnp.log(N)) + jnp.sum(vsmdp_ind(Np, P, Uind))
+
 
 class NoiseMatrixSM_novar(ConstantKernel):
     def __init__(self, N, F, P):
@@ -433,22 +481,38 @@ class NoiseMatrixSM_var(VariableKernel):
         self.params = sorted(set(self.getN.params + self.getP.params))
 
     def make_solve_1d(self):
-        getN, F, getP = self.getN, jnp.array(self.F), self.getP
+        getN, getP = self.getN, self.getP
+
+        if SM_algorithm == 'indexed':
+            Uind = jnp.array(make_uind(self.F))
+        else:
+            F = jnp.array(self.F)
 
         # closes on getN, F, getP
         def solve_1d(params, y):
-            Kmy, logK = SM_1d_fused(y, getN(params), F, getP(params))
+            if SM_algorithm == 'indexed':
+                Kmy, logK = SM_1d_indexed(y, getN(params), Uind, getP(params))
+            else:
+                Kmy, logK = SM_1d_fused(y, getN(params), F, getP(params))
             return Kmy, logK
         solve_1d.params = self.params
 
         return solve_1d
 
     def make_solve_2d(self):
-        getN, F, getP = self.getN, jnp.array(self.F), self.getP
+        getN, getP = self.getN, self.getP
+
+        if SM_algorithm == 'indexed':
+            Uind = jnp.array(make_uind(self.F))
+        else:
+            F = jnp.array(self.F)
 
         # closes on getN, F, getP
         def solve_2d(params, T):
-            KmT, logK = SM_2d_fused(T.T, getN(params), F, getP(params))
+            if SM_algorithm == 'indexed':
+                KmT, logK = SM_2d_indexed(T.T, getN(params), Uind, getP(params))
+            else:
+                KmT, logK = SM_2d_fused(T.T, getN(params), F, getP(params))
             return KmT.T, logK
         solve_2d.params = self.params
 
@@ -939,7 +1003,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             Fmat = Ffunc(params)
 
-            NmF, ldN = N_solve_2d(params, Fmat)
+            NmF, _ = N_solve_2d(params, Fmat)
             FtNmF = Fmat.T @ NmF
             NmFty = NmF.T @ y
 
