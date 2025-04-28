@@ -58,7 +58,7 @@ def config(**kwargs):
         matrix_solve  = jsp.linalg.lu_solve
         matrix_norm   = 1.0
 
-    SM_algorithm = 'fused'
+    SM_algorithm = 'indexed'
 
 config(backend='jax', factor='cholesky')
 
