@@ -768,15 +768,37 @@ def dipole_orf(pos1, pos2):
         return np.dot(pos1, pos2)
 
 
+# this is experimental, I'm still learning how to use typing
+class vector(typing.Sequence):
+    def __init__(self, length):
+        self.shape = (length,)
+
+    def __len__(self):
+        return self.shape[0]
+
+    def __getitem__(self):
+        return NotImplementedError("No data in typing annotation")
+
+    @staticmethod
+    def suffix(instance):
+        if isinstance(instance, vector):
+            return f'({len(instance)})'
+        else:
+            return ''
+
+
 def makedelay(psr, delay, common=[], name='delay'):
     argspec = inspect.getfullargspec(delay)
-    argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
-              for arg in argspec.args if not hasattr(psr, arg)]
+    args = argspec.args + [arg for arg in argspec.kwonlyargs if arg not in argspec.kwonlydefaults]
 
-    psrpars = {arg: matrix.jnparray(getattr(psr, arg)) for arg in argspec.args if hasattr(psr, arg)}
+    argmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
+                   + vector.suffix(argspec.annotations.get(arg))
+              for arg in args if not hasattr(psr, arg)}
+
+    psrpars = {arg: matrix.jnparray(getattr(psr, arg)) for arg in args if hasattr(psr, arg)}
 
     def delayfunc(params):
-        return delay(*psrpars.values(), *[params[arg] for arg in argmap])
-    delayfunc.params = argmap
+        return delay(**psrpars, **{arg: params[argname] for arg,argname in argmap.items()})
+    delayfunc.params = sorted(argmap.values())
 
     return delayfunc
