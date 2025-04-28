@@ -768,31 +768,12 @@ def dipole_orf(pos1, pos2):
         return np.dot(pos1, pos2)
 
 
-# this is experimental, I'm still learning how to use typing
-class vector(typing.Sequence):
-    def __init__(self, length):
-        self.shape = (length,)
-
-    def __len__(self):
-        return self.shape[0]
-
-    def __getitem__(self):
-        return NotImplementedError("No data in typing annotation")
-
-    @staticmethod
-    def suffix(instance):
-        if isinstance(instance, vector):
-            return f'({len(instance)})'
-        else:
-            return ''
-
-
-def makedelay(psr, delay, common=[], name='delay'):
+def makedelay(psr, delay, components=None, common=[], name='delay'):
     argspec = inspect.getfullargspec(delay)
     args = argspec.args + [arg for arg in argspec.kwonlyargs if arg not in argspec.kwonlydefaults]
 
-    argmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
-                   + vector.suffix(argspec.annotations.get(arg))
+    argmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
+                   (f'({components})' if (argspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
               for arg in args if not hasattr(psr, arg)}
 
     psrpars = {arg: matrix.jnparray(getattr(psr, arg)) for arg in args if hasattr(psr, arg)}
