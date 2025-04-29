@@ -462,6 +462,15 @@ def SM_2d_indexed(T, N, Uind, P):
 
     return vsmup_ind_correct(Tp, Np, Uind, P), jnp.sum(jnp.log(N)) + jnp.sum(vsmdp_ind(Np, P, Uind))
 
+def SM_12d_indexed(y, T, N, Uind, P):
+    yp = jnp.pad(y, ((1,0),), constant_values=0.0)
+    Tp = jnp.pad(T, ((1,0),(1,0)), constant_values=0.0).at[0,:].set(yp)
+    Np = jnp.pad(N, ((1,0),), constant_values=jnp.inf)
+
+    c = vsmup_ind_correct(Tp, Np, Uind, P)
+
+    return c[0,:], c[1:,:], jnp.sum(jnp.log(N)) + jnp.sum(vsmdp_ind(Np, P, Uind))
+
 
 class NoiseMatrixSM_novar(ConstantKernel):
     def __init__(self, N, F, P):
@@ -480,21 +489,21 @@ class NoiseMatrixSM_var(VariableKernel):
         self.getN, self.F, self.getP = getN, F, getP
         self.params = sorted(set(self.getN.params + self.getP.params))
 
+        if SM_algorithm == 'indexed':
+            self.Uind = make_uind(F)
+
     def make_solve_1d(self):
         getN, getP = self.getN, self.getP
 
         if SM_algorithm == 'indexed':
-            Uind = jnp.array(make_uind(self.F))
+            Uind = jnp.array(self.Uind)
+            def solve_1d(params, y):
+                return SM_1d_indexed(y, getN(params), Uind, getP(params))
         else:
             F = jnp.array(self.F)
+            def solve_1d(params, y):
+                return SM_1d_fused(y, getN(params), F, getP(params))
 
-        # closes on getN, F, getP
-        def solve_1d(params, y):
-            if SM_algorithm == 'indexed':
-                Kmy, logK = SM_1d_indexed(y, getN(params), Uind, getP(params))
-            else:
-                Kmy, logK = SM_1d_fused(y, getN(params), F, getP(params))
-            return Kmy, logK
         solve_1d.params = self.params
 
         return solve_1d
@@ -507,16 +516,45 @@ class NoiseMatrixSM_var(VariableKernel):
         else:
             F = jnp.array(self.F)
 
-        # closes on getN, F, getP
-        def solve_2d(params, T):
-            if SM_algorithm == 'indexed':
+        if SM_algorithm == 'indexed':
+            Uind = jnp.array(self.Uind)
+            def solve_2d(params, T):
                 KmT, logK = SM_2d_indexed(T.T, getN(params), Uind, getP(params))
-            else:
+                return KmT.T, logK
+        else:
+            F = jnp.array(self.F)
+            def solve_2d(params, T):
                 KmT, logK = SM_2d_fused(T.T, getN(params), F, getP(params))
-            return KmT.T, logK
+                return KmT.T, logK
+
         solve_2d.params = self.params
 
         return solve_2d
+
+    def make_solve_12d(self):
+        getN, getP = self.getN, self.getP
+
+        if SM_algorithm == 'indexed':
+            Uind = jnp.array(make_uind(self.F))
+        else:
+            F = jnp.array(self.F)
+
+        if SM_algorithm == 'indexed':
+            Uind = jnp.array(self.Uind)
+            def solve_12d(params, y, T):
+                Kmy, KmT, logK = SM_12d_indexed(y, T.T, getN(params), Uind, getP(params))
+                return Kmy, KmT.T, logK
+        else:
+            F = jnp.array(self.F)
+            def solve_12d(params, y, T):
+                Kmy, logK = SM_1d_fused(y, getN(params), F, getP(params))
+                KmT, _    = SM_2d_fused(T.T, getN(params), F, getP(params))
+                return Kmy, KmT.T, logK
+
+        solve_12d.params = self.params
+
+        return solve_12d
+
 
 
 class NoiseMatrix1D_var(VariableKernel):
@@ -998,10 +1036,10 @@ class WoodburyKernel_varNP(VariableKernel):
         P_var_inv = self.P_var.make_inv()
 
         def kernelproduct(params):
+            Fmat = Ffunc(params)
+
             Nmy, ldN = N_solve_1d(params, y)
             ytNmy = y @ Nmy
-
-            Fmat = Ffunc(params)
 
             NmF, _ = N_solve_2d(params, Fmat)
             FtNmF = Fmat.T @ NmF
