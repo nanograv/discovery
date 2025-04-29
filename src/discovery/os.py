@@ -201,6 +201,25 @@ class OS:
 
         return jax.jit(get_imhof)
 
+    @functools.cached_property
+    def imhof_pdf(self):
+        def get_imhof_pdf(u, x, eigs):
+            theta = 0.5 * jnp.sum(jnp.arctan(eigs[:,jnp.newaxis] * u), axis=0) - 0.5 * x * u
+            rho = jnp.prod((1.0 + (eigs[:,jnp.newaxis] * u)**2)**0.25, axis=0)
+
+            return jnp.cos(theta) / rho
+
+        return jax.jit(get_imhof_pdf)
+
+    def gx2pdf(self, params, xs, cutoff=1e-6, limit=100, epsabs=1e-6):
+        eigr = self.gx2eig(params)
+
+        # cutoff by number of eigenvalues is more friendly to jitted imhof
+        eigs = eigr[:cutoff] if cutoff > 1 else eigr[jnp.abs(eigr) > cutoff]
+
+        return np.array([scipy.integrate.quad(lambda u: float(self.imhof_pdf(u, x, eigs)),
+                                                0, np.inf, limit=limit, epsabs=epsabs)[0] / (2*np.pi) for x in xs])
+
     # note this returns a numpy array, and the integration is handled by non-jax scipy
     def gx2cdf(self, params, xs, cutoff=1e-6, limit=100, epsabs=1e-6):
         eigr = self.gx2eig(params)
