@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+site_name: discovery docs
+site_url: ""
+use_directory_urls: false
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+plugins:
+  - search
+  -  gen-files:
+      scripts:
+      - docs/scripts/gen_ref_pages.py
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          import:
+          - https://danielward27.github.io/flowjax/objects.inv
+          - https://pandas.pydata.org/docs/objects.inv
+          - https://numpy.org/doc/stable/objects.inv
+          - https://docs.kidger.site/equinox/objects.inv
+          - https://num.pyro.ai/en/stable/objects.inv
+          - https://jax.readthedocs.io/en/latest/objects.inv
+          - https://docs.python.org/3/objects.inv
+          paths: [src]
+          options:
+            selection:
+              members: yes
+            docstring_style: numpy
+            docstring_section_style: spacy
+            show_if_no_docstring: true
+            separate_signature: true
+            show_signature_annotations: true
+            show_root_heading: false
+            heading_level: 2
+            group_by_category: true
+            show_category_heading: true
+            members_order: source
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            show_bases: true
+  - mkdocs-jupyter:
+      theme: light
+      include_source: True
+      ignore: ["gen_ref_pages.py"]
+
+markdown_extensions:
+  - admonition
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - attr_list
+  - md_in_html
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+extra_css:
+- css/mkdocstrings.css
+- css/extra.css
