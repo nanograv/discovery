@@ -101,8 +101,10 @@ def make_chromaticdelay(psr, idx=None):
     Now, most of the computation is done in log-space with the intent of stabilizing
     gradients. Also for frequencies less than the normalizing
     frequency (1400 MHz), the exponent is pushed towards more positive values.
-    However, this is often not enough to handle all of the possible `NaN`
-    values, so we mask out any that remain.
+
+    The exponent must be calculated outside of the call to `jnp.exp`.
+    If you calculate it inside the exponential, `jax.grad` can produce
+    `NaN`'s.
 
     """
     toadays, invnormfreqs = matrix.jnparray(psr.toas / const.day), matrix.jnparray(1400.0 / psr.freqs)
@@ -127,11 +129,6 @@ def make_chromaticdelay(psr, idx=None):
             ln_10 * log10_Amp - dt / (10**log10_tau) + idx * ln_invnormfreqs,
             0.0,
         )
-
-        # Filter out any `NaN`s. A few things were tried here (e.g. clipping), but
-        # they didn't handle the `NaN`s in the gradient. This, while brute force,
-        # does the trick.
-        vals = matrix.jnp.where(matrix.jnp.isnan(vals), 0.0, vals)
 
         return matrix.jnp.where(dt_mask, -1.0 * matrix.jnp.exp(vals), vals)
 
