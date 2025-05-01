@@ -94,17 +94,20 @@ def make_chromaticdelay(psr, idx=None):
 
     Notes
     -----
-    Originally, this function was not written in log-space. However, it was
-    found that large negative numbers in the exponent (`-(t - t_0)/tau`) lead
-    to `NaN` values in the gradients of likelihoods that incorporate this delay.
+    Without the double `matrix.jnp.where` in this function, the gradients can return
+    `NaN`. This is because JAX still evaluates the gradient at the `False` positions
+    of the `where` [1]_, and for some pulsars `matrix.jnp.exp(-dt / 10**log10_tau)`
+    is large enough to overflow and become an `inf`! We don't care about the opposite
+    direction, because the underflow just becomes a zero.
 
-    Now, most of the computation is done in log-space with the intent of stabilizing
-    gradients. Also for frequencies less than the normalizing
-    frequency (1400 MHz), the exponent is pushed towards more positive values.
+    The solution to the problem is the "double where" trick [1]_, which this
+    method implements. It is possible to instead move the `matrix.jnp.where`
+    inside the exponential and return `-inf` for all `dt < 0.0`, but in testing
+    this implementation in log space with two `where`'s is actually faster.
 
-    The exponent must be calculated outside of the call to `jnp.exp`.
-    If you calculate it inside the exponential, `jax.grad` can produce
-    `NaN`'s.
+    References
+    ----------
+    .. [1] https://docs.jax.dev/en/latest/faq.html#gradients-contain-nan-where-using-where
 
     """
     toadays, invnormfreqs = matrix.jnparray(psr.toas / const.day), matrix.jnparray(1400.0 / psr.freqs)
