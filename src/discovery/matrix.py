@@ -20,6 +20,9 @@ def config(**kwargs):
     np.make2d = lambda a: a if a.ndim == 2 else np.diag(a)
     jax.numpy.make2d = lambda a: a if a.ndim == 2 else jax.numpy.diag(a)
 
+    np.makearray = lambda a: np.array(a) if hasattr(a, '__len__') else a
+    jax.numpy.makearray = lambda a: jax.numpy.array(a) if hasattr(a, '__len__') else a
+
     backend = kwargs.get('backend')
 
     if backend == 'numpy':
@@ -483,6 +486,24 @@ class NoiseMatrixSM_novar(ConstantKernel):
     def solve_2d(self, T):
         KmT, logK = SM_2d_fused(T.T, self.N, self.F, self.P)
         return KmT.T, logK
+
+    def make_solve_1d(self):
+        Nmat, Uind, Pmat = jnp.array(self.N), jnp.array(make_uind(self.F)), jnp.array(self.P)
+
+        def solve_1d(y):
+            Kmy, logK = SM_1d_indexed(y, Nmat, Uind, Pmat)
+            return Kmy, logK
+
+        return solve_1d
+
+    def make_solve_2d(self):
+        Nmat, Uind, Pmat = jnp.array(self.N), jnp.array(make_uind(self.F)), jnp.array(self.P)
+
+        def solve_2d(T):
+            KmT, logK = SM_2d_indexed(T.T, Nmat, Uind, Pmat)
+            return KmT.T, logK
+
+        return solve_2d
 
 class NoiseMatrixSM_var(VariableKernel):
     def __init__(self, getN, F, getP):
@@ -1187,11 +1208,11 @@ class WoodburyKernel_varP(VariableKernel):
 
             Nmy, _ = N_solve_1d(yp)
             ytNmy = yp @ Nmy
-            NmFty = NmF.T @ yp
+            FtNmy = NmF.T @ yp
 
             Pinv, ldP = P_var_inv(params)
             cf = matrix_factor(Pinv + FtNmF)
-            ytXy = NmFty.T @ matrix_solve(cf, NmFty)
+            ytXy = FtNmy.T @ matrix_solve(cf, FtNmy)
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
         kernel.params = y.params + P_var_inv.params
@@ -1207,29 +1228,42 @@ class WoodburyKernel_varP(VariableKernel):
 
         Nmy, ldN = self.N.solve_1d(y)
         ytNmy = y @ Nmy
-        NmFty = NmF.T @ y
+        FtNmy = NmF.T @ y
 
-        FtNmF, NmFty, ytNmy, ldN = jnparray(FtNmF), jnparray(NmFty), jnparray(ytNmy), jnparray(ldN)
+        FtNmF, FtNmy, ytNmy, ldN = jnparray(FtNmF), jnparray(FtNmy), jnparray(ytNmy), jnparray(ldN)
         P_var_inv = self.P_var.make_inv()
 
-        # closes on P_var_inv, FtNmF, NmFty, ytNmy, ldN
+        kmean = getattr(self, 'mean', None)
+
+        # closes on P_var_inv, FtNmF, FtNmy, ytNmy, ldN
         def kernelproduct(params):
             Pinv, ldP = P_var_inv(params)
 
             cf = matrix_factor(Pinv + FtNmF)
-            ytXy = NmFty.T @ matrix_solve(cf, NmFty)
+            ytXy = FtNmy.T @ matrix_solve(cf, FtNmy)
 
             # direct inv
-            # ytXy = NmFty.T @ jnp.linalg.inv(Pinv + FtNmF) @ NmFty
+            # ytXy = FtNmy.T @ jnp.linalg.inv(Pinv + FtNmF) @ FtNmy
 
             # SVD solution
             # U, S, VT = jnp.linalg.svd(Pinv + FtNmF)
-            # ytXy = NmFty.T @ VT.T @ np.diag(1/S) @ U.T @ NmFty
+            # ytXy = FtNmy.T @ VT.T @ np.diag(1/S) @ U.T @ FtNmy
             # matrix_norm, cf = 1.0, (np.diag(S), None)
 
-            return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
+            logp = -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = P_var_inv.params
+            if kmean is not None:
+                # -0.5 a0t.FtNmF.a0 + 0.5 a0t.FtNmF.Sm.FtNmF.a0 + a0t.FtNmy - a0t.FtNmF.Sm.FtNmy
+                # -0.5 (a0t.FtNmF).a0 + (FtNmy)t.a0 + 0.5 (a0t.FtNmF).Sm.FtNmF.a0 - (FtNmy)t.Sm.FtNmF.a0
+                # -0.5 (a0t.FtNmF).(a0 - Sm.FtNmF.a0) + (FtNmy)t.(a0 - Sm.FtNmF.a0)
+
+                a0 = kmean(params)
+                FtNmFa0 = FtNmF @ a0
+                logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix_solve(cf, FtNmFa0))
+
+            return logp
+
+        kernelproduct.params = sorted(P_var_inv.params + (kmean.params if kmean is not None else []))
 
         return kernelproduct
 

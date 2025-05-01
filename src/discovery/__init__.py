@@ -12,5 +12,6 @@ from .likelihood import *
 from .os import *
 from .solar import *
 from .pulsar import *
+from .deterministic import *
 
 __version__ = "0.2"

@@ -295,7 +295,7 @@ def make_dmfourierbasis(alpha=2.0, tndm=False):
 
     return basis
 
-def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], name='fourierGP'):
+def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], name='fourierGP'):
     argspec = inspect.getfullargspec(prior)
     argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
               (f'({components[arg] if isinstance(components, dict) else components})' if argspec.annotations.get(arg) == typing.Sequence else '')
@@ -327,6 +327,22 @@ def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, co
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})': slice(0,len(f))} # better for cosine
     gp.name, gp.pos = psr.name, psr.pos
     gp.gpname, gp.gpcommon = name, common
+
+    if mean is not None:
+        margspec = inspect.getfullargspec(mean)
+        margs = margspec.args + [arg for arg in margspec.kwonlyargs if arg not in margspec.kwonlydefaults]
+        margmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
+#                        won't work here since components already applies to frequencies
+#                        + (f'({components})' if (margspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
+                   for arg in margs if not hasattr(psr, arg) and arg not in exclude}
+
+        psrpars = {arg: getattr(psr, arg) for arg in margspec.args if hasattr(psr, arg)}
+
+        def meanfunc(params):
+            return mean(f, df, *psrpars.values(), **{arg: params[argname] for arg, argname in margmap.items()})
+        meanfunc.params = sorted(margmap.values())
+
+        gp.mean = meanfunc
 
     return gp
 
@@ -439,7 +455,7 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
     return gp
 
 
-def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierbasis=fourierbasis, exclude=['f', 'df'],  name='fourierGlobalGP'):
+def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'],  name='fourierGlobalGP'):
     priors = priors if isinstance(priors, list) else [priors]
     orfs   = orfs   if isinstance(orfs, list)   else [orfs]
 
@@ -505,15 +521,19 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierb
 
     if means is not None:
         margspec = inspect.getfullargspec(means)
-        margmap = [f'{name}_{arg}' for arg in margspec.args if not hasattr(psrs[0], arg) and arg not in exclude]
+        margs = margspec.args + [arg for arg in margspec.kwonlyargs if arg not in margspec.kwonlydefaults]
+        margmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
+                        (f'({components})' if (margspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
+                   for arg in margs if not hasattr(psrs[0], arg) and arg not in exclude}
 
         psrpars = {arg: matrix.jnparray([getattr(psr, arg) for psr in psrs])
                    for arg in margspec.args if hasattr(psrs[0], arg)}
+
         vmeanfunc = jax.vmap(means, in_axes=([None] * 2 + [0] * len(psrpars) + [None] * len(margmap)))
 
         def meanfunc(params):
-            return vmeanfunc(f, df, *psrpars.values(), *[params[arg] for arg in margmap]).flatten()
-        meanfunc.params = margmap
+            return vmeanfunc(f, df, *psrpars.values(), *[params[argname] for arg, argname in margmap.items()]).flatten()
+        meanfunc.params = sorted(margmap.values())
 
         gp.means = meanfunc
 

@@ -71,11 +71,13 @@ class PulsarLikelihood:
                 vgp = matrix.CompoundGP(vgps)
                 vsm = matrix.WoodburyKernel(csm, vgp.F, vgp.Phi)
                 vsm.index = getattr(vgp, 'index', None)
+                vsm.mean = getattr(vgp, 'mean', None)
             else:
                 vsm = csm
                 for vgp in vgps:
                     vsm = matrix.WoodburyKernel(vsm, vgp.F, vgp.Phi)
                     vsm.index = getattr(vgp, 'index', None)
+                    vsm.mean = getattr(vgp, 'mean', None)
         else:
             vsm = csm
 
@@ -93,6 +95,10 @@ class PulsarLikelihood:
     def __setattr__(self, name, value):
         if name == 'residuals' and 'logL' in self.__dict__:
             self.y = value
+
+            if len(self.delay) > 0:
+                self.y = matrix.CompoundDelay(self.y, self.delay)
+
             del self.logL
         else:
             self.__dict__[name] = value
