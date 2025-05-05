@@ -1,17 +1,21 @@
 # Discovery
 
+<p align="right">
+  <img src="discovery.png" alt="discovery logo" width="150" style="float: right; margin-left: 20px;">
+</p>
+
 _Discovery_ is a next-generation pulsar-timing-array data-analysis package, _built for speed_ on a [JAX](https://jax.readthedocs.io/en/latest/) backend that supports GPU execution and autodifferentiation.
 If [Enterprise](https://github.com/nanograv/enterprise) is Spock, logical and elegant, _Discovery_ is all Scotty, fast, efficient, and not above a hack if it gets you to warp speed.
 
-# Requirements
+## Requirements
 
 _Discovery_ needs `numpy`, `scipy`, `jax`, `pyarrow`. _Discovery_'s subpackages (such as `discovery.flow` and the packages under `discovery.samplers`) require additional dependencies.
 
-# Examples
+## Examples
 
 The folder `examples` contains a growing set of usage examples.
 
-# Data model
+## Data model
 
 The _Discovery_ data model consists of `Kernel` objects (think of a noise matrix `N`, which can be inverted and applied to a vector, `N^{-1} y`, or even sandwiched with it, `y^T N^{-1} y`) and of `GP` objects, consisting of a basis `F` (sized `ntoas x ngp`) and a prior/kernel `Phi`. The kernel `WoodburyKernel(N, F, P)` combines a noise kernel and a GP.
 
