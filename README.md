@@ -5,7 +5,7 @@
 _Discovery_ is a next-generation pulsar-timing-array data-analysis package, _built for speed_ on a [JAX](https://jax.readthedocs.io/en/latest/) backend that supports GPU execution and autodifferentiation.
 If [Enterprise](https://github.com/nanograv/enterprise) is Spock, logical and elegant, _Discovery_ is all Scotty, fast, efficient, and not above a hack if it gets you to warp speed.
 
-<div style="clear: both;"></div>
+---
 
 ## Requirements
 
