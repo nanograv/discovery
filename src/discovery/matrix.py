@@ -306,6 +306,7 @@ def CompoundDelay(residuals, delays):
     def delayfunc(params):
         return residuals - sum(delay(params) for delay in delays)
     delayfunc.params = sorted(set.union(*[set(delay.params) for delay in delays]))
+    delayfunc.ndim = residuals.ndim
 
     return delayfunc
 
@@ -1157,11 +1158,53 @@ class WoodburyKernel_varP(VariableKernel):
     # - Tt (Phi + Ft Nm F)^-1 T
     # with fixed y and T
 
+    def make_kernelsolve_vary(self, y, T):
+        # Calculate/bring into scope all quantities that don't
+        # depend on ``y``
+        NmT, _ = self.N.solve_2d(T)
+        FtNmT  = jnparray(self.F.T @ NmT)
+        TtNmT  = jnparray(T.T @ NmT)
+
+        NmF, _ = self.N.solve_2d(self.F)
+        FtNmF = jnparray(self.F.T @ NmF)
+        TtNmF = jnparray(T.T @ NmF)
+
+        P_var_inv = self.P_var.make_inv()
+
+        # Need to bring ``F`` into scope for this callable y case
+        # because we'll have to recalculate ``FtNmy`` for each set
+        # of parameters.
+        F = self.F
+
+        y_var, N_solve = y, self.N.solve_1d if y.ndim==1 else self.N.solve_2d
+
+        def kernelsolve(params):
+            # Handle callable y
+            yp = y_var(params)
+
+            Pinv, _ = P_var_inv(params)
+            cf = matrix_factor(Pinv + FtNmF)
+            Nmy = N_solve(yp)[0]
+            FtNmy  = jnparray(F.T @ Nmy)
+            TtNmy  = jnparray(T.T @ Nmy)
+
+
+            TtSy = TtNmy - TtNmF @ matrix_solve(cf, FtNmy)
+            TtST = TtNmT - TtNmF @ matrix_solve(cf, FtNmT)
+
+            return TtSy, TtST
+
+        kernelsolve.params = sorted(set(P_var_inv.params + y_var.params))
+        return kernelsolve
+
     def make_kernelsolve(self, y, T):
         # Tt Sigma y = Tt (N + F P Ft) y
         # Tt Sigma^-1 y = Tt (Nm - Nm F (P^-1 + Ft Nm F)^-1 Ft Nm) y
         #               = Tt Nm y - Tt Nm F (P^-1 + Ft Nm F)^-1 Ft Nm y
         # Tt Sigma^-1 T = Tt Nm T - Tt Nm F (P^-1 + Ft Nm F)^-1 Ft Nm T
+
+        if callable(y):
+            return self.make_kernelsolve_vary(y, T)
 
         Nmy, _ = self.N.solve_1d(y) if y.ndim == 1 else self.N.solve_2d(y)
         FtNmy  = self.F.T @ Nmy
