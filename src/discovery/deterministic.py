@@ -4,8 +4,8 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-from . import matrix
-from . import const
+from discovery import matrix
+from discovery import const
 
 
 def fpc_fast(pos, gwtheta, gwphi):

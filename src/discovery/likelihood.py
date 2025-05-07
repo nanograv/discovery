@@ -4,8 +4,8 @@ import functools
 import numpy as np
 import jax
 
-from . import matrix
-from . import signals
+from discovery import matrix
+from discovery import signals
 
 # import jax
 
