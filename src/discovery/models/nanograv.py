@@ -1,5 +1,5 @@
-from .. import signals
-from .. import likelihood
+from discovery import signals
+from discovery import likelihood
 
 
 # CURN model from 15yr NANOGrav analysis (= model 2a in 12.5yr analysis)

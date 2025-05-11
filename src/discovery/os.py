@@ -3,8 +3,8 @@ import functools
 import numpy as np
 import scipy.integrate
 
-from . import matrix
-from . import signals
+from discovery import matrix
+from discovery import signals
 jnp = matrix.jnp
 
 import jax

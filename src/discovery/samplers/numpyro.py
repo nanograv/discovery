@@ -1,12 +1,17 @@
 import inspect
+import warnings
 
 import pandas as pd
 
-import numpyro
-from numpyro import infer
-from numpyro import distributions as dist
+try:
+    import numpyro
+    from numpyro import infer
+    from numpyro import distributions as dist
+except ModuleNotFoundError:
+    warnings.warn("NumPyro not found!")
 
-from .. import prior
+
+from discovery import prior
 
 
 def makemodel_transformed(mylogl, transform=prior.makelogtransform_uniform, priordict={}):
