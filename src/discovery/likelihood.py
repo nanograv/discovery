@@ -124,7 +124,15 @@ class PulsarLikelihood:
     def conditional(self):
         if self.delay:
             raise NotImplementedError('No PulsarLikelihood.conditional with delays so far.')
-
+        # if there's only one woodbury to do (N + T Phi T)
+        # as opposed to (N + T Phi T + ... + T Phi T)
+        if isinstance(self.N.N, matrix.NoiseMatrix):
+            def cond(params):
+                ksolve = self.N.make_kernelsolve_simple(self.y)
+                mu, Sigma = ksolve(params)
+                return mu, matrix.jsp.linalg.cho_factor(Sigma, lower=True)
+            cond.params = sorted(self.N.N.params + self.N.P_var.params)
+            return cond
         P_var_inv = self.N.P_var.Phi_inv or self.N.P_var.make_inv()
 
         ksolve = self.N.N.make_kernelsolve(self.y, self.N.F)
