@@ -103,6 +103,9 @@ class Pulsar:
         if 'noisedict' in meta:
             setattr(self, 'noisedict', meta['noisedict'])
 
+        setattr(self, 'toas0', np.min(self.toas))
+        setattr(self, 'toas1', np.max(self.toas))
+
         return self
 
     to_list = lambda a: a.tolist() if isinstance(a, np.ndarray) else a

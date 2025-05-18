@@ -23,7 +23,7 @@ from . import signals
 #   VariableGP
 #       consists of a VariableKernel and a numpy matrix
 #
-# ShermanMorrisonKernel can return a ConstantKernel or a VariableKernel
+# WoodburyKernel can return a ConstantKernel or a VariableKernel
 
 # npta = je.PulsarLikelihood(je.residuals(psr),
 #                            je.makenoise_measurement(psr, noisedict),
@@ -54,11 +54,11 @@ class PulsarLikelihood:
         if cgps:
             if len(cgps) > 1 and concat:
                 cgp = matrix.CompoundGP(cgps)
-                csm = matrix.ShermanMorrisonKernel(noise, cgp.F, cgp.Phi)
+                csm = matrix.WoodburyKernel(noise, cgp.F, cgp.Phi)
             else:
                 csm = noise
                 for cgp in cgps:
-                    csm = matrix.ShermanMorrisonKernel(csm, cgp.F, cgp.Phi)
+                    csm = matrix.WoodburyKernel(csm, cgp.F, cgp.Phi)
         else:
             csm = noise
 
@@ -69,13 +69,15 @@ class PulsarLikelihood:
 
             if len(vgps) > 1 and concat:
                 vgp = matrix.CompoundGP(vgps)
-                vsm = matrix.ShermanMorrisonKernel(csm, vgp.F, vgp.Phi)
+                vsm = matrix.WoodburyKernel(csm, vgp.F, vgp.Phi)
                 vsm.index = getattr(vgp, 'index', None)
+                vsm.mean = getattr(vgp, 'mean', None)
             else:
                 vsm = csm
                 for vgp in vgps:
-                    vsm = matrix.ShermanMorrisonKernel(vsm, vgp.F, vgp.Phi)
+                    vsm = matrix.WoodburyKernel(vsm, vgp.F, vgp.Phi)
                     vsm.index = getattr(vgp, 'index', None)
+                    vsm.mean = getattr(vgp, 'mean', None)
         else:
             vsm = csm
 
@@ -93,6 +95,10 @@ class PulsarLikelihood:
     def __setattr__(self, name, value):
         if name == 'residuals' and 'logL' in self.__dict__:
             self.y = value
+
+            if len(self.delay) > 0:
+                self.y = matrix.CompoundDelay(self.y, self.delay)
+
             del self.logL
         else:
             self.__dict__[name] = value
@@ -477,9 +483,9 @@ class ArrayLikelihood:
     #     lastgp = self.commongp[-1]
 
     #     Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-    #     csm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+    #     csm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
 
-    #     vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, lastgp.F, lastgp.Phi)
+    #     vsm = matrix.VectorWoodburyKernel_varP(Ns, lastgp.F, lastgp.Phi)
     #     if hasattr(lastgp, 'prior'):
     #         vsm.prior = lastgp.prior
     #     if hasattr(lastgp, 'index'):
@@ -507,7 +513,7 @@ class ArrayLikelihood:
             commongp = matrix.VectorCompoundGP(cgp + [self.globalgp])
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-        self.vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+        self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
         if hasattr(commongp, 'prior'):
             self.vsm.prior = commongp.prior
         if hasattr(commongp, 'index'):
@@ -532,7 +538,7 @@ class ArrayLikelihood:
         commongp = matrix.VectorCompoundGP(self.commongp)
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-        self.vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+        self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
         self.vsm.index = getattr(commongp, 'index', None)
 
         if self.globalgp is None:
