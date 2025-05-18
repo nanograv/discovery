@@ -134,7 +134,7 @@ def makelogtransform_uniform(func, priordict={}):
             return pd.DataFrame(np.array(xs), columns=psrcols).sort_index(axis=1)
 
     def prior(ys):
-        return jnp.sum(jnp.log(2.0) - 2.0 * jnp.logaddexp(ys, -ys))
+        return jnp.sum(2.0 * (jnp.log(2.0) - 2.0 * jnp.logaddexp(ys, -ys)))
 
     def transformed(ys):
         return func(to_dict(ys)) + prior(ys)
