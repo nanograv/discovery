@@ -4,48 +4,73 @@ from jax import numpy as jnp
 from typing import Callable
 
 
-def dict_batches(model1_df: pd.DataFrame, batch_size: int):
+def batch_reweight(
+    source_df: pd.DataFrame,
+    target_logl_fn: Callable,
+    batch_size: int = 64
+) -> pd.DataFrame:
     """
-    Yield sub-dicts of size batch_size along the first axis
-    of every array in data_dict that shares the full data length.
-    Keys whose arrays don't match that length are passed through intact.
+    Compute the log-likelihood of each sample in source_df under a new model
+    (given by target_logl_fn) in batches, and return a copy of source_df
+    augmented with a 'logl' column of the recomputed values.
+
+    Args:
+        source_df: DataFrame of samples (one row per sample, columns = parameters).
+                   If it contains a 'logl' column it will be dropped.
+        target_logl_fn: Function that maps a 1D array of parameter values to a scalar
+                        log-likelihood.
+        batch_size: Number of samples to process per vmapped function call.
+
+    Returns:
+        DataFrame: A copy of source_df with 'logl' from target_logl_fn.
     """
-    data_dict = {col: jnp.array(model1_df[col].values) for col in model1_df.columns}
-    total = next(iter(data_dict.values())).shape[0]   # length of first array
+    df = source_df.copy()
+    if 'logl' in df.columns:
+        df = df.drop(columns=['logl'])
+    param_array = jnp.array(df.to_numpy())
 
-    for start in range(0, total, batch_size):
-        end = start + batch_size
-        def slice_fn(x):
-            if isinstance(x, jnp.ndarray) and x.ndim > 0 and x.shape[0] == total:
-                return x[start:end]
-            else:
-                return x
-        yield jax.tree_util.tree_map(slice_fn, data_dict)
+    jitted_logl_fn = jax.jit(target_logl_fn)
+    recomputed_logl = jax.lax.map(jitted_logl_fn, param_array, batch_size=batch_size)
 
-def batch_reweight(model1_df: pd.DataFrame, model2_logl: Callable, batch_size=64):
-    batches = dict_batches(model1_df, batch_size)
-    jvlogl = jax.jit(jax.vmap(model2_logl))
+    result_df = pd.DataFrame(df)
+    result_df['logl'] = recomputed_logl
+    return result_df
 
-    log_likelihoods = []
-    for batch in batches:
-        log_likelihoods.append(jvlogl(batch))
-    model2_df = pd.DataFrame(model1_df)
-    model2_df['logl'] = jnp.concatenate(log_likelihoods)
-    return model2_df
-
-def compute_weights(model1_df, model2_df):
+def compute_weights(
+    base_df: pd.DataFrame,
+    reweighted_df: pd.DataFrame
+) -> jnp.ndarray:
     """
-    Compute weights for model2_df based on the log-likelihoods of model1_df.
+    Given two DataFrames with 'logl' columns, compute importance weights w_i = exp(logl2_i - logl1_i).
+
+    Args:
+        base_df: Original samples with their log-likelihoods under the first model.
+        reweighted_df: Same samples with log-likelihoods under the second model.
+
+    Returns:
+        Array of weights of shape (N,).
     """
-    logl1 = model1_df['logl'].values
-    logl2 = model2_df['logl'].values
+    logl1 = base_df['logl'].to_numpy()
+    logl2 = reweighted_df['logl'].to_numpy()
+    return jnp.exp(logl2 - logl1)
 
-    # Compute weights
-    weights = jnp.exp(logl2 - logl1)
-    return weights
+def compute_bayes_factor(
+    base_df: pd.DataFrame,
+    reweighted_df: pd.DataFrame
+) -> tuple[float, float]:
+    """
+    Estimate the Bayes factor between two models:
+        BF = E[w] = mean_i exp(logl2_i - logl1_i),
+    with uncertainty σ_w / sqrt(N).
 
-def compute_bayes_factor(model1_df, model2_df):
-    weights = compute_weights(model1_df, model2_df)
-    bayes_factor = jnp.average(weights)
-    bayes_factor_unc = jnp.std(weights) / jnp.sqrt(len(weights))
-    return bayes_factor, bayes_factor_unc
+    Args:
+        base_df: DataFrame of samples from model 1 with 'logl' column.
+        reweighted_df: DataFrame of same samples under model 2 with 'logl' column.
+
+    Returns:
+        A tuple (bayes_factor, uncertainty).
+    """
+    weights = compute_weights(base_df, reweighted_df)
+    bf = jnp.mean(weights)
+    bf_unc = jnp.std(weights) / jnp.sqrt(len(weights))
+    return float(bf), float(bf_unc)
