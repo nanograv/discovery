@@ -27,10 +27,11 @@ def batch_reweight(
     df = source_df.copy()
     if 'logl' in df.columns:
         df = df.drop(columns=['logl'])
-    param_array = jnp.array(df.to_numpy())
+
+    jax_dict = {col: jnp.array(df[col].values) for col in df.columns}
 
     jitted_logl_fn = jax.jit(target_logl_fn)
-    recomputed_logl = jax.lax.map(jitted_logl_fn, param_array, batch_size=batch_size)
+    recomputed_logl = jax.lax.map(jitted_logl_fn, jax_dict, batch_size=batch_size)
 
     result_df = pd.DataFrame(df)
     result_df['logl'] = recomputed_logl
@@ -54,9 +55,8 @@ def compute_weights(
     logl2 = reweighted_df['logl'].to_numpy()
     return jnp.exp(logl2 - logl1)
 
-def compute_bayes_factor(
-    base_df: pd.DataFrame,
-    reweighted_df: pd.DataFrame
+def compute_bayes_factor_from_weights(
+    weights: jnp.ndarray
 ) -> tuple[float, float]:
     """
     Estimate the Bayes factor between two models:
@@ -64,13 +64,32 @@ def compute_bayes_factor(
     with uncertainty σ_w / sqrt(N).
 
     Args:
-        base_df: DataFrame of samples from model 1 with 'logl' column.
-        reweighted_df: DataFrame of same samples under model 2 with 'logl' column.
+        weights: Array of weights computed from log-likelihoods
 
     Returns:
         A tuple (bayes_factor, uncertainty).
     """
-    weights = compute_weights(base_df, reweighted_df)
     bf = jnp.mean(weights)
     bf_unc = jnp.std(weights) / jnp.sqrt(len(weights))
     return float(bf), float(bf_unc)
+
+def compute_reweighted_bayes_factor(
+    source_df: pd.DataFrame,
+    target_logl_fn: Callable,
+    batch_size: int = 64
+) -> tuple[float, float]:
+    """
+    Compute the Bayes factor between two models by reweighting samples from source_df.
+
+    Args:
+        source_df: DataFrame of samples (one row per sample, columns = parameters).
+        target_logl_fn: Function that maps a 1D array of parameter values to a scalar
+                        log-likelihood.
+        batch_size: Number of samples to process per vmapped function call.
+
+    Returns:
+        A tuple (bayes_factor, uncertainty).
+    """
+    reweighted_df = batch_reweight(source_df, target_logl_fn, batch_size)
+    weights = compute_weights(source_df, reweighted_df)
+    return compute_bayes_factor_from_weights(weights)
