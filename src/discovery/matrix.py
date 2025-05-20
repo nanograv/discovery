@@ -107,7 +107,7 @@ class GlobalVariableGP:
 
 def CompoundGlobalGP(gplist):
     if all(isinstance(gp, GlobalVariableGP) for gp in gplist):
-        fmats = [np.hstack(F) for F in zip(*[gp.Fs for gp in gplist])]
+        fmats = [jnp.hstack(F) for F in zip(*[gp.Fs for gp in gplist])]
 
         npsr = len(fmats)
 
@@ -206,7 +206,7 @@ def VectorCompoundGP(gplist):
     if all(isinstance(gp, (VariableGP, GlobalVariableGP)) for gp in gplist):
         # each gp.F is a tuple of F matrices, one for each pulsar
         # globalgp has gp.Fs instead, which maybe is not ideal
-        F = [np.hstack(Fs) for Fs in zip(*[gp.F if hasattr(gp, 'F') else gp.Fs for gp in gplist])]
+        F = [jnp.hstack(Fs) for Fs in zip(*[gp.F if hasattr(gp, 'F') else gp.Fs for gp in gplist])]
 
         if all(isinstance(gp.Phi, VectorNoiseMatrix1D_var) for gp in gplist):
             def Phi(params):
@@ -251,13 +251,13 @@ def CompoundGP(gplist):
 
     if all(isinstance(gp, ConstantGP) for gp in gplist):
         if all(isinstance(gp.Phi, NoiseMatrix1D_novar) for gp in gplist):
-            F = np.hstack([gp.F for gp in gplist])
-            PhiN = np.concatenate([gp.Phi.N for gp in gplist])
+            F = jnp.hstack([gp.F for gp in gplist])
+            PhiN = jnp.concatenate([gp.Phi.N for gp in gplist])
 
             multigp = ConstantGP(NoiseMatrix1D_novar(PhiN), F)
         elif all(isinstance(gp.Phi, (NoiseMatrix1D_novar, NoiseMatrix2D_novar)) for gp in gplist):
-            F = np.hstack([gp.F for gp in gplist])
-            PhiN = jsp.linalg.block_diag(*[np.diag(gp.Phi.N) if isinstance(gp.Phi, NoiseMatrix1D_novar)
+            F = jnp.hstack([gp.F for gp in gplist])
+            PhiN = jsp.linalg.block_diag(*[jnp.diag(gp.Phi.N) if isinstance(gp.Phi, NoiseMatrix1D_novar)
                                                              else gp.Phi.N
                                           for gp in gplist])
 
@@ -268,7 +268,7 @@ def CompoundGP(gplist):
                 return jnp.hstack([gp.F(params) if callable(gp.F) else gp.F for gp in gplist])
             F.params = sum((gp.F.params if callable(gp.F) else [] for gp in gplist), [])
         else:
-            F = np.hstack([gp.F for gp in gplist])
+            F = jnp.hstack([gp.F for gp in gplist])
 
         if all(isinstance(gp.Phi, NoiseMatrix1D_var) for gp in gplist):
             def Phi(params):
@@ -323,14 +323,14 @@ def NoiseMatrix12D_var(getN):
 class NoiseMatrix1D_novar(ConstantKernel):
     def __init__(self, N):
         self.N = N
-        self.ld = np.logdet(N)
+        self.ld = jnp.logdet(N)
 
         self.params = []
 
     def make_kernelproduct(self, y):
         if callable(y):
             y_var = y
-            N, ld = jnparray(self.N), np.logdet(self.N)
+            N, ld = jnparray(self.N), jnp.logdet(self.N)
 
             def kernelproduct(params):
                 yp = y_var(params)
@@ -338,7 +338,7 @@ class NoiseMatrix1D_novar(ConstantKernel):
                 return -0.5 * jnp.sum(yp**2 / N) - 0.5 * ld
             kernelproduct.params = sorted(set(y.params))
         else:
-            product = -0.5 * np.sum(y**2 / self.N) - 0.5 * np.logdet(self.N)
+            product = -0.5 * jnp.sum(y**2 / self.N) - 0.5 * jnp.logdet(self.N)
 
             def kernelproduct(params):
                 return product
@@ -371,10 +371,10 @@ class NoiseMatrix1D_novar(ConstantKernel):
         return solve_1d
 
     def solve_2d(self, T):
-        return T / self.N[:, np.newaxis], self.ld
+        return T / self.N[:, jnp.newaxis], self.ld
 
     def make_solve_2d(self):
-        N, ld = jnparray(self.N[:, np.newaxis]), jnparray(self.ld)
+        N, ld = jnparray(self.N[:, jnp.newaxis]), jnparray(self.ld)
 
         def solve_2d(T):
             return T / N, ld
@@ -382,7 +382,7 @@ class NoiseMatrix1D_novar(ConstantKernel):
         return solve_2d
 
     def make_sample(self):
-        N12 = jnparray(np.sqrt(self.N))
+        N12 = jnparray(jnp.sqrt(self.N))
 
         def sample(key):
             key, subkey = jnpsplit(key)
@@ -422,7 +422,7 @@ def SM_2d_fused(Y, N, F, P):
 # indexed, carefully handwritten
 
 def make_uind(U):
-    Uind = np.zeros((U.shape[1], jnp.max(jnp.sum(U, axis=0)) + 1), 'i')
+    Uind = np.zeros((U.shape[1], np.max(np.sum(U, axis=0)) + 1), 'i')
 
     for i in range(U.shape[1]):
         ind = np.where(U[:,i])[0]
@@ -598,7 +598,7 @@ class NoiseMatrix1D_var(VariableKernel):
 
     def inv(self, params):
         N = self.getN(params)
-        return np.diag(1.0 / N), np.logdet(N)
+        return jnp.diag(1.0 / N), jnp.logdet(N)
 
     def make_inv(self):
         getN = self.getN
@@ -637,12 +637,12 @@ class NoiseMatrix1D_var(VariableKernel):
     def solve_1d(self, params, y):
         N = self.getN(params)
 
-        return y / N, np.logdet(N)
+        return y / N, jnp.logdet(N)
 
     def solve_2d(self, params, F):
         N = self.getN(params)
 
-        return F / N[:, np.newaxis], np.logdet(N)
+        return F / N[:, jnp.newaxis], jnp.logdet(N)
 
     def make_solve_1d(self):
         getN = self.getN
@@ -671,8 +671,8 @@ class NoiseMatrix2D_novar(ConstantKernel):
     def __init__(self, N):
         self.N = N
 
-        self.invN = np.linalg.inv(N)
-        self.ld = np.linalg.slogdet(N)[1]
+        self.invN = jnp.linalg.inv(N)
+        self.ld = jnp.linalg.slogdet(N)[1]
 
     def inv(self):
         return self.invN, self.ld
@@ -833,7 +833,7 @@ class WoodburyKernel_novar(ConstantKernel):
 
         Pinv, ldP = P.inv()
         self.cf = matrix_factor(Pinv + FtNmF)
-        self.ld = ldN + ldP + matrix_norm * np.logdet(np.diag(self.cf[0]))
+        self.ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(self.cf[0]))
 
         self.params = []
 
@@ -1533,7 +1533,7 @@ class WoodburyKernel_varN(VariableKernel):
         NmFty = NmF.T @ y
 
         cf = matrix_factor(self.Pinv + self.F.T @ NmF)
-        ld = ldN + self.ldP + matrix_norm * jnp.logdet(np.diag(cf[0]))
+        ld = ldN + self.ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
 
         return self.N_var.solve_1d(params, y)[0] - NmF @ matrix_solve(cf, NmFty), ld
 
@@ -1559,7 +1559,7 @@ class WoodburyKernel_varN(VariableKernel):
         NmFltFr = NmFl.T @ Fr
 
         cf = matrix_factor(self.Pinv + self.F.T @ NmFl)
-        ld = ldN + self.ldP + matrix_norm * np.logdet(np.diag(cf[0]))
+        ld = ldN + self.ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
 
         return self.N_var.solve_2d(params, Fr)[0] - NmFl @ matrix_solve(cf, NmFltFr), ld
 
