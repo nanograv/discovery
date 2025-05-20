@@ -832,8 +832,8 @@ class WoodburyKernel_novar(ConstantKernel):
         FtNmF = F.T @ self.NmF
 
         Pinv, ldP = P.inv()
-        self.cf = jsp.linalg.cho_factor(Pinv + FtNmF)
-        self.ld = ldN + ldP + 2.0 * np.logdet(np.diag(self.cf[0]))
+        self.cf = matrix_factor(Pinv + FtNmF)
+        self.ld = ldN + ldP + matrix_norm * np.logdet(np.diag(self.cf[0]))
 
         self.params = []
 
@@ -860,12 +860,12 @@ class WoodburyKernel_novar(ConstantKernel):
             def kernelproduct(params):
                 yp = y_var(params)
 
-                Nmy = N_solve_1d(yp)[0] - self.NmF @ jsp.linalg.cho_solve(cf, NmF.T @ yp)
+                Nmy = N_solve_1d(yp)[0] - self.NmF @ matrix_solve(cf, NmF.T @ yp)
 
                 return -0.5 * yp @ Nmy - 0.5 * ld
             kernelproduct.params = sorted(set(y.params))
         else:
-            Nmy = self.N.solve_1d(y)[0] - self.NmF @ jsp.linalg.cho_solve(self.cf, self.NmF.T @ y)
+            Nmy = self.N.solve_1d(y)[0] - self.NmF @ matrix_solve(self.cf, self.NmF.T @ y)
             product = -0.5 * y @ Nmy - 0.5 * self.ld
 
             # closes on product
@@ -897,8 +897,8 @@ class WoodburyKernel_novar(ConstantKernel):
         FtNmT = self.F.T @ NmT
         TtNmT = T.T @ NmT
 
-        sol = jsp.linalg.cho_solve(self.cf, FtNmy)
-        sol2 = jsp.linalg.cho_solve(self.cf, FtNmT)
+        sol = matrix_solve(self.cf, FtNmy)
+        sol2 = matrix_solve(self.cf, FtNmT)
 
         a = -0.5 * (ytNmy - FtNmy.T @ sol) - 0.5 * self.ld
         b = jnparray(TtNmy - TtNmF @ sol)
@@ -938,8 +938,8 @@ class WoodburyKernel_novar(ConstantKernel):
                 FtNmT  = F.T @ NmT
                 TtNmT  = Tmat.T @ NmT
 
-                TtSy = TtNmy - TtNmF @ jsp.linalg.cho_solve(cf, FtNmy)
-                TtST = TtNmT - TtNmF @ jsp.linalg.cho_solve(cf, FtNmT)
+                TtSy = TtNmy - TtNmF @ matrix_solve(cf, FtNmy)
+                TtST = TtNmT - TtNmF @ matrix_solve(cf, FtNmT)
 
                 return TtSy, TtST
 
@@ -952,8 +952,8 @@ class WoodburyKernel_novar(ConstantKernel):
             FtNmT  = self.F.T @ NmT
             TtNmT  = T.T @ NmT
 
-            TtSy = jnparray(TtNmy - TtNmF @ jsp.linalg.cho_solve(self.cf, FtNmy))
-            TtST = jnparray(TtNmT - TtNmF @ jsp.linalg.cho_solve(self.cf, FtNmT))
+            TtSy = jnparray(TtNmy - TtNmF @ matrix_solve(self.cf, FtNmy))
+            TtST = jnparray(TtNmT - TtNmF @ matrix_solve(self.cf, FtNmT))
 
             # closes on TtSy and TtST
             def kernelsolve(params={}):
@@ -964,7 +964,7 @@ class WoodburyKernel_novar(ConstantKernel):
         return kernelsolve
 
     def solve_1d(self, y):
-        return self.N.solve_1d(y)[0] - self.NmF @ jsp.linalg.cho_solve(self.cf, self.NmF.T @ y), self.ld
+        return self.N.solve_1d(y)[0] - self.NmF @ matrix_solve(self.cf, self.NmF.T @ y), self.ld
 
     def make_solve_1d(self):
         N_solve_1d = self.N.make_solve_1d()
@@ -974,12 +974,12 @@ class WoodburyKernel_novar(ConstantKernel):
 
         # closes on N_solve_1d, NmF, cf, ld
         def solve_1d(y):
-            return N_solve_1d(y)[0] - NmF @ jsp.linalg.cho_solve(cf, NmF.T @ y), ld
+            return N_solve_1d(y)[0] - NmF @ matrix_solve(cf, NmF.T @ y), ld
 
         return solve_1d
 
     def solve_2d(self, y):
-        return self.N.solve_2d(y)[0] - self.NmF @ jsp.linalg.cho_solve(self.cf, self.NmF.T @ y), self.ld
+        return self.N.solve_2d(y)[0] - self.NmF @ matrix_solve(self.cf, self.NmF.T @ y), self.ld
 
     def make_solve_2d(self):
         N_solve_2d = self.N.make_solve_2d()
@@ -988,7 +988,7 @@ class WoodburyKernel_novar(ConstantKernel):
         ld = jnp.array(self.ld)
 
         def solve_2d(F):
-            return N_solve_2d(F)[0] - NmF @ jsp.linalg.cho_solve(cf, NmF.T @ F), self.ld
+            return N_solve_2d(F)[0] - NmF @ matrix_solve(cf, NmF.T @ F), self.ld
 
         return solve_2d
 
@@ -1121,10 +1121,10 @@ class WoodburyKernel_varNP(VariableKernel):
             TtNmF = T.T @ NmF
 
             Pinv, _ = P_var_inv(params)
-            cf = jsp.linalg.cho_factor(Pinv + FtNmF)
+            cf = matrix_factor(Pinv + FtNmF)
 
-            TtSy = TtNmy - TtNmF @ jsp.linalg.cho_solve(cf, FtNmy)
-            TtST = TtNmT - TtNmF @ jsp.linalg.cho_solve(cf, FtNmT)
+            TtSy = TtNmy - TtNmF @ matrix_solve(cf, FtNmy)
+            TtST = TtNmT - TtNmF @ matrix_solve(cf, FtNmT)
 
             return TtSy, TtST
 
@@ -1532,10 +1532,10 @@ class WoodburyKernel_varN(VariableKernel):
         NmF, ldN = self.N_var.solve_2d(params, self.F)
         NmFty = NmF.T @ y
 
-        cf = jsp.linalg.cho_factor(self.Pinv + self.F.T @ NmF)
-        ld = ldN + self.ldP + 2.0 * jnp.logdet(np.diag(cf[0]))
+        cf = matrix_factor(self.Pinv + self.F.T @ NmF)
+        ld = ldN + self.ldP + matrix_norm * jnp.logdet(np.diag(cf[0]))
 
-        return self.N_var.solve_1d(params, y)[0] - NmF @ jsp.linalg.cho_solve(cf, NmFty), ld
+        return self.N_var.solve_1d(params, y)[0] - NmF @ matrix_solve(cf, NmFty), ld
 
     def make_solve_1d(self):
         N_solve_1d = self.N_var.make_solve_1d()
@@ -1558,10 +1558,10 @@ class WoodburyKernel_varN(VariableKernel):
         NmFl, ldN = self.N_var.solve_2d(params, self.F)
         NmFltFr = NmFl.T @ Fr
 
-        cf = jsp.linalg.cho_factor(self.Pinv + self.F.T @ NmFl)
-        ld = ldN + self.ldP + 2.0 * np.logdet(np.diag(cf[0]))
+        cf = matrix_factor(self.Pinv + self.F.T @ NmFl)
+        ld = ldN + self.ldP + matrix_norm * np.logdet(np.diag(cf[0]))
 
-        return self.N_var.solve_2d(params, Fr)[0] - NmFl @ jsp.linalg.cho_solve(cf, NmFltFr), ld
+        return self.N_var.solve_2d(params, Fr)[0] - NmFl @ matrix_solve(cf, NmFltFr), ld
 
     def make_solve_2d(self):
         N_solve_2d = self.N_var.make_solve_2d()
