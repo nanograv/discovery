@@ -1,8 +1,8 @@
 import numpy as np
 
-from .. import matrix
-from .. import signals
-from .. import likelihood
+from discovery import matrix
+from discovery import signals
+from discovery import likelihood
 
 priordict_standard = {
     "(.*_)?efac": [0.9, 1.1],

@@ -1,6 +1,7 @@
 import time
 import collections.abc
 import typing
+import warnings
 PyTree = typing.Any
 
 import numpy as np
@@ -11,10 +12,13 @@ import tqdm
 import jax
 import jax.numpy as jnp
 
-import equinox as eqx
-import optax
-import flowjax
-import paramax
+try:
+    import equinox as eqx
+    import optax
+    import flowjax
+    import paramax
+except ModuleNotFoundError:
+    warnings.warn("Please install discovery[flow].")
 
 # modified from flowjax/train/losses.py
 
