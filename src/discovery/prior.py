@@ -36,7 +36,17 @@ priordict_standard = {
     "crn_log10_rho": [-9, -4],
     "gw_(.*_)?log10_rho": [-9, -4],
     r"(.*_)?red_noise_log10_rho\(([0-9]*)\)": [-9, -4],
-    r"(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4]
+    r"(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4],
+    "cw_ra": [0, 2*np.pi],
+    "cw_dec": [-0.5*np.pi, 0.5*np.pi],
+    "cw_inc": [0, np.pi],
+    "cw_sindec": [-1.0, 1.0],
+    "cw_cosinc": [-1.0, 1.0],
+    "cw_psi": [0, np.pi],
+    "cw_log10_f0": [-9.0, -7.0],
+    "cw_log10_h0": [-18.0, -11.0],
+    "cw_phi_earth": [0., 2*np.pi],
+    "(.*_)?cw_phi_psr": [0., 2*np.pi]
 }
 
 def getprior_uniform(par, priordict={}):
