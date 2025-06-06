@@ -143,8 +143,8 @@ def makelogtransform_uniform(func, priordict={}):
             psrcols = [psrdict[par.split('[')[1]] + '_' + par.split('[')[0] if '[' in par else par for par in columns]
             return pd.DataFrame(np.array(xs), columns=psrcols).sort_index(axis=1)
 
-    def prior(ys):
-        return jnp.sum(2.0 * (jnp.log(2.0) - 2.0 * jnp.logaddexp(ys, -ys)))
+    def logprior(ys):
+        return jnp.sum(np.log((b - a) / 2) + 2.0 * (jnp.log(2.0) - jnp.logaddexp(ys, -ys)))
 
     def logL(ys):
         return func(to_dict(ys))
@@ -192,7 +192,7 @@ def makelogtransform_classic(func, priordict={}):
         return pd.DataFrame(np.array(xs), columns=func.params)
 
     def logprior(ys):
-        return jnp.sum(jnp.log(2.0) - 2.0 * jnp.logaddexp(ys, -ys))
+        return jnp.sum(np.log((b - a) / 2) + 2.0 * (jnp.log(2.0) - jnp.logaddexp(ys, -ys)))
 
         # return jnp.sum(jnp.log(0.5) - 2.0 * jnp.log(jnp.cosh(ys)))
         # but   log(0.5) - 2 * log(cosh(y))
