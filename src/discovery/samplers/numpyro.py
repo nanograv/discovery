@@ -18,7 +18,7 @@ def makemodel_transformed(mylogl, transform=prior.makelogtransform_uniform, prio
         pars = numpyro.sample('pars', dist.Normal(0, 10).expand([parlen]))
         base_logl = logx(pars)
 
-        jac = logx.prior(pars)
+        jac = logx.logprior(pars)
         logl = base_logl - jac  # adjust for the transformation
 
         numpyro.deterministic('logl_det', logl)
