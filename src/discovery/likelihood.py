@@ -598,7 +598,7 @@ class ArrayLikelihood:
 
         return loglike
 
-    def cglogL(self, cgmaxiter=100, detmatvecs=40, detsamples=1000):
+    def cglogL(self, cgmaxiter=100, detmatvecs=40, detsamples=1000, logdet=True):
         commongp = matrix.VectorCompoundGP(self.commongp)
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
@@ -645,16 +645,19 @@ class ArrayLikelihood:
 
                 sol = matrix.cgsolve(matvec, FtNmy, M=precond, maxiter=cgmaxiter)
 
-                # combine preconditioner and matrix application for logdet estimation
-                # compute also preconditioner logdet correction
-                i1, i2 = matrix.jnp.diag_indices(precf[0].shape[1], ndim=2)
-                logpre = 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.abs(precf[0][:, i1, i2])))
-                def prematvec(FtNmyvec):
-                    FtNmy = FtNmyvec.reshape((npsr, ngp))
-                    pcnd = matrix.jsp.linalg.cho_solve(precf, matvec(FtNmy))
-                    return pcnd.reshape(npsr * ngp)
+                if logdet:
+                    # combine preconditioner and matrix application for logdet estimation
+                    # compute also preconditioner logdet correction
+                    i1, i2 = matrix.jnp.diag_indices(precf[0].shape[1], ndim=2)
+                    logpre = 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.abs(precf[0][:, i1, i2])))
+                    def prematvec(FtNmyvec):
+                        FtNmy = FtNmyvec.reshape((npsr, ngp))
+                        pcnd = matrix.jsp.linalg.cho_solve(precf, matvec(FtNmy))
+                        return pcnd.reshape(npsr * ngp)
 
-                logdet = logdet_estimator(prematvec, rndkey) + logpre
+                    logdet = logdet_estimator(prematvec, rndkey) + logpre
+                else:
+                    logdet = 0.0
 
                 return p0 + 0.5 * (matrix.jnp.sum(FtNmy * sol) - ldP - logdet)
 
