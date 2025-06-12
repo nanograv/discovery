@@ -1,7 +1,6 @@
 import functools
 # from dataclasses import dataclass
 
-import matfree.stochtrace
 import numpy as np
 import jax
 
@@ -644,7 +643,7 @@ class ArrayLikelihood:
                     return (matrix.jsp.linalg.cho_solve(orfcf, matrix.jsp.linalg.cho_solve(phicf, FtNmy.T).T) +
                             matrix.jnp.squeeze(FtNmF @ FtNmy[..., None])) # matrix.jnp.einsum('kij,kj->ki', FtNmF, FtNmy))
 
-                sol = jaxopt.linear_solve.solve_cg(matvec, FtNmy, M=precond, maxiter=cgmaxiter)
+                sol = matrix.cgsolve(matvec, FtNmy, M=precond, maxiter=cgmaxiter)
 
                 # combine preconditioner and matrix application for logdet estimation
                 # compute also preconditioner logdet correction
