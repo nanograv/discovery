@@ -65,9 +65,39 @@ def config(**kwargs):
 
 config(backend='jax', factor='cholesky')
 
-
 def rngkey(seed):
     return jnpkey(seed)
+
+# CG solver and Lanczos-Hutchinson logdet estimator, need matfree and jaxopt
+
+try:
+    import jaxopt
+    from matfree import decomp, funm, stochtrace
+
+    cgsolve = jaxopt.linear_solve.solve_cg
+
+    def make_logdet_estimator(ndim, num_matvecs=40, samples=1000):
+        #
+        # log det A = tr log A = (1/S) \sum_i^S z_i^T (log A) z_i
+
+        # set up Lanczos tridiagonalization interface, uses num_matvecs applications of A
+        tridiag_sym = decomp.tridiag_sym(num_matvecs)
+
+        # set up integrand for Lanczos quadrature
+        problem = funm.integrand_funm_sym_logdet(tridiag_sym)
+
+        # generate `samples` random probes of shape
+        sampler = stochtrace.sampler_normal(jnpzeros(ndim), num=samples)
+
+        # combine problem and sampler into Hutchinson trace estimator
+        estimator = stochtrace.estimator(problem, sampler=sampler)
+
+        return estimator
+
+except ImportError:
+    pass
+
+
 
 class ConstantMatrix:
     pass
@@ -104,8 +134,9 @@ class VariableGP:
 # is used by GlobalLikelihood.sample_conditional to parse out the vectors
 
 class GlobalVariableGP:
-    def __init__(self, Phi, Fs, Phi_inv=None):
-        self.Phi, self.Fs, self.Phi_inv = Phi, Fs, Phi_inv
+    def __init__(self, Phi, Fs):
+        self.Phi, self.Fs = Phi, Fs
+        self.Phi_inv = None
 
 def CompoundGlobalGP(gplist):
     if all(isinstance(gp, GlobalVariableGP) for gp in gplist):
@@ -143,7 +174,7 @@ def CompoundGlobalGP(gplist):
             #     return jnp.diag(jnp.concatenate(ps)), sum(ls)
             # invprior.params = sorted(set.union(*[set(gp.Phi_inv.params) for gp in gplist]))
 
-            multigp = GlobalVariableGP(NoiseMatrix1D_var(priorfunc), fmats, None) # invprior
+            multigp = GlobalVariableGP(NoiseMatrix1D_var(priorfunc), fmats)
         else:
             def priorfunc(params):
                 ret = jnp.zeros((npsr*allgp, npsr*allgp), 'd')
@@ -183,7 +214,8 @@ def CompoundGlobalGP(gplist):
 
             invprior.params = sorted(set.union(*[set(gp.Phi.params) for gp in gplist]))
 
-            multigp = GlobalVariableGP(NoiseMatrix2D_var(priorfunc), fmats, invprior)
+            multigp = GlobalVariableGP(NoiseMatrix2D_var(priorfunc), fmats)
+            multigp.Phi_inv = invprior
     else:
         raise NotImplementedError("Cannot concatenate these types of GlobalGPs.")
 
