@@ -598,7 +598,7 @@ class ArrayLikelihood:
 
         return loglike
 
-    def cglogL(self, cgmaxiter=100, detmatvecs=40, detsamples=1000, logdet=True):
+    def cglogL(self, cgmaxiter=100, detmatvecs=40, detsamples=1000, make_logdet=True):
         commongp = matrix.VectorCompoundGP(self.commongp)
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
@@ -645,7 +645,7 @@ class ArrayLikelihood:
 
                 sol = matrix.cgsolve(matvec, FtNmy, M=precond, maxiter=cgmaxiter)
 
-                if logdet:
+                if make_logdet:
                     # combine preconditioner and matrix application for logdet estimation
                     # compute also preconditioner logdet correction
                     i1, i2 = matrix.jnp.diag_indices(precf[0].shape[1], ndim=2)
