@@ -1,6 +1,7 @@
 import functools
 # from dataclasses import dataclass
 
+import matfree.stochtrace
 import numpy as np
 import jax
 
@@ -587,5 +588,69 @@ class ArrayLikelihood:
 
             params_kmeans = kmeans.params if kmeans is not None else []
             loglike.params = sorted(kterms.params + params_kmeans + P_var_inv.params)
+
+        return loglike
+
+    def cglogL(self, cgmaxiter=100, detmatvecs=40, detsamples=1000):
+        commongp = matrix.VectorCompoundGP(self.commongp)
+
+        Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+        self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
+        self.vsm.index = getattr(commongp, 'index', None)
+
+        if self.globalgp is None:
+            loglike = self.vsm.make_kernelproduct(self.ys)
+        else:
+            factors = self.globalgp.factors
+            kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs)
+
+            npsr = len(self.globalgp.Fs)
+            ngp = self.globalgp.Fs[0].shape[1]
+
+            logdet_estimator = matrix.make_logdet_estimator(npsr * ngp, detmatvecs, detsamples)
+            rndkey = jax.random.PRNGKey(1)
+
+            def loglike(params):
+                terms = kterms(params)
+
+                p0, FtNmy, FtNmF = matrix.jnp.sum(terms[0]), terms[1], terms[2]
+
+                # get Cholesky factors of orf and phi matrices
+                orfcf, phicf = factors(params)
+
+                # compute log Phi
+                ldP = (npsr * 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(phicf[0]))) +
+                       ngp  * 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(orfcf[0]))))
+
+                # reconstruct the inverse matrices
+                orfinv = matrix.jsp.linalg.cho_solve(orfcf, matrix.jnp.eye(npsr))
+                phiinv = matrix.jsp.linalg.cho_solve(phicf, matrix.jnp.eye(ngp))
+
+                # define a preconditioner solve M^-1 y with block-diag M_i = FtNmF_i + orfinv[i,i] phi
+                precf = matrix.jsp.linalg.cho_factor(FtNmF + matrix.jnp.diag(orfinv)[:, None, None] * phiinv[None, :, :])
+                def precond(FtNmy):
+                    return matrix.jsp.linalg.cho_solve(precf, FtNmy)
+
+                # define the application of Gamma^-1 x phi^-1 + FtNmF to a "vector" FtNmy (npsr, ngp)
+                def matvec(FtNmy):
+                    return (matrix.jsp.linalg.cho_solve(orfcf, matrix.jsp.linalg.cho_solve(phicf, FtNmy.T).T) +
+                            matrix.jnp.squeeze(FtNmF @ FtNmy[..., None])) # matrix.jnp.einsum('kij,kj->ki', FtNmF, FtNmy))
+
+                sol = jaxopt.linear_solve.solve_cg(matvec, FtNmy, M=precond, maxiter=cgmaxiter)
+
+                # combine preconditioner and matrix application for logdet estimation
+                # compute also preconditioner logdet correction
+                i1, i2 = matrix.jnp.diag_indices(precf[0].shape[1], ndim=2)
+                logpre = 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.abs(precf[0][:, i1, i2])))
+                def prematvec(FtNmyvec):
+                    FtNmy = FtNmyvec.reshape((npsr, ngp))
+                    pcnd = matrix.jsp.linalg.cho_solve(precf, matvec(FtNmy))
+                    return pcnd.reshape(npsr * ngp)
+
+                logdet = logdet_estimator(prematvec, rndkey) + logpre
+
+                return p0 + 0.5 * (matrix.jnp.sum(FtNmy * sol) - ldP - logdet)
+
+            loglike.params = sorted(kterms.params + factors.params)
 
         return loglike

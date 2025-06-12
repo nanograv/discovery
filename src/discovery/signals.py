@@ -445,7 +445,8 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
         return 1.0 / p, jnp.sum(jnp.log(p))
     invprior.params = priorfunc.params
 
-    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix1D_var(priorfunc), fmats, invprior)
+    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix1D_var(priorfunc), fmats)
+    gp.Phi_inv = invprior
 
     gp.index = {f'{psr.name}_{name}_coefficients({2*components})':
                 slice((2*components)*i, (2*components)*(i+1)) for i, psr in enumerate(psrs)}
@@ -500,8 +501,16 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierb
                         # was -orfmat.shape[0] * jnp.sum(jnp.log(invphidiag)))
             invprior.params = argmap
             invprior.type = jax.Array
+
+            orfcf = matrix.jsp.linalg.cho_factor(orfmat)
+            def factors(params):
+                phi = prior(f, df, *[params[arg] for arg in argmap])
+                phicf = matrix.jsp.linalg.cho_factor(phi)
+
+                return orfcf, phicf
+            factors.params = argmap
         else:
-            invprior = None
+            invprior, factors = None, None
     else:
         def priorfunc(params):
             phis = [prior(f, df, *[params[arg] for arg in argmap]) for prior, argmap in zip(priors, argmaps)]
@@ -511,9 +520,11 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierb
         priorfunc.params = sorted(set.union(*[set(argmap) for argmap in argmaps]))
         priorfunc.type = jax.Array
 
-        invprior = None
+        invprior, factors = None, None
 
-    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix12D_var(priorfunc), fmats, invprior)
+    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix12D_var(priorfunc), fmats)
+    gp.Phi_inv, gp.factors = invprior, factors
+
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})':
                 slice(len(f)*i, len(f)*(i+1)) for i, psr in enumerate(psrs)}
     gp.pos = [psr.pos for psr in psrs]
