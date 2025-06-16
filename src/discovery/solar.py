@@ -41,27 +41,6 @@ def make_solardm(psr):
 
     return solardm
 
-def _dm_solar_close(n_earth, r_earth):
-     return (n_earth * AU_light_sec * AU_pc / r_earth)
-
-
-def _dm_solar(n_earth, theta, r_earth):
-    return ((np.pi - theta) *
-            (n_earth * AU_light_sec * AU_pc
-            / (r_earth * np.sin(theta))))
-
-def dm_solar(n_earth, theta, r_earth):
-    """
-    Calculates Dispersion measure due to 1/r^2 solar wind density model.
-    ::param :n_earth Solar wind proton/electron density at Earth (1/cm^3)
-    ::param :theta: angle between sun and line-of-sight to pulsar (rad)
-    ::param :r_earth :distance from Earth to Sun in (light seconds).
-    See You et al. 2007 for more details.
-    """
-    return matrix.jnp.where(np.pi - theta >= 1e-5,
-                    _dm_solar(n_earth, theta, r_earth),
-                    _dm_solar_close(n_earth, r_earth))
-
 def fourierbasis_solar_dm(psr,
                         components,
                         T=None):
@@ -78,9 +57,8 @@ def fourierbasis_solar_dm(psr,
 
     # get base Fourier design matrix and frequencies
     f, df, fmat = fourierbasis(psr, components, T)
-    theta, R_earth, _, _ = theta_impact(psr)
-    dm_sol_wind = dm_solar(1.0, theta, R_earth)
-    dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
+
+    dt_DM = make_solardm(psr) * 4.148808e3 / (psr.freqs**2) # DM constant from Pulsar handbook
 
     return f, df, fmat * dt_DM[:, None]
 
@@ -88,11 +66,8 @@ def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, common=[], name='timedom
      argspec = inspect.getfullargspec(covariance)
      argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
                for arg in argspec.args if arg not in ['tau']]
-     
-     # get solar wind ingredients
-     theta, R_earth, _, _ = theta_impact(psr)
-     dm_sol_wind = dm_solar(1.0, theta, R_earth)
-     dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
+
+     dt_DM = make_solardm(psr) * 4.148808e3 / (psr.freqs**2)
  
      bins = quantize(psr.toas, dt)
      Umat = np.vstack([bins == i for i in range(bins.max() + 1)]).T.astype('d')
