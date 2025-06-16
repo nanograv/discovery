@@ -46,7 +46,7 @@ def selection_backend_flags(psr):
     return psr.backend_flags
 
 
-def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, selection=selection_backend_flags, vectorize=True):
+def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, ecorr=False, selection=selection_backend_flags, vectorize=True):
     backend_flags = selection(psr)
     backends = [b for b in sorted(set(backend_flags)) if b != '']
 
@@ -69,7 +69,11 @@ def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, selection
             noise = sum(mask * noisedict[efac]**2 * ((scale * psr.toaerrs)**2 + 10.0**(2 * (logscale + noisedict[log10_t2equad])))
                         for mask, efac, log10_t2equad in zip(masks, efacs, log10_t2equads))
 
-        return matrix.NoiseMatrix1D_novar(noise)
+        if ecorr:
+            egp = makegp_ecorr(psr, noisedict=noisedict, enterprise=True, scale=scale, selection=selection)
+            return matrix.NoiseMatrixSM_novar(noise, egp.F, egp.Phi.N)
+        else:
+            return matrix.NoiseMatrix1D_novar(noise)
     else:
         if vectorize:
             toaerrs2, masks = matrix.jnparray(scale**2 * psr.toaerrs**2), matrix.jnparray([mask for mask in masks])
@@ -99,8 +103,11 @@ def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, selection
 
         getnoise.params = params
 
-
-        return matrix.NoiseMatrix1D_var(getnoise)
+        if ecorr:
+            egp = makegp_ecorr(psr, noisedict={}, enterprise=True, scale=scale, selection=selection)
+            return matrix.NoiseMatrixSM_var(getnoise, egp.F, egp.Phi.getN)
+        else:
+            return matrix.NoiseMatrix1D_var(getnoise)
 
 
 # ECORR
@@ -201,13 +208,21 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
 
 def makegp_improper(psr, fmat, constant=1.0e40, name='improperGP', variable=False):
     if variable:
+        phi = matrix.jnparray(constant * np.ones(fmat.shape[1]))
+
         def getphi(params):
-            return constant * jnp.ones(fmat.shape[1])
+            return phi
         getphi.params = []
 
-        return matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
+        gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
+        gp.index = {f'{psr.name}_{name}_coefficients({fmat.shape[1]})': slice(0, fmat.shape[1])}
     else:
-        return matrix.ConstantGP(matrix.NoiseMatrix1D_novar(constant * np.ones(fmat.shape[1])), fmat)
+        gp = matrix.ConstantGP(matrix.NoiseMatrix1D_novar(constant * np.ones(fmat.shape[1])), fmat)
+
+    gp.name = psr.name
+    gp.gpname = name
+
+    return gp
 
 def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, variable=False):
     if svd:
@@ -226,9 +241,7 @@ def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, varia
         else:
             raise ValueError("signals.makegp_timing() can take a specification of _either_ `constant` or `variance`.")
 
-    gp = makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
-    gp.name = psr.name
-    return gp
+    return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
 
 
 # Fourier GP
@@ -269,7 +282,20 @@ def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
 
     return f, df, fmatfunc
 
-def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], name='fourierGP'):
+def make_dmfourierbasis(alpha=2.0, tndm=False):
+    def basis(psr, components, T=None, fref=1400.0):
+        f, df, fmat = fourierbasis(psr, components, T)
+
+        if tndm:
+            Dm = (fref / psr.freqs) ** alpha * np.sqrt(12.0) * np.pi / 1400.0 / 1400.0 / 2.41e-4
+        else:
+            Dm = (fref / psr.freqs) ** alpha
+
+        return f, df, fmat * Dm[:, None]
+
+    return basis
+
+def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], name='fourierGP'):
     argspec = inspect.getfullargspec(prior)
     argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
               (f'({components[arg] if isinstance(components, dict) else components})' if argspec.annotations.get(arg) == typing.Sequence else '')
@@ -301,6 +327,22 @@ def makegp_fourier(psr, prior, components, T=None, fourierbasis=fourierbasis, co
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})': slice(0,len(f))} # better for cosine
     gp.name, gp.pos = psr.name, psr.pos
     gp.gpname, gp.gpcommon = name, common
+
+    if mean is not None:
+        margspec = inspect.getfullargspec(mean)
+        margs = margspec.args + [arg for arg in margspec.kwonlyargs if arg not in margspec.kwonlydefaults]
+        margmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
+#                        won't work here since components already applies to frequencies
+#                        + (f'({components})' if (margspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
+                   for arg in margs if not hasattr(psr, arg) and arg not in exclude}
+
+        psrpars = {arg: getattr(psr, arg) for arg in margspec.args if hasattr(psr, arg)}
+
+        def meanfunc(params):
+            return mean(f, df, *psrpars.values(), **{arg: params[argname] for arg, argname in margmap.items()})
+        meanfunc.params = sorted(margmap.values())
+
+        gp.mean = meanfunc
 
     return gp
 
@@ -403,7 +445,8 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
         return 1.0 / p, jnp.sum(jnp.log(p))
     invprior.params = priorfunc.params
 
-    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix1D_var(priorfunc), fmats, invprior)
+    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix1D_var(priorfunc), fmats)
+    gp.Phi_inv = invprior
 
     gp.index = {f'{psr.name}_{name}_coefficients({2*components})':
                 slice((2*components)*i, (2*components)*(i+1)) for i, psr in enumerate(psrs)}
@@ -413,7 +456,7 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
     return gp
 
 
-def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourierbasis, exclude=['f', 'df'],  name='fourierGlobalGP'):
+def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'],  name='fourierGlobalGP'):
     priors = priors if isinstance(priors, list) else [priors]
     orfs   = orfs   if isinstance(orfs, list)   else [orfs]
 
@@ -458,8 +501,16 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
                         # was -orfmat.shape[0] * jnp.sum(jnp.log(invphidiag)))
             invprior.params = argmap
             invprior.type = jax.Array
+
+            orfcf = matrix.jsp.linalg.cho_factor(orfmat)
+            def factors(params):
+                phi = prior(f, df, *[params[arg] for arg in argmap])
+                phicf = matrix.jsp.linalg.cho_factor(phi)
+
+                return orfcf, phicf
+            factors.params = argmap
         else:
-            invprior = None
+            invprior, factors = None, None
     else:
         def priorfunc(params):
             phis = [prior(f, df, *[params[arg] for arg in argmap]) for prior, argmap in zip(priors, argmaps)]
@@ -469,13 +520,33 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
         priorfunc.params = sorted(set.union(*[set(argmap) for argmap in argmaps]))
         priorfunc.type = jax.Array
 
-        invprior = None
+        invprior, factors = None, None
 
-    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix12D_var(priorfunc), fmats, invprior)
+    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix12D_var(priorfunc), fmats)
+    gp.Phi_inv, gp.factors = invprior, factors
+
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})':
                 slice(len(f)*i, len(f)*(i+1)) for i, psr in enumerate(psrs)}
     gp.pos = [psr.pos for psr in psrs]
     gp.name = [psr.name for psr in psrs]
+
+    if means is not None:
+        margspec = inspect.getfullargspec(means)
+        margs = margspec.args + [arg for arg in margspec.kwonlyargs if arg not in margspec.kwonlydefaults]
+        margmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
+                        (f'({components})' if (margspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
+                   for arg in margs if not hasattr(psrs[0], arg) and arg not in exclude}
+
+        psrpars = {arg: matrix.jnparray([getattr(psr, arg) for psr in psrs])
+                   for arg in margspec.args if hasattr(psrs[0], arg)}
+
+        vmeanfunc = jax.vmap(means, in_axes=([None] * 2 + [0] * len(psrpars) + [None] * len(margmap)))
+
+        def meanfunc(params):
+            return vmeanfunc(f, df, *psrpars.values(), *[params[argname] for arg, argname in margmap.items()]).flatten()
+        meanfunc.params = sorted(margmap.values())
+
+        gp.means = meanfunc
 
     return gp
 
@@ -569,12 +640,16 @@ def make_timeinterpbasis(start_time=None, order=1):
 
     return timeinterpbasis
 
-def psd2cov(psdfunc, components, T, oversample=3, cutoff=1):
-    if components % 2 == 0:
-        raise ValueError('psd2cov number of components must be odd.')
+def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
+    if not (isinstance(oversample, int) and isinstance(fmax_factor, int) and isinstance(cutoff, int)):
+        raise ValueError('psd2cov: oversample, fmax_factor and cutoff must be integers.')
 
-    n_freqs = int((components - 1) / 2 * oversample + 1)
-    fmax = (components - 1) / T / 2
+    if components % 2 == 0:
+        raise ValueError('psd2cov: number of components must be odd.')
+
+    scaled_components = (components - 1) * fmax_factor + 1
+    n_freqs = int((scaled_components - 1) / 2 * oversample + 1)
+    fmax = (scaled_components - 1) / T / 2
     freqs = np.linspace(0, fmax, n_freqs)
     df = 1 / T / oversample
 
@@ -594,23 +669,23 @@ def psd2cov(psdfunc, components, T, oversample=3, cutoff=1):
         Cfreq = jnp.fft.ifft(fullpsd, norm='backward')
         Ctau = Cfreq.real * len(fullpsd) * df / 2
 
-        return matrix.jsp.linalg.toeplitz(Ctau[:components])
+        return matrix.jsp.linalg.toeplitz(Ctau[:scaled_components:fmax_factor])
     covmat.__signature__ = inspect.signature(psdfunc)
     covmat.type = jax.Array
 
     return covmat
 
-def makegp_fftcov(psr, prior, components, T=None, timeinterpbasis=timeinterpbasis, oversample=3, cutoff=1, common=[], name='fftcovGP'):
+def makegp_fftcov(psr, prior, components, T=None, timeinterpbasis=timeinterpbasis, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP'):
     T = getspan(psr) if T is None else T
-    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, cutoff),
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=timeinterpbasis, common=common, name=name)
 
-def makecommongp_fftcov(psrs, prior, components, T, timeinterpbasis=timeinterpbasis, oversample=3, cutoff=1, common=[], vector=False, name='fftcovCommonGP'):
-    return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, cutoff),
+def makecommongp_fftcov(psrs, prior, components, T, timeinterpbasis=timeinterpbasis, oversample=3, fmax_factor=1, cutoff=1, common=[], vector=False, name='fftcovCommonGP'):
+    return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                                 components, T, fourierbasis=timeinterpbasis, common=common, vector=vector, name=name)
 
-def makeglobalgp_fftcov(psrs, prior, orf, components, T, timeinterpbasis=timeinterpbasis, oversample=3, cutoff=1, name='fftcovGlobalGP'):
-    return makeglobalgp_fourier(psrs, psd2cov(prior, components, T, oversample, cutoff), orf,
+def makeglobalgp_fftcov(psrs, prior, orf, components, T, timeinterpbasis=timeinterpbasis, oversample=3, fmax_factor=1, cutoff=1, name='fftcovGlobalGP'):
+    return makeglobalgp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), orf,
                                 components, T, fourierbasis=timeinterpbasis, name=name)
 
 
@@ -724,15 +799,18 @@ def dipole_orf(pos1, pos2):
         return np.dot(pos1, pos2)
 
 
-def makedelay(psr, delay, common=[], name='delay'):
+def makedelay(psr, delay, components=None, common=[], name='delay'):
     argspec = inspect.getfullargspec(delay)
-    argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
-              for arg in argspec.args if not hasattr(psr, arg)]
+    args = argspec.args + [arg for arg in argspec.kwonlyargs if arg not in argspec.kwonlydefaults]
 
-    psrpars = {arg: matrix.jnparray(getattr(psr, arg)) for arg in argspec.args if hasattr(psr, arg)}
+    argmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
+                   (f'({components})' if (argspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
+              for arg in args if not hasattr(psr, arg)}
+
+    psrpars = {arg: matrix.jnparray(getattr(psr, arg)) for arg in args if hasattr(psr, arg)}
 
     def delayfunc(params):
-        return delay(*psrpars.values(), *[params[arg] for arg in argmap])
-    delayfunc.params = argmap
+        return delay(**psrpars, **{arg: params[argname] for arg,argname in argmap.items()})
+    delayfunc.params = sorted(argmap.values())
 
     return delayfunc

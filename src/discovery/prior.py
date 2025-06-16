@@ -36,7 +36,17 @@ priordict_standard = {
     "crn_log10_rho": [-9, -4],
     "gw_(.*_)?log10_rho": [-9, -4],
     r"(.*_)?red_noise_log10_rho\(([0-9]*)\)": [-9, -4],
-    r"(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4]
+    r"(.*_)?red_noise_crn_log10_rho\(([0-9]*)\)": [-9, -4],
+    "cw_ra": [0, 2*np.pi],
+    "cw_dec": [-0.5*np.pi, 0.5*np.pi],
+    "cw_inc": [0, np.pi],
+    "cw_sindec": [-1.0, 1.0],
+    "cw_cosinc": [-1.0, 1.0],
+    "cw_psi": [0, np.pi],
+    "cw_log10_f0": [-9.0, -7.0],
+    "cw_log10_h0": [-18.0, -11.0],
+    "cw_phi_earth": [0., 2*np.pi],
+    "(.*_)?cw_phi_psr": [0., 2*np.pi]
 }
 
 def getprior_uniform(par, priordict={}):
@@ -70,10 +80,6 @@ def makelogtransform_uniform(func, priordict={}):
     # figure out slices when there are vector arguments
     slices, offset = [], 0
     for par in func.params:
-        # l = int(par[par.index('(')+1:par.index(')')]) if '(' in par else 1
-        # slices.append(slice(offset, offset+l))
-        # offset = offset + l
-
         if '(' in par:
             l = int(par[par.index('(')+1:par.index(')')]) if '(' in par else 1
             slices.append(slice(offset, offset+l))
@@ -137,15 +143,20 @@ def makelogtransform_uniform(func, priordict={}):
             psrcols = [psrdict[par.split('[')[1]] + '_' + par.split('[')[0] if '[' in par else par for par in columns]
             return pd.DataFrame(np.array(xs), columns=psrcols).sort_index(axis=1)
 
-    def prior(ys):
+    def logprior(ys):
         return jnp.sum(jnp.log(2.0) - 2.0 * jnp.logaddexp(ys, -ys))
 
+    def logL(ys):
+        return func(to_dict(ys))
+
     def transformed(ys):
-        return func(to_dict(ys)) + prior(ys)
+        return logL(ys) + logprior(ys)
 
     transformed.params = func.params
 
-    transformed.prior = prior
+    transformed.logprior = logprior
+    transformed.logL = logL
+
     transformed.to_dict = to_dict
     transformed.to_vec = to_vec
     transformed.to_df = to_df
@@ -180,7 +191,7 @@ def makelogtransform_classic(func, priordict={}):
         xs = 0.5 * (b + a + (b - a) * jnp.tanh(ys))
         return pd.DataFrame(np.array(xs), columns=func.params)
 
-    def prior(ys):
+    def logprior(ys):
         return jnp.sum(jnp.log(2.0) - 2.0 * jnp.logaddexp(ys, -ys))
 
         # return jnp.sum(jnp.log(0.5) - 2.0 * jnp.log(jnp.cosh(ys)))
@@ -189,12 +200,17 @@ def makelogtransform_classic(func, priordict={}):
         #     = log(0.5) - 2 * (log(exp(x) - exp(-x)) - log(2.0))
         #     = log(2.0) - 2 * logaddexp(x, -x)
 
+    def logL(ys):
+        return func(to_dict(ys))
+
     def transformed(ys):
-        return func(to_dict(ys)) + prior(ys)
+        return logL(ys) + logprior(ys)
 
     transformed.params = func.params
 
-    transformed.prior = prior
+    transformed.logprior = logprior
+    transformed.logL = logL
+
     transformed.to_dict = to_dict
     transformed.to_vec = to_vec
     transformed.to_df = to_df

@@ -31,10 +31,29 @@ class TestLikelihood:
                                    ds.makenoise_measurement(psr, psr.noisedict),
                                    ds.makegp_ecorr(psr, psr.noisedict)])
 
-        yield ds.PulsarLikelihood([psr.residuals,
+        mdl = ds.PulsarLikelihood([psr.residuals,
                                    ds.makenoise_measurement(psr, psr.noisedict),
                                    ds.makegp_ecorr(psr, psr.noisedict),
                                    ds.makegp_timing(psr, svd=True)])
+        p0 = ds.sample_uniform(mdl.logL.params)
+        yield mdl, p0
+
+        yield ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr, psr.noisedict, ecorr=True),
+                                   ds.makegp_timing(psr, svd=True)]), p0
+
+        mdl = ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr),
+                                   ds.makegp_ecorr(psr),
+                                   ds.makegp_timing(psr, svd=True),
+                                   ds.makegp_fourier(psr, ds.powerlaw, components=30, name='rednoise')])
+        p0 = ds.sample_uniform(mdl.logL.params)
+        yield mdl, p0
+
+        yield ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr, ecorr=True),
+                                   ds.makegp_timing(psr, svd=True, variable=True),
+                                   ds.makegp_fourier(psr, ds.powerlaw, components=30, name='rednoise')]), p0
 
         yield ds.PulsarLikelihood([psr.residuals,
                                    ds.makenoise_measurement(psr, psr.noisedict),
@@ -142,6 +161,7 @@ class TestLikelihood:
         psrfile = data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
         psr = ds.Pulsar.read_feather(psrfile)
 
+        p0_old = None
         for model in self._singlepsr_likelihoods(psr):
             if isinstance(model, tuple):
                 model, p0 = model
@@ -154,6 +174,11 @@ class TestLikelihood:
             l2 = jax.jit(logl)(p0)
 
             assert np.allclose(l1, l2)
+
+            if p0 and p0 == p0_old:
+                assert np.allclose(l1, l1_old, atol=0.1)
+
+            p0_old, l1_old = p0, l1
 
     @pytest.mark.integration
     def test_compare_enterprise(self):

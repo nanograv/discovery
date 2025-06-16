@@ -1,19 +1,23 @@
 # Discovery
 
+<img src="discovery.png" alt="Logo" width="300" align="left" style="margin-right: 20px;"/>
+
 _Discovery_ is a next-generation pulsar-timing-array data-analysis package, _built for speed_ on a [JAX](https://jax.readthedocs.io/en/latest/) backend that supports GPU execution and autodifferentiation.
 If [Enterprise](https://github.com/nanograv/enterprise) is Spock, logical and elegant, _Discovery_ is all Scotty, fast, efficient, and not above a hack if it gets you to warp speed.
 
-# Requirements
+## Requirements
 
-_Discovery_ needs `numpy`, `scipy`, `jax`, `pyarrow`. _Discovery_'s subpackages (such as `discovery.flow` and the packages under `discovery.samplers`) require additional dependencies.
+_Discovery_ needs a modern Python with `numpy`, `scipy`, `jax`, `pyarrow`. It will be happier running on an Nvidia GPU with CUDA-enabled JAX.
 
-# Examples
+_Discovery_'s subpackages (such as `discovery.flow` and the packages under `discovery.samplers`) require additional dependencies.
+
+## Examples
 
 The folder `examples` contains a growing set of usage examples.
 
-# Data model
+## Data model
 
-The _Discovery_ data model consists of `Kernel` objects (think of a noise matrix `N`, which can be inverted and applied to a vector, `N^{-1} y`, or even sandwiched with it, `y^T N^{-1} y`) and of `GP` objects, consisting of a basis `F` (sized `ntoas x ngp`) and a prior/kernel `Phi`. The kernel `ShermanMorrisonKernel(N, F, P)` combines a noise kernel and a GP.
+The _Discovery_ data model consists of `Kernel` objects (think of a noise matrix `N`, which can be inverted and applied to a vector, `N^{-1} y`, or even sandwiched with it, `y^T N^{-1} y`) and of `GP` objects, consisting of a basis `F` (sized `ntoas x ngp`) and a prior/kernel `Phi`. The kernel `WoodburyKernel(N, F, P)` combines a noise kernel and a GP.
 
 ## Pulsar data
 
@@ -54,7 +58,7 @@ _Discovery_ uses lightweight `Pulsar` objects saved as Arrow Feather files. To c
 
 ## Likelihood (`likelihood.py`)
 
-- `PulsarLikelihood(signals, concat=True)`: returns a `PulsarLikelihood` object, with a `logL` property that implements the single-pulsar likelihood as a JAX-ready function. The likelihood takes as a single argument a dictionary of parameters named as discussed above. Here `signals` is an iterable that must contain exactly one residual vector, exactly one noise `Kernel`, any number of `GP` objects, and any number of deterministic delays (any callable). If `concat=False`, the likelihood is built by nesting `ShermanMorrisonKernel`s, first consuming `ConstantGP` objects (those without parameters) and then `VariableGP`, but otherwise respecting the order in `signals`. If `concat=True`, the `ConstantGP`s and `VariableGP`s are separately concatenated, and then nested.
+- `PulsarLikelihood(signals, concat=True)`: returns a `PulsarLikelihood` object, with a `logL` property that implements the single-pulsar likelihood as a JAX-ready function. The likelihood takes as a single argument a dictionary of parameters named as discussed above. Here `signals` is an iterable that must contain exactly one residual vector, exactly one noise `Kernel`, any number of `GP` objects, and any number of deterministic delays (any callable). If `concat=False`, the likelihood is built by nesting `WoodburyKernel`s, first consuming `ConstantGP` objects (those without parameters) and then `VariableGP`, but otherwise respecting the order in `signals`. If `concat=True`, the `ConstantGP`s and `VariableGP`s are separately concatenated, and then nested.
 - `GlobalLikelihood(psls, globalgp=None)`: returns `GlobalLikelihood` object, with a `logL` property that implements the multi-pulsar likelihood as a JAX-ready function. The likelihood takes as a single argument a dictionary of parameters. Here `psls` is an iterable that may contain any number of `PulsarLikelihood` objects, and `globalgp` is a `GlobalVariableGP` object, such as returned by `makegp_fourier_global`, encoding a joint GP for all pulsars.
 
 - The two likelihood objects have a `sample` property—a JAX-ready function that generates a random realization of the data if given a JAX key and a dictionary of parameters. (According to JAX protocol, `sample` actually returns a tuple consisting of the "split" key and the data realization.)

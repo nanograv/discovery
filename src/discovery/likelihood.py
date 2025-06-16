@@ -23,7 +23,7 @@ from . import signals
 #   VariableGP
 #       consists of a VariableKernel and a numpy matrix
 #
-# ShermanMorrisonKernel can return a ConstantKernel or a VariableKernel
+# WoodburyKernel can return a ConstantKernel or a VariableKernel
 
 # npta = je.PulsarLikelihood(je.residuals(psr),
 #                            je.makenoise_measurement(psr, noisedict),
@@ -54,11 +54,11 @@ class PulsarLikelihood:
         if cgps:
             if len(cgps) > 1 and concat:
                 cgp = matrix.CompoundGP(cgps)
-                csm = matrix.ShermanMorrisonKernel(noise, cgp.F, cgp.Phi)
+                csm = matrix.WoodburyKernel(noise, cgp.F, cgp.Phi)
             else:
                 csm = noise
                 for cgp in cgps:
-                    csm = matrix.ShermanMorrisonKernel(csm, cgp.F, cgp.Phi)
+                    csm = matrix.WoodburyKernel(csm, cgp.F, cgp.Phi)
         else:
             csm = noise
 
@@ -69,13 +69,15 @@ class PulsarLikelihood:
 
             if len(vgps) > 1 and concat:
                 vgp = matrix.CompoundGP(vgps)
-                vsm = matrix.ShermanMorrisonKernel(csm, vgp.F, vgp.Phi)
+                vsm = matrix.WoodburyKernel(csm, vgp.F, vgp.Phi)
                 vsm.index = getattr(vgp, 'index', None)
+                vsm.mean = getattr(vgp, 'mean', None)
             else:
                 vsm = csm
                 for vgp in vgps:
-                    vsm = matrix.ShermanMorrisonKernel(vsm, vgp.F, vgp.Phi)
+                    vsm = matrix.WoodburyKernel(vsm, vgp.F, vgp.Phi)
                     vsm.index = getattr(vgp, 'index', None)
+                    vsm.mean = getattr(vgp, 'mean', None)
         else:
             vsm = csm
 
@@ -93,6 +95,10 @@ class PulsarLikelihood:
     def __setattr__(self, name, value):
         if name == 'residuals' and 'logL' in self.__dict__:
             self.y = value
+
+            if len(self.delay) > 0:
+                self.y = matrix.CompoundDelay(self.y, self.delay)
+
             del self.logL
         else:
             self.__dict__[name] = value
@@ -256,8 +262,10 @@ class GlobalLikelihood:
                     'if you provided them using a generator, it may have been consumed already. ' +
                     'In that case you can use a list.')
 
-            npsr = len(self.globalgp.Fs)
-            ngp = self.globalgp.Fs[0].shape[1]
+            # npsr = len(self.globalgp.Fs)
+            # ngp = self.globalgp.Fs[0].shape[1]
+
+            kmeans = getattr(self.globalgp, 'means', None)
 
             def loglike(params):
                 terms = [kterm(params) for kterm in kterms]
@@ -267,16 +275,30 @@ class GlobalLikelihood:
 
                 Pinv, ldP = P_var_inv(params)
 
-                #for i, term in enumerate(terms):
-                #    Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(term[2])
-                #cf = matrix.jsp.linalg.cho_factor(Pinv)
+                # for i, term in enumerate(terms):
+                #     Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(term[2])
+                # cf = matrix.jsp.linalg.cho_factor(Pinv)
 
                 # this seems a bit slower than the .at/.set scheme in plogL below
-                cf = matrix.jsp.linalg.cho_factor(Pinv + matrix.jsp.linalg.block_diag(*[term[2] for term in terms]))
+                FtNmF = matrix.jsp.linalg.block_diag(*[term[2] for term in terms])
+                cf = matrix.jsp.linalg.cho_factor(Pinv + FtNmF)
 
-                return p0 + 0.5 * (FtNmy.T @ matrix.jsp.linalg.cho_solve(cf, FtNmy) - ldP - 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
+                logp = p0 + 0.5 * (FtNmy.T @ matrix.jsp.linalg.cho_solve(cf, FtNmy) - ldP - 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
 
-            loglike.params = sorted(sorted(set.union(*[set(kterm.params) for kterm in kterms])) + P_var_inv.params)
+                if kmeans is not None:
+                    # -0.5 a0t.FtNmF.a0 + 0.5 a0t.FtNmF.Sm.FtNmF.a0 + a0t.FtNmy - a0t.FtNmF.Sm.FtNmy
+                    # -0.5 (a0t.FtNmF).a0 + (FtNmy)t.a0 + 0.5 (a0t.FtNmF).Sm.FtNmF.a0 - (FtNmy)t.Sm.FtNmF.a0
+                    # -0.5 (a0t.FtNmF).(a0 - Sm.FtNmF.a0) + (FtNmy)t.(a0 - Sm.FtNmF.a0)
+
+                    a0 = kmeans(params)
+                    FtNmFa0 = FtNmF @ a0
+                    logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
+
+                return logp
+
+            params_kterms = list(set.union(*[set(kterm.params) for kterm in kterms]))
+            params_kmeans = kmeans.params if kmeans is not None else []
+            loglike.params = sorted(params_kterms + params_kmeans + P_var_inv.params)
 
         return loglike
 
@@ -461,9 +483,9 @@ class ArrayLikelihood:
     #     lastgp = self.commongp[-1]
 
     #     Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-    #     csm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+    #     csm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
 
-    #     vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, lastgp.F, lastgp.Phi)
+    #     vsm = matrix.VectorWoodburyKernel_varP(Ns, lastgp.F, lastgp.Phi)
     #     if hasattr(lastgp, 'prior'):
     #         vsm.prior = lastgp.prior
     #     if hasattr(lastgp, 'index'):
@@ -491,7 +513,7 @@ class ArrayLikelihood:
             commongp = matrix.VectorCompoundGP(cgp + [self.globalgp])
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-        self.vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+        self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
         if hasattr(commongp, 'prior'):
             self.vsm.prior = commongp.prior
         if hasattr(commongp, 'index'):
@@ -516,7 +538,7 @@ class ArrayLikelihood:
         commongp = matrix.VectorCompoundGP(self.commongp)
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-        self.vsm = matrix.VectorShermanMorrisonKernel_varP(Ns, commongp.F, commongp.Phi)
+        self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
         self.vsm.index = getattr(commongp, 'index', None)
 
         if self.globalgp is None:
@@ -527,6 +549,8 @@ class ArrayLikelihood:
 
             npsr = len(self.globalgp.Fs)
             ngp = self.globalgp.Fs[0].shape[1]
+
+            kmeans = getattr(self.globalgp, 'means', None)
 
             def loglike(params):
                 terms = kterms(params)
@@ -549,10 +573,86 @@ class ArrayLikelihood:
                 #               Pinv)
                 #    cf = matrix.jsp.linalg.cho_factor(Pinv)
 
-                cf = matrix.matrix_factor(Pinv + matrix.jsp.linalg.block_diag(*terms[2]))
+                FtNmF = matrix.jsp.linalg.block_diag(*terms[2])
+                cf = matrix.matrix_factor(Pinv + FtNmF)
 
-                return p0 + 0.5 * (FtNmy.T @ matrix.matrix_solve(cf, FtNmy) - ldP - matrix.matrix_norm * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
+                logp = p0 + 0.5 * (FtNmy.T @ matrix.matrix_solve(cf, FtNmy) - ldP - matrix.matrix_norm * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
 
-            loglike.params = sorted(kterms.params + P_var_inv.params)
+                if kmeans is not None:
+                    a0 = kmeans(params)
+                    FtNmFa0 = FtNmF @ a0
+                    logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
+
+                return logp
+
+            params_kmeans = kmeans.params if kmeans is not None else []
+            loglike.params = sorted(kterms.params + params_kmeans + P_var_inv.params)
+
+        return loglike
+
+    def cglogL(self, cgmaxiter=100, detmatvecs=40, detsamples=1000, make_logdet=True):
+        commongp = matrix.VectorCompoundGP(self.commongp)
+
+        Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+        self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
+        self.vsm.index = getattr(commongp, 'index', None)
+
+        if self.globalgp is None:
+            loglike = self.vsm.make_kernelproduct(self.ys)
+        else:
+            factors = self.globalgp.factors
+            kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs)
+
+            npsr = len(self.globalgp.Fs)
+            ngp = self.globalgp.Fs[0].shape[1]
+
+            logdet_estimator = matrix.make_logdet_estimator(npsr * ngp, detmatvecs, detsamples)
+            rndkey = jax.random.PRNGKey(1)
+
+            def loglike(params):
+                terms = kterms(params)
+
+                p0, FtNmy, FtNmF = matrix.jnp.sum(terms[0]), terms[1], terms[2]
+
+                # get Cholesky factors of orf and phi matrices
+                orfcf, phicf = factors(params)
+
+                # compute log Phi
+                ldP = (npsr * 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(phicf[0]))) +
+                       ngp  * 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(orfcf[0]))))
+
+                # reconstruct the inverse matrices
+                orfinv = matrix.jsp.linalg.cho_solve(orfcf, matrix.jnp.eye(npsr))
+                phiinv = matrix.jsp.linalg.cho_solve(phicf, matrix.jnp.eye(ngp))
+
+                # define a preconditioner solve M^-1 y with block-diag M_i = FtNmF_i + orfinv[i,i] phi
+                precf = matrix.jsp.linalg.cho_factor(FtNmF + matrix.jnp.diag(orfinv)[:, None, None] * phiinv[None, :, :])
+                def precond(FtNmy):
+                    return matrix.jsp.linalg.cho_solve(precf, FtNmy)
+
+                # define the application of Gamma^-1 x phi^-1 + FtNmF to a "vector" FtNmy (npsr, ngp)
+                def matvec(FtNmy):
+                    return (matrix.jsp.linalg.cho_solve(orfcf, matrix.jsp.linalg.cho_solve(phicf, FtNmy.T).T) +
+                            matrix.jnp.squeeze(FtNmF @ FtNmy[..., None])) # matrix.jnp.einsum('kij,kj->ki', FtNmF, FtNmy))
+
+                sol = matrix.cgsolve(matvec, FtNmy, M=precond, maxiter=cgmaxiter)
+
+                if make_logdet:
+                    # combine preconditioner and matrix application for logdet estimation
+                    # compute also preconditioner logdet correction
+                    i1, i2 = matrix.jnp.diag_indices(precf[0].shape[1], ndim=2)
+                    logpre = 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.abs(precf[0][:, i1, i2])))
+                    def prematvec(FtNmyvec):
+                        FtNmy = FtNmyvec.reshape((npsr, ngp))
+                        pcnd = matrix.jsp.linalg.cho_solve(precf, matvec(FtNmy))
+                        return pcnd.reshape(npsr * ngp)
+
+                    logdet = logdet_estimator(prematvec, rndkey) + logpre
+                else:
+                    logdet = 0.0
+
+                return p0 + 0.5 * (matrix.jnp.sum(FtNmy * sol) - ldP - logdet)
+
+            loglike.params = sorted(kterms.params + factors.params)
 
         return loglike
