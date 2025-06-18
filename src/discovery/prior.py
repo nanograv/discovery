@@ -3,7 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from . import matrix
+from discovery import matrix
 jnp = matrix.jnp
 
 def uniform(par, a, b):
