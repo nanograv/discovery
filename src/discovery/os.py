@@ -48,12 +48,20 @@ class OS:
         pairs = self.pairs
 
         def get_rhosigma(params):
-            sN = jnp.sqrt(getN(params))
+            N = getN(params)
             ks = [k(params) for k in kernelsolves]
 
-            ts = [jnp.dot(sN * ks[i][0], sN * ks[j][0]) for (i,j) in pairs]
+            if N.ndim == 1:
+                sN = jnp.sqrt(getN(params))
 
-            ds = [sN[:,jnp.newaxis] * k[1] * sN[jnp.newaxis,:] for k in ks]
+                ts = [jnp.dot(sN * ks[i][0], sN * ks[j][0]) for (i,j) in pairs]
+                ds = [sN[:,jnp.newaxis] * k[1] * sN[jnp.newaxis,:] for k in ks]
+            else:
+                U = jnp.linalg.cholesky(N)
+
+                ts = [jnp.dot(U @ ks[i][0], U @ ks[j][0]) for (i,j) in pairs]
+                ds = [U @ k[1] @ U.T for k in ks]
+
             bs = [jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
 
             return (matrix.jnparray(ts) / matrix.jnparray(bs),
