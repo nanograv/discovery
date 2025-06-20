@@ -57,7 +57,7 @@ class OS:
                 ts = [jnp.dot(sN * ks[i][0], sN * ks[j][0]) for (i,j) in pairs]
                 ds = [sN[:,jnp.newaxis] * k[1] * sN[jnp.newaxis,:] for k in ks]
             else:
-                U = jnp.linalg.cholesky(N)
+                U = jnp.linalg.cholesky(N, upper=True)
 
                 ts = [jnp.dot(U @ ks[i][0], U @ ks[j][0]) for (i,j) in pairs]
                 ds = [U @ k[1] @ U.T for k in ks]
