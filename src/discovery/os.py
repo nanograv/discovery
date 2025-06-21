@@ -5,22 +5,21 @@ import scipy.integrate
 
 from . import matrix
 from . import signals
-jnp = matrix.jnp
 
 import jax
 
 # these versions of ORFs take only one parameter (the angle)
-# z = jnp.dot(pos1, pos2)
+# z = matrix.jnp.dot(pos1, pos2)
 
 def hd_orfa(z):
     omc2 = (1.0 - z) / 2.0
-    return 1.5 * omc2 * jnp.log(omc2) - 0.25 * omc2 + 0.5 + 0.5 * jnp.allclose(z, 1.0)
+    return 1.5 * omc2 * matrix.jnp.log(omc2) - 0.25 * omc2 + 0.5 + 0.5 * matrix.jnp.allclose(z, 1.0)
 
 def dipole_orfa(z):
-    return z + 1.0e-6 * jnp.allclose(z, 1.0)
+    return z + 1.0e-6 * matrix.jnp.allclose(z, 1.0)
 
 def monopole_orfa(z):
-    return 1.0 + 1.0e-6 * jnp.allclose(z, 1.0)
+    return 1.0 + 1.0e-6 * matrix.jnp.allclose(z, 1.0)
 
 
 class OS:
@@ -35,7 +34,7 @@ class OS:
             raise AttributeError("I cannot find the common GW GP in the pulsar likelihood objects.")
 
         self.pairs = [(i1, i2) for i1 in range(len(self.pos)) for i2 in range(i1 + 1, len(self.pos))]
-        self.angles = [jnp.dot(self.pos[i], self.pos[j]) for (i,j) in self.pairs]
+        self.angles = [matrix.jnp.dot(self.pos[i], self.pos[j]) for (i,j) in self.pairs]
 
     @functools.cached_property
     def params(self):
@@ -44,28 +43,54 @@ class OS:
     @functools.cached_property
     def os_rhosigma(self):
         kernelsolves = [psl.N.make_kernelsolve(psl.y, gw.F) for (psl, gw) in zip(self.psls, self.gws)]
-        getN = self.gws[0].Phi.getN   # use prior from first pulsar, assume all GW GP are the same
+        getN = self.gws[0].Phi.getN   # use GW prior from first pulsar, assume all GW GP are the same
         pairs = self.pairs
+
+        # OS = sum_{i<j} y_i* K_i^{-1} T_i Phi_{ij} T_j* K_j^{-1} y_j /
+        #      sum_{j<j} tr K_i^{-1} T_i Phi_{ij} T_j* K_j^{-1} T_j Phi_{ji} T_i*
+        #
+        # with Phi_{ij} = orf_ij Phi
+        #
+        # kernelsolves return kv_i = T_i* K_i^{-1} y_i and km_i = T_i* K_i^{-1} T_i
+        # and U* U = Phi
+        #
+        # then ts_ij = (U kv_i)* (U kv_j) and bs_ij = tr(U km_i U*  U km_j U*)
+        #      rho_ij = ts_ij / bs_ij and sigma_ij = 1.0 / sqrt(bs_ij)
+        #
+        # and finally os = sum_{i<j} (ts_ij orf_ij) / sum_{i<j} (orf_ij^2 bs_ij)
+        #                = sum_{i<j} (rho_ij orf_ij / sigma_ij^2) / sum_{i<j} (orf_ij^2 / sigma_ij^2)
+        # and os_sigma   = (sum_{i<j} orf_ij^2 bs_ij)^(-1/2) = (sum_{i<j} orf_ij^2 / sigma_ij^2)^(-1/2)
 
         def get_rhosigma(params):
             N = getN(params)
             ks = [k(params) for k in kernelsolves]
 
             if N.ndim == 1:
-                sN = jnp.sqrt(getN(params))
+                sN = matrix.jnp.sqrt(N)
 
-                ts = [jnp.dot(sN * ks[i][0], sN * ks[j][0]) for (i,j) in pairs]
-                ds = [sN[:,jnp.newaxis] * k[1] * sN[jnp.newaxis,:] for k in ks]
+                ts = [matrix.jnp.dot(sN * ks[i][0], sN * ks[j][0]) for (i,j) in pairs]
+                ds = [sN[:,matrix.jnp.newaxis] * k[1] * sN[matrix.jnp.newaxis,:] for k in ks]
+
+                bs = [matrix.jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
             else:
-                U = jnp.linalg.cholesky(N, upper=True)
+                U = matrix.jnp.linalg.cholesky(N, upper=True) # N = U^T U
 
-                ts = [jnp.dot(U @ ks[i][0], U @ ks[j][0]) for (i,j) in pairs]
+                uks = [U @ k[0] for k in ks]
                 ds = [U @ k[1] @ U.T for k in ks]
 
-            bs = [jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
+                ts  = [matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in pairs]
+                bs = [matrix.jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
+
+                # slower:
+                # ts = [matrix.jnp.dot(U @ ks[i][0], U @ ks[j][0]) for (i,j) in pairs]
+                # even slower, more explicit:
+                # ts = [ks[i][0].T @ N @ ks[j][0] for (i,j) in pairs]
+
+                # more explicit:
+                # bs = [matrix.jnp.trace(ks[i][1] @ N @ ks[j][1] @ N) for (i,j) in pairs]
 
             return (matrix.jnparray(ts) / matrix.jnparray(bs),
-                    1.0 / jnp.sqrt(matrix.jnparray(bs)))
+                    1.0 / matrix.jnp.sqrt(matrix.jnparray(bs)))
 
         get_rhosigma.params = sorted(set.union(*[set(k.params) for k in kernelsolves], getN.params))
 
@@ -84,8 +109,8 @@ class OS:
 
             orfs = orf(angles)
 
-            os = jnp.sum(rhos * orfs / sigmas**2) / jnp.sum(orfs**2 / sigmas**2)
-            os_sigma = 1.0 / jnp.sqrt(jnp.sum(orfs**2 / sigmas**2))
+            os = matrix.jnp.sum(rhos * orfs / sigmas**2) / matrix.jnp.sum(orfs**2 / sigmas**2)
+            os_sigma = 1.0 / matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 / sigmas**2))
             snr = os / os_sigma
 
             return {'os': os, 'os_sigma': os_sigma, 'snr': snr, 'log10_A': params[gwpar]} # , 'rhos': rhos, 'sigmas': sigmas}
@@ -105,11 +130,11 @@ class OS:
             gwnorm = 10**(2.0 * params[gwpar])
             rhos, sigmas = gwnorm * rhos, gwnorm * sigmas
 
-            angles = matrix.jnparray([jnp.dot(pos[i], pos[j]) for (i,j) in pairs])
+            angles = matrix.jnparray([matrix.jnp.dot(pos[i], pos[j]) for (i,j) in pairs])
             orfs = orf(angles)
 
-            os = jnp.sum(rhos * orfs / sigmas**2) / jnp.sum(orfs**2 / sigmas**2)
-            os_sigma = 1.0 / jnp.sqrt(jnp.sum(orfs**2 / sigmas**2))
+            os = matrix.jnp.sum(rhos * orfs / sigmas**2) / matrix.jnp.sum(orfs**2 / sigmas**2)
+            os_sigma = 1.0 / matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 / sigmas**2))
             snr = os / os_sigma
 
             return {'os': os, 'os_sigma': os_sigma, 'snr': snr, 'log10_A': params[gwpar]} #, 'rhos': rhos, 'sigmas': sigmas}
@@ -125,18 +150,23 @@ class OS:
         pairs = self.pairs
 
         def get_rhosigma_complex(params):
-            sN = jnp.sqrt(getN(params))
+            N = getN(params)
             ks = [k(params) for k in kernelsolves]
 
-            tsf = [sN[::2] * (k[0][::2] + 1j * k[0][1::2]) for k in ks]
-            ts = [tsf[i] * jnp.conj(tsf[j]) for (i,j) in pairs]
+            if sN.ndim == 2:
+                raise NotImplementedError("Complex rhosigma not defined for 2D Phi.")
 
-            ds = [sN[:,jnp.newaxis] * k[1] * sN[jnp.newaxis,:] for k in ks]
-            bs = [jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
+            sN = matrix.jnp.sqrt(N)
+
+            tsf = [sN[::2] * (k[0][::2] + 1j * k[0][1::2]) for k in ks]
+            ts = [tsf[i] * matrix.jnp.conj(tsf[j]) for (i,j) in pairs]
+
+            ds = [sN[:,matrix.jnp.newaxis] * k[1] * sN[matrix.jnp.newaxis,:] for k in ks]
+            bs = [matrix.jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
 
             # can't use matrix.jnparray or complex will be downcast
-            return (jnp.array(ts) / matrix.jnparray(bs)[:,jnp.newaxis],
-                    1.0 / jnp.sqrt(matrix.jnparray(bs)))
+            return (matrix.jnparray(ts) / matrix.jnparray(bs)[:,matrix.jnp.newaxis],
+                    1.0 / matrix.jnp.sqrt(matrix.jnparray(bs)))
 
         get_rhosigma_complex.params = sorted(set.union(*[set(k.params) for k in kernelsolves], getN.params))
 
@@ -151,16 +181,16 @@ class OS:
             rhos_complex, sigmas = os_rhosigma_complex(params)
 
             # can't use matrix.jnparray or complex will be downcast
-            phaseprod = jnp.array([jnp.exp(1j * (phases[i] - phases[j])) for i,j in pairs])
-            rhos = jnp.sum(jnp.real(rhos_complex * phaseprod), axis=1)
+            phaseprod = matrix.jnp.array([matrix.jnp.exp(1j * (phases[i] - phases[j])) for i,j in pairs])
+            rhos = matrix.jnp.sum(matrix.jnp.real(rhos_complex * phaseprod), axis=1)
 
             gwnorm = 10**(2.0 * params[gwpar])
             rhos, sigmas = gwnorm * rhos, gwnorm * sigmas
 
             orfs = orf(angles)
 
-            os = jnp.sum(rhos * orfs / sigmas**2) / jnp.sum(orfs**2 / sigmas**2)
-            os_sigma = 1.0 / jnp.sqrt(jnp.sum(orfs**2 / sigmas**2))
+            os = matrix.jnp.sum(rhos * orfs / sigmas**2) / matrix.jnp.sum(orfs**2 / sigmas**2)
+            os_sigma = 1.0 / matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 / sigmas**2))
             snr = os / os_sigma
 
             return {'os': os, 'os_sigma': os_sigma, 'snr': snr, 'log10_A': params[gwpar]} #, 'rhos': rhos, 'sigmas': sigmas}
@@ -179,21 +209,29 @@ class OS:
         gwpar, pairs, orfs = self.gwpar, self.pairs, [signals.hd_orf(self.pos[i], self.pos[j]) for i, j in self.pairs]
 
         def get_gx2eig(params):
-            sN = jnp.sqrt(getN(params))
+            N = getN(params)
             ks = [k(params) for k in kernelsolves]
 
             A = 10**params[gwpar]
 
-            ts = [sN[:,jnp.newaxis] * k[0] * jnp.sqrt(phi(params)) / A for k, phi in zip(ks, phis)]
+            if N.ndim == 1:
+                sN = matrix.jnp.sqrt(N)
 
-            d = [sN[:,jnp.newaxis] * k[1] * sN[jnp.newaxis,:] / A**2 for k in ks]
-            b = sum(jnp.trace(d[i] @ d[j] * orf**2) for (i,j), orf in zip(pairs, orfs))
+                ts = [sN[:,matrix.jnp.newaxis] * k[0] * matrix.jnp.sqrt(phi(params)) / A for k, phi in zip(ks, phis)]
+                ds = [sN[:,matrix.jnp.newaxis] * k[1] * sN[matrix.jnp.newaxis,:] / A**2 for k in ks]
+            else:
+                U = matrix.jnp.linalg.cholesky(N, upper=True)
 
-            amat = jnp.block([[(0.0 if i == j else orfmat[i,j] / jnp.sqrt(b)) * jnp.dot(t1.T, t2)
-                               for i,t1 in enumerate(ts)]
-                              for j,t2 in enumerate(ts)])
+                ts = [U @ k[0] @ matrix.jnp.linalg.cholesky(phi(params), upper=True) / A for k, phi in zip(ks, phis)]
+                ds = [U @ k[1] * U.T / A**2 for k in ks]
 
-            return jnp.real(jnp.linalg.eig(amat)[0])
+            b = sum(matrix.jnp.trace(ds[i] @ ds[j] * orf**2) for (i,j), orf in zip(pairs, orfs))
+
+            amat = matrix.jnp.block([[(0.0 if i == j else orfmat[i,j] / matrix.jnp.sqrt(b)) * matrix.jnp.dot(t1.T, t2)
+                               for i, t1 in enumerate(ts)]
+                              for j, t2 in enumerate(ts)])
+
+            return matrix.jnp.real(matrix.jnp.linalg.eig(amat)[0])
 
         get_gx2eig.params = sorted(set.union(*[set(k.params) for k in kernelsolves], getN.params))
 
@@ -202,10 +240,10 @@ class OS:
     @functools.cached_property
     def imhof(self):
         def get_imhof(u, x, eigs):
-            theta = 0.5 * jnp.sum(jnp.arctan(eigs[:,jnp.newaxis] * u), axis=0) - 0.5 * x * u
-            rho = jnp.prod((1.0 + (eigs[:,jnp.newaxis] * u)**2)**0.25, axis=0)
+            theta = 0.5 * matrix.jnp.sum(matrix.jnp.arctan(eigs * u), axis=0) - 0.5 * x * u
+            rho = matrix.jnp.prod((1.0 + (eigs * u)**2)**0.25, axis=0)
 
-            return jnp.sin(theta) / (u * rho)
+            return matrix.jnp.sin(theta) / (u * rho)
 
         return jax.jit(get_imhof)
 
@@ -214,7 +252,7 @@ class OS:
         eigr = self.gx2eig(params)
 
         # cutoff by number of eigenvalues is more friendly to jitted imhof
-        eigs = eigr[:cutoff] if cutoff > 1 else eigr[jnp.abs(eigr) > cutoff]
+        eigs = eigr[:cutoff] if cutoff > 1 else eigr[matrix.jnp.abs(eigr) > cutoff]
 
         return np.array([0.5 - scipy.integrate.quad(lambda u: float(self.imhof(u, x, eigs)),
                                                     0, np.inf, limit=limit, epsabs=epsabs)[0] / np.pi for x in xs])
