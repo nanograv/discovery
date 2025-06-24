@@ -200,7 +200,7 @@ class OS:
         return get_shift
 
     @functools.cached_property
-    def gx2eig(self):
+    def gx2mat(self):
         kernelsolves = [psl.N.make_kernelsolve(psl.N.F, gw.F) for (psl, gw) in zip(self.psls, self.gws)]
         phis = [psr.N.P_var.getN for psr in self.psls]
         getN = self.gws[0].Phi.getN
@@ -208,7 +208,13 @@ class OS:
         orfmat = matrix.jnparray([[signals.hd_orf(p1, p2) for p1 in self.pos] for p2 in self.pos])
         gwpar, pairs, orfs = self.gwpar, self.pairs, [signals.hd_orf(self.pos[i], self.pos[j]) for i, j in self.pairs]
 
-        def get_gx2eig(params):
+        # GP-only random data is sqrt(N) X, with X normal deviate
+        # SNR is os / os_sigma
+        #
+        # amat_ij is  sqrt(phi_i) F_i* K_i^-1 T_i (Gamma_ij Phi) T_j* K_j^-1 F_j sqrt(phi_j) / sqrt(b)
+        # with b = tr(  Phi Gamma_ji T_i* K_i^{-1} T_i Phi Gamma_ij T_j* K_i^{-1} T_j )
+
+        def get_gx2mat(params):
             N = getN(params)
             ks = [k(params) for k in kernelsolves]
 
@@ -227,15 +233,14 @@ class OS:
 
             b = sum(matrix.jnp.trace(ds[i] @ ds[j] * orf**2) for (i,j), orf in zip(pairs, orfs))
 
-            amat = matrix.jnp.block([[(0.0 if i == j else orfmat[i,j] / matrix.jnp.sqrt(b)) * matrix.jnp.dot(t1.T, t2)
-                               for i, t1 in enumerate(ts)]
-                              for j, t2 in enumerate(ts)])
+            amat = 0.5 * matrix.jnp.block([[(0.0 if i == j else orfmat[i,j] / matrix.jnp.sqrt(b)) * matrix.jnp.dot(t1.T, t2)
+                                            for i, t1 in enumerate(ts)] for j, t2 in enumerate(ts)])
 
-            return matrix.jnp.real(matrix.jnp.linalg.eig(amat)[0])
+            return amat
 
-        get_gx2eig.params = sorted(set.union(*[set(k.params) for k in kernelsolves], getN.params))
+        get_gx2mat.params = sorted(set.union(*[set(k.params) for k in kernelsolves], getN.params))
 
-        return get_gx2eig
+        return get_gx2mat
 
     @functools.cached_property
     def imhof(self):
@@ -249,7 +254,8 @@ class OS:
 
     # note this returns a numpy array, and the integration is handled by non-jax scipy
     def gx2cdf(self, params, xs, cutoff=1e-6, limit=100, epsabs=1e-6):
-        eigr = self.gx2eig(params)
+        amat = self.gx2mat(params)
+        eigr = matrix.jnp.real(matrix.jnp.linalg.eig(amat)[0])
 
         # cutoff by number of eigenvalues is more friendly to jitted imhof
         eigs = eigr[:cutoff] if cutoff > 1 else eigr[matrix.jnp.abs(eigr) > cutoff]
