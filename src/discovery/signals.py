@@ -847,3 +847,7 @@ def makedelay(psr, delay, components=None, common=[], name='delay'):
     delayfunc.params = sorted(argmap.values())
 
     return delayfunc
+
+# use with makedelay to set residuals dynamically from arrays
+def getresiduals(y):
+    return -y

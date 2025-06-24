@@ -76,7 +76,22 @@ try:
 
     cgsolve = jaxopt.linear_solve.solve_cg
 
-    def make_logdet_estimator(ndim, num_matvecs=40, samples=1000):
+    def dense_funm_sym_eigh(matfun, clip=None):
+        def fun(dense_matrix):
+            eigvals, eigvecs = funm.linalg.eigh(dense_matrix)
+            # optional clipping
+            if clip:
+                eigvals = jnp.clip(eigvals, a_min=1e-6)
+            fx_eigvals = funm.func.vmap(matfun)(eigvals)
+            return eigvecs @ funm.linalg.diagonal(fx_eigvals) @ eigvecs.T
+
+        return fun
+
+    def integrand_funm_sym_logdet(tridiag_sym, clip=None):
+        dense_funm = dense_funm_sym_eigh(jnp.log, clip=clip)
+        return funm.integrand_funm_sym(dense_funm, tridiag_sym)
+
+    def make_logdet_estimator(ndim, num_matvecs=40, samples=1000, clip=None):
         #
         # log det A = tr log A = (1/S) \sum_i^S z_i^T (log A) z_i
 
@@ -84,7 +99,7 @@ try:
         tridiag_sym = decomp.tridiag_sym(num_matvecs)
 
         # set up integrand for Lanczos quadrature
-        problem = funm.integrand_funm_sym_logdet(tridiag_sym)
+        problem = integrand_funm_sym_logdet(tridiag_sym, clip=clip)
 
         # generate `samples` random probes of shape
         sampler = stochtrace.sampler_normal(jnpzeros(ndim), num=samples)
@@ -1217,11 +1232,55 @@ class WoodburyKernel_varP(VariableKernel):
     # - Tt (Phi + Ft Nm F)^-1 T
     # with fixed y and T
 
+    def make_kernelsolve_vary(self, y, T):
+        # Tt Sigma y = Tt (N + F P Ft) y
+        # Tt Sigma^-1 y = Tt (Nm - Nm F (P^-1 + Ft Nm F)^-1 Ft Nm) y
+        #               = Tt Nm y - Tt Nm F (P^-1 + Ft Nm F)^-1 Ft Nm y
+        # Tt Sigma^-1 T = Tt Nm T - Tt Nm F (P^-1 + Ft Nm F)^-1 Ft Nm T
+
+        y_var = y
+        N_solve_1d = self.N.make_solve_1d()
+        Fmat, Tmat = jnparray(self.F), jnparray(T)
+
+        NmT, _ = self.N.solve_2d(T)
+        FtNmT  = self.F.T @ NmT
+        TtNmT  = T.T @ NmT
+
+        NmF, _ = self.N.solve_2d(self.F)
+        FtNmF = self.F.T @ NmF
+        TtNmF = T.T @ NmF
+
+        FtNmT, TtNmT = jnparray(FtNmT), jnparray(TtNmT)
+        FtNmF, TtNmF = jnparray(FtNmF), jnparray(TtNmF)
+        P_var_inv = self.P_var.make_inv()
+
+        def kernelsolve(params):
+            yp = y_var(params)
+            Nmy, _ = N_solve_1d(yp)
+
+            FtNmy  = Fmat.T @ Nmy
+            TtNmy  = Tmat.T @ Nmy
+
+            Pinv, _ = P_var_inv(params)
+            cf = matrix_factor(Pinv + FtNmF)
+
+            TtSy = TtNmy - TtNmF @ matrix_solve(cf, FtNmy)
+            TtST = TtNmT - TtNmF @ matrix_solve(cf, FtNmT)
+
+            return TtSy, TtST
+
+        kernelsolve.params = sorted(y.params + P_var_inv.params)
+
+        return kernelsolve
+
     def make_kernelsolve(self, y, T):
         # Tt Sigma y = Tt (N + F P Ft) y
         # Tt Sigma^-1 y = Tt (Nm - Nm F (P^-1 + Ft Nm F)^-1 Ft Nm) y
         #               = Tt Nm y - Tt Nm F (P^-1 + Ft Nm F)^-1 Ft Nm y
         # Tt Sigma^-1 T = Tt Nm T - Tt Nm F (P^-1 + Ft Nm F)^-1 Ft Nm T
+
+        if callable(y):
+            return self.make_kernelsolve_vary(y, T)
 
         Nmy, _ = self.N.solve_1d(y) if y.ndim == 1 else self.N.solve_2d(y)
         FtNmy  = self.F.T @ Nmy
@@ -1275,7 +1334,7 @@ class WoodburyKernel_varP(VariableKernel):
             ytXy = FtNmy.T @ matrix_solve(cf, FtNmy)
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
-        kernel.params = y.params + P_var_inv.params
+        kernel.params = sorted(y.params + P_var_inv.params)
 
         return kernel
 
