@@ -13,8 +13,6 @@ import jax.numpy as jnp
 from . import matrix
 from . import const
 
-from .solar import theta_impact, dm_solar
-
 # residuals
 
 def residuals(psr):
@@ -660,6 +658,7 @@ def make_timeinterpbasis_chromatic(start_time=None, order=1, idx=0, fref=1400.0)
 
 def make_timeinterpbasis_solar(start_time=None, order=1):
     timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
+    from .solar import theta_impact, dm_solar
 
     def timeinterpbasis_solar(psr, nmodes, T):
         F = timeinterpbasis_achrom(psr, nmodes, T)
