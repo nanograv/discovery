@@ -13,6 +13,7 @@ import jax.numpy as jnp
 from . import matrix
 from . import const
 
+from .solar import theta_impact, dm_solar
 
 # residuals
 
@@ -657,6 +658,17 @@ def make_timeinterpbasis_chromatic(start_time=None, order=1, idx=0, fref=1400.0)
         
     return timeinterpbasis_chrom
 
+def make_timeinterpbasis_solar(start_time=None, order=1):
+    timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
+
+    def timeinterpbasis_solar(psr, nmodes, T):
+        F = timeinterpbasis_achrom(psr, nmodes, T)
+        theta, R_earth, _, _ = theta_impact(psr)
+        dm_sol_wind = dm_solar(1.0, theta, R_earth)
+        dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
+        return dt_DM[:, None] * F  # chromatic modulation from Sun
+    return timeinterpbasis_solar
+
 def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
     if not (isinstance(oversample, int) and isinstance(fmax_factor, int) and isinstance(cutoff, int)):
         raise ValueError('psd2cov: oversample, fmax_factor and cutoff must be integers.')
@@ -697,10 +709,20 @@ def makegp_fftcov(psr, prior, components, T=None, t0=None, order=1, oversample=3
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=make_timeinterpbasis(start_time=t0, order=order), common=common, name=name)
 
-def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP', idx=2, fref=1400.0):
+def makegp_fftcov_dm(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP_dm', idx=2, fref=1400.0):
     T = getspan(psr) if T is None else T
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=make_timeinterpbasis_chromatic(start_time=t0, order=order, idx=idx, fref=fref), common=common, name=name)
+
+def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP_chrom', idx=4, fref=1400.0):
+    T = getspan(psr) if T is None else T
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
+                          components, T=T, fourierbasis=make_timeinterpbasis_chromatic(start_time=t0, order=order, idx=idx, fref=fref), common=common, name=name)
+
+def makegp_fftcov_solar(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP_solar'):
+    T = getspan(psr) if T is None else T
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), 
+                          components, T=T, fourierbasis=make_timeinterpbasis_solar(start_time=t0, order=order), common=common, name=name)
 
 def makecommongp_fftcov(psrs, prior, components, T, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], vector=False, name='fftcovCommonGP'):
     return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
