@@ -489,7 +489,8 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
     return gp
 
 
-def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'],  name='fourierGlobalGP'):
+def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourierbasis, means=None, common=[], exclude=['f', 'df'],
+                         name='fourierGlobalGP', meansname='meanFourierGlobalGP'):
     priors = priors if isinstance(priors, list) else [priors]
     orfs   = orfs   if isinstance(orfs, list)   else [orfs]
 
@@ -566,18 +567,21 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, means=None, fourierb
     if means is not None:
         margspec = inspect.getfullargspec(means)
         margs = margspec.args + [arg for arg in margspec.kwonlyargs if arg not in margspec.kwonlydefaults]
-        margmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}') +
-                        (f'({components})' if (margspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
-                   for arg in margs if not hasattr(psrs[0], arg) and arg not in exclude}
 
-        psrpars = {arg: matrix.jnparray([getattr(psr, arg) for psr in psrs])
-                   for arg in margspec.args if hasattr(psrs[0], arg)}
+        # parameters carried by the pulsar objects (e.g., pos), should be at the beginning of function
+        psrpars = [{arg: getattr(psr, arg) for arg in margspec.args if hasattr(psrs[0], arg) and arg not in exclude}
+                   for psr in psrs]
 
-        vmeanfunc = jax.vmap(means, in_axes=([None] * 2 + [0] * len(psrpars) + [None] * len(margmap)))
+        # other means parameters, either common or pulsar-specific
+        margmaps = [{arg: (f'{meansname}_{arg}' if f'{meansname}_{arg}' in common else f'{psr.name}_{meansname}_{arg}') +
+                     (f'({components})' if (margspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
+                     for arg in margs if not hasattr(psr, arg) and arg not in exclude}
+                    for psr in psrs]
 
         def meanfunc(params):
-            return vmeanfunc(f, df, *psrpars.values(), *[params[argname] for arg, argname in margmap.items()]).flatten()
-        meanfunc.params = sorted(margmap.values())
+            return jnp.concatenate([means(f, df, *psrpar.values(), **{arg: params[argname] for arg, argname in margmap.items()})
+                                    for psrpar, margmap in zip(psrpars, margmaps)])
+        meanfunc.params = sorted(set.union(*[set(margmap.values()) for margmap in margmaps]))
 
         gp.means = meanfunc
 
