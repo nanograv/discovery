@@ -338,8 +338,6 @@ def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fouri
         margspec = inspect.getfullargspec(mean)
         margs = margspec.args + [arg for arg in margspec.kwonlyargs if arg not in margspec.kwonlydefaults]
         margmap = {arg: (arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
-#                        won't work here since components already applies to frequencies
-#                        + (f'({components})' if (margspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
                    for arg in margs if not hasattr(psr, arg) and arg not in exclude}
 
         psrpars = {arg: getattr(psr, arg) for arg in margspec.args if hasattr(psr, arg)}

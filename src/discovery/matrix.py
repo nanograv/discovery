@@ -140,6 +140,13 @@ class ConstantGP:
 class VariableGP:
     def __init__(self, Phi, F):
         self.Phi, self.F = Phi, F
+    @property
+    def params(self):
+        param_set = set()
+        for part in [self.Phi, self.F]:
+            if hasattr(part, 'params'):
+                param_set.update(part.params)
+        return sorted(param_set)
 
 
 # note that all factories that return a GlobalVariableGP should define its `index`

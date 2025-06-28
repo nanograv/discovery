@@ -91,10 +91,27 @@ class PulsarLikelihood:
 
         self.y, self.delay, self.N = y, delay, vsm
 
+        self.all_params = []
+
+        # collect from noise
+        if hasattr(self.N, 'params'):
+            self.all_params.extend(self.N.params)
+
+        # collect from GPs
+        for gp in cgps + vgps:
+            for attr in [gp, getattr(gp, 'Phi', None), getattr(gp, 'F', None), getattr(gp, 'mean', None)]:
+                if hasattr(attr, 'params'):
+                    self.all_params.extend(attr.params)
+
+        # deduplicate and assign
+        self.all_params = sorted(set(self.all_params))
+
         # a bit kludgy, we'll find a better way
         for gp in cgps + vgps:
             if hasattr(gp, 'name'):
                 self.name = gp.name
+
+        self.logL.params = sorted(set(self.all_params))
 
     # allow replacement of residuals
     def __setattr__(self, name, value):
