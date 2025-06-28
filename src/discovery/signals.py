@@ -646,12 +646,14 @@ def make_timeinterpbasis(start_time=None, order=1):
 
     return timeinterpbasis
 
-def make_timeinterpbasis_chromatic(start_time=None, order=1, idx=0, fref=1400.0):
+def make_timeinterpbasis_chromatic(start_time=None, order=1, fref=1400.0):
     timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
 
     def timeinterpbasis_chrom(psr, nmodes, T):
         t_coarse, dt_coarse, Bmat = timeinterpbasis_achrom(psr, nmodes, T)
-        scale = (fref / psr.freqs) ** idx
+        scale = (fref / psr.freqs)
+        def Bmat(alpha):
+            return (scale[:, None]**alpha) * Bmat
         return t_coarse, dt_coarse, scale[:, None] * Bmat 
         
     return timeinterpbasis_chrom
