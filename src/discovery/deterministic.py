@@ -29,17 +29,19 @@ def fpc_fast(pos, gwtheta, gwphi):
 
 
 def makedelay_binary(pulsarterm=True):
-    def delay_binary(toas, pos, log10_h0, log10_f0, ra, dec, inc, psi, phi_earth, phi_psr):
+    def delay_binary(toas, pos, log10_h0, log10_f0, ra, sindec, cosinc, psi, phi_earth, phi_psr):
         """BBH residuals from Ellis et. al 2012, 2013"""
 
         h0 = 10**log10_h0
         f0 = 10**log10_f0
 
+        dec, inc = jnp.arcsin(sindec), jnp.arccos(cosinc)
+
         # calculate antenna pattern (note: pos is pulsar sky position unit vector)
         fplus, fcross = fpc_fast(pos, 0.5 * jnp.pi - dec, ra)  # careful with dec -> gwtheta conversion
 
         if pulsarterm:
-            phi_avg  = 0.5 * (phi_earth + phi_psr)
+            phi_avg = 0.5 * (phi_earth + phi_psr)
         else:
             phi_avg = phi_earth
 
@@ -109,11 +111,13 @@ def cos2comp(f, df, A, f0, phi, t0):
 
 
 def makefourier_binary(pulsarterm=True):
-    def fourier_binary(f, df, toas0, pos, log10_h0, log10_f0, ra, dec, inc, psi, phi_earth, phi_psr):
+    def fourier_binary(f, df, mintoa, pos, log10_h0, log10_f0, ra, sindec, cosinc, psi, phi_earth, phi_psr):
         """BBH residuals from Ellis et. al 2012, 2013"""
 
         h0 = 10**log10_h0
         f0 = 10**log10_f0
+
+        dec, inc = jnp.arcsin(sindec), jnp.arccos(cosinc)
 
         # calculate antenna pattern (note: pos is pulsar sky position unit vector)
         fplus, fcross = fpc_fast(pos, 0.5 * jnp.pi - dec, ra)  # careful with dec -> gwtheta conversion
@@ -125,8 +129,8 @@ def makefourier_binary(pulsarterm=True):
 
         tref = 86400.0 * 51544.5  # MJD J2000 in seconds
 
-        cphase = cos2comp(f, df, 1.0, f0, phi_avg - 2.0 * jnp.pi * f0 * tref, toas0)
-        sphase = cos2comp(f, df, 1.0, f0, phi_avg - 2.0 * jnp.pi * f0 * tref - 0.5*jnp.pi, toas0)
+        cphase = cos2comp(f, df, 1.0, f0, phi_avg - 2.0 * jnp.pi * f0 * tref, mintoa)
+        sphase = cos2comp(f, df, 1.0, f0, phi_avg - 2.0 * jnp.pi * f0 * tref - 0.5*jnp.pi, mintoa)
 
         # fix this for no pulsarterm
 

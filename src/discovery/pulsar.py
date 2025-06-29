@@ -103,8 +103,8 @@ class Pulsar:
         if 'noisedict' in meta:
             setattr(self, 'noisedict', meta['noisedict'])
 
-        setattr(self, 'toas0', np.min(self.toas))
-        setattr(self, 'toas1', np.max(self.toas))
+        setattr(self, 'mintoa', np.min(self.toas))
+        setattr(self, 'maxtoa', np.max(self.toas))
 
         return self
 
