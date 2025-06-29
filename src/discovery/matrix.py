@@ -132,6 +132,8 @@ class VariableKernel(Kernel):
 class GP:
     pass
 
+class NoiseMatrix:
+    pass
 
 class ConstantGP:
     def __init__(self, Phi, F):
@@ -374,7 +376,7 @@ def NoiseMatrix12D_var(getN):
 
 # consider passing inv as a 1D object
 
-class NoiseMatrix1D_novar(ConstantKernel):
+class NoiseMatrix1D_novar(NoiseMatrix, ConstantKernel):
     def __init__(self, N):
         self.N = N
         self.ld = np.logdet(N)
@@ -529,7 +531,7 @@ def SM_12d_indexed(y, T, N, Uind, P):
     return c[0,:], c[1:,:], jnp.sum(jnp.log(N)) + jnp.sum(vsmdp_ind(Np, P, Uind))
 
 
-class NoiseMatrixSM_novar(ConstantKernel):
+class NoiseMatrixSM_novar(NoiseMatrix, ConstantKernel):
     def __init__(self, N, F, P):
         self.N, self.F, self.P = N, F, P
 
@@ -559,7 +561,7 @@ class NoiseMatrixSM_novar(ConstantKernel):
 
         return solve_2d
 
-class NoiseMatrixSM_var(VariableKernel):
+class NoiseMatrixSM_var(NoiseMatrix, VariableKernel):
     def __init__(self, getN, F, getP):
         self.getN, self.F, self.getP = getN, F, getP
         self.params = sorted(set(self.getN.params + self.getP.params))
@@ -632,7 +634,7 @@ class NoiseMatrixSM_var(VariableKernel):
 
 
 
-class NoiseMatrix1D_var(VariableKernel):
+class NoiseMatrix1D_var(NoiseMatrix, VariableKernel):
     def __init__(self, getN):
         self.getN = getN
         self.params = getN.params
@@ -721,7 +723,7 @@ class NoiseMatrix1D_var(VariableKernel):
         return solve_2d
 
 
-class NoiseMatrix2D_novar(ConstantKernel):
+class NoiseMatrix2D_novar(NoiseMatrix, ConstantKernel):
     def __init__(self, N):
         self.N = N
 
@@ -732,7 +734,7 @@ class NoiseMatrix2D_novar(ConstantKernel):
         return self.invN, self.ld
 
 
-class NoiseMatrix2D_var(VariableKernel):
+class NoiseMatrix2D_var(NoiseMatrix, VariableKernel):
     def __init__(self, getN):
         self.getN = getN
         self.params = getN.params
@@ -788,7 +790,7 @@ def VectorNoiseMatrix12D_var(getN):
         return VectorNoiseMatrix1D_var(getN)
 
 
-class VectorNoiseMatrix1D_var(VariableKernel):
+class VectorNoiseMatrix1D_var(NoiseMatrix, VariableKernel):
     def __init__(self, getN):
         self.getN = getN
         self.params = getN.params
@@ -822,7 +824,7 @@ class VectorNoiseMatrix1D_var(VariableKernel):
         return inv
 
 
-class VectorNoiseMatrix2D_var(VariableKernel):
+class VectorNoiseMatrix2D_var(NoiseMatrix, VariableKernel):
     def __init__(self, getN):
         self.getN = getN
         self.params = getN.params
@@ -1130,6 +1132,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
         return kernelproduct
 
+
     def make_kernelproduct_gpcomponent(self, y):
         # -0.5 (y - F a)^T N^-1 (y - F a) - 0.5 a^T P^-1 a
 
@@ -1184,6 +1187,31 @@ class WoodburyKernel_varNP(VariableKernel):
 
         kernelsolve.params = sorted(self.N.params + P_var_inv.params)
 
+        return kernelsolve
+
+    def make_kernelsolve_simple(self, y):
+        # for when there is only one
+        # GP, and it hasn't been marginalized over
+        P_var = self.P_var
+        Nvar = self.N
+        F = jnparray(self.F)
+        y = jnparray(y)
+        P_var_inv = P_var.make_inv()
+
+        Nvar_solve_2d = Nvar.make_solve_2d()
+        def kernelsolve(params):
+            NmF, ldN = Nvar_solve_2d(params, F)
+            FtNm = NmF.T
+            FtNmy = FtNm @ y
+            FtNmF = F.T @ NmF
+            Pinv, ldP = P_var_inv(params)
+            Sigma = Pinv + FtNmF
+            ch = matrix_factor(Sigma)
+            b_mean = matrix_solve(ch, FtNmy)
+
+            return b_mean, Sigma
+
+        kernelsolve.params = sorted(self.N.params + P_var.params)
         return kernelsolve
 
 
