@@ -1645,7 +1645,8 @@ class WoodburyKernel_varN(VariableKernel):
             NmF, ldN = N_solve_2d(params, F)
             NmFty = NmF.T @ y
 
-            cf = matrix_factor(Pinv + F.T @ NmF)
+            epsilon = 1e-8 * jnp.eye(Pinv.shape[0])
+            cf = matrix_factor(Pinv + F.T @ NmF + epsilon)
             ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
 
             return N_solve_1d(params, y)[0] - NmF @ matrix_solve(cf, NmFty), ld
@@ -1671,7 +1672,8 @@ class WoodburyKernel_varN(VariableKernel):
             NmFl, ldN = N_solve_2d(params, Fl)
             NmFltFr = NmFl.T @ Fr
 
-            cf = matrix_factor(Pinv + Fl.T @ NmFl)
+            epsilon = 1e-8 * jnp.eye(Pinv.shape[0])
+            cf = matrix_factor(Pinv + Fl.T @ NmFl + epsilon)
             ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
 
             return N_solve_2d(params, Fr)[0] - NmFl @ matrix_solve(cf, NmFltFr), ld
