@@ -355,7 +355,8 @@ def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fouri
 
 
 # for use in ArrayLikelihood. Same process for all pulsars.
-def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], vector=False, name='fourierCommonGP'):
+def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, means=None, common=[], exclude=['f', 'df'], vector=False,
+                         name='fourierCommonGP', meansname='meanFourierCommonGP'):
     argspec = inspect.getfullargspec(prior)
 
     if vector:
@@ -397,6 +398,25 @@ def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, 
     gp = matrix.VariableGP(matrix.VectorNoiseMatrix12D_var(priorfunc), fmats)
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})': slice(len(f)*i,len(f)*(i+1))
                 for i, psr in enumerate(psrs)}
+
+    if means is not None:
+        margspec = inspect.getfullargspec(means)
+        margs = margspec.args + [arg for arg in margspec.kwonlyargs if arg not in margspec.kwonlydefaults]
+
+        # parameters carried by the pulsar objects (e.g., pos), should be at the beginning of function
+        psrpars = [{arg: getattr(psr, arg) for arg in margspec.args if hasattr(psrs[0], arg) and arg not in exclude}
+                   for psr in psrs]
+
+        # other means parameters, either common or pulsar-specific
+        margmaps = [{arg: f'{meansname}_{arg}' if (f'{meansname}_{arg}' in common or arg in common) else f'{psr.name}_{meansname}_{arg}'
+                     for arg in margs if not hasattr(psr, arg) and arg not in exclude} for psr in psrs]
+
+        def meanfunc(params):
+            return matrix.jnparray([means(f, df, *psrpar.values(), **{arg: params[argname] for arg, argname in margmap.items()})
+                                    for psrpar, margmap in zip(psrpars, margmaps)])
+        meanfunc.params = sorted(set.union(*[set(margmap.values()) for margmap in margmaps]))
+
+        gp.means = meanfunc
 
     return gp
 
@@ -547,10 +567,8 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
                    for psr in psrs]
 
         # other means parameters, either common or pulsar-specific
-        margmaps = [{arg: (f'{meansname}_{arg}' if f'{meansname}_{arg}' in common else f'{psr.name}_{meansname}_{arg}') +
-                     (f'({components})' if (margspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
-                     for arg in margs if not hasattr(psr, arg) and arg not in exclude}
-                    for psr in psrs]
+        margmaps = [{arg: f'{meansname}_{arg}' if (f'{meansname}_{arg}' in common or arg in common) else f'{psr.name}_{meansname}_{arg}'
+                     for arg in margs if not hasattr(psr, arg) and arg not in exclude} for psr in psrs]
 
         def meanfunc(params):
             return jnp.concatenate([means(f, df, *psrpar.values(), **{arg: params[argname] for arg, argname in margmap.items()})

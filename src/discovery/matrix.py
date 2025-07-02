@@ -1732,6 +1732,8 @@ class VectorWoodburyKernel_varP(VariableKernel):
         if any(callable(y) for y in ys):
             return self.make_kernelproduct_vary(ys)
 
+        kmeans = getattr(self, 'means', None)
+
         NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs)])
         FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
 
@@ -1756,9 +1758,18 @@ class VectorWoodburyKernel_varP(VariableKernel):
             ytXy = jnp.sum(NmFty * matrix_solve(cf, NmFty)) # was NmFty.T @ jsp.linalg.cho_solve(...)
 
             i1, i2 = jnp.diag_indices(cf[0].shape[1], ndim=2) # it's hard to vectorize numpy.diag!
-            return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + jnp.sum(ldP) + matrix_norm * jnp.logdet(cf[0][:,i1,i2]))
+            logp = -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + jnp.sum(ldP) + matrix_norm * jnp.logdet(cf[0][:,i1,i2]))
 
-        kernelproduct.params = P_var_inv.params
+            if kmeans is not None:
+                a0 = kmeans(params)   # (npsr, ngp)
+                FtNmFa0 = jax.vmap(jnp.matmul)(FtNmF, a0)
+                # FtNmFa0 = jnp.einsum('kij,kj->ki', FtNmF, a0)  # (npsr, ngp, ngp) @ (npsr, ngp)
+                logp = logp - jnp.sum(0.5 * (FtNmFa0 - NmFty) * (a0 - matrix_solve(cf, FtNmFa0))) # (npsr, ngp) * (npsr, ngp)
+
+            return logp
+
+        params_kmeans = kmeans.params if kmeans is not None else []
+        kernelproduct.params = sorted(P_var_inv.params + params_kmeans)
 
         return kernelproduct
 
