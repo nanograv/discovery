@@ -669,6 +669,21 @@ def make_timeinterpbasis(start_time=None, order=1):
 
     return timeinterpbasis
 
+def make_dmtimeinterpbasis(alpha=2.0, tndm=False, start_time=None, order=1):
+    basis = make_timeinterpbasis(start_time, order)
+
+    def dmbasis(psr, components, T=None, fref=1400.0):
+        t_coarse, dt_coarse, Bmat = basis(psr, components, T)
+
+        if tndm:
+            Dm = (fref / psr.freqs) ** alpha * np.sqrt(12.0) * np.pi / 1400.0 / 1400.0 / 2.41e-4
+        else:
+            Dm = (fref / psr.freqs) ** alpha
+
+        return t_coarse, dt_coarse, Bmat * Dm[:, None]
+
+    return dmbasis
+
 def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
     if not (isinstance(oversample, int) and isinstance(fmax_factor, int) and isinstance(cutoff, int)):
         raise ValueError('psd2cov: oversample, fmax_factor and cutoff must be integers.')
@@ -704,18 +719,21 @@ def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
 
     return covmat
 
-def makegp_fftcov(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP'):
+def makegp_fftcov(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, fourierbasis=None, common=[], name='fftcovGP'):
     T = getspan(psr) if T is None else T
-    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
-                          components, T=T, fourierbasis=make_timeinterpbasis(start_time=t0, order=order), common=common, name=name)
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), components, T=T,
+                          fourierbasis=(make_timeinterpbasis(start_time=t0, order=order) if fourierbasis is None else fourierbasis),
+                          common=common, name=name)
 
-def makecommongp_fftcov(psrs, prior, components, T, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], vector=False, name='fftcovCommonGP'):
-    return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
-                                components, T, fourierbasis=make_timeinterpbasis(start_time=t0, order=order), common=common, vector=vector, name=name)
+def makecommongp_fftcov(psrs, prior, components, T, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, fourierbasis=None, common=[], vector=False, name='fftcovCommonGP'):
+    return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), components, T,
+                                fourierbasis=(make_timeinterpbasis(start_time=t0, order=order) if fourierbasis is None else fourierbasis),
+                                common=common, vector=vector, name=name)
 
 def makeglobalgp_fftcov(psrs, prior, orf, components, T, t0, order=1, oversample=3, fmax_factor=1, cutoff=1, name='fftcovGlobalGP'):
-    return makeglobalgp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), orf,
-                                components, T, fourierbasis=make_timeinterpbasis(start_time=t0, order=order), name=name)
+    return makeglobalgp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), orf, components, T,
+                                fourierbasis=(make_timeinterpbasis(start_time=t0, order=order) if fourierbasis is None else fourierbasis),
+                                name=name)
 
 
 # time-interpolated covariance matrix from time-domain

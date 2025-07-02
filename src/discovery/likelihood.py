@@ -548,7 +548,6 @@ class ArrayLikelihood:
         self.vsm.means = getattr(commongp, 'means', None)
 
         if self.globalgp is None:
-            print("Got", self.vsm.means)
             loglike = self.vsm.make_kernelproduct(self.ys)
         else:
             P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
