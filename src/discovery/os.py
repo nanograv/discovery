@@ -22,6 +22,9 @@ def monopole_orfa(z):
     return 1.0 + 1.0e-6 * matrix.jnp.allclose(z, 1.0)
 
 
+def make2d(array):
+    return matrix.jnp.diag(array) if array.ndim == 1 else array
+
 class OS:
     def __init__(self, gbl):
         self.psls = gbl.psls
@@ -39,6 +42,66 @@ class OS:
     @functools.cached_property
     def params(self):
         return self.os_rhosigma.params
+
+#    def sample_rhosigma(self, key, params, n=1, orf=hd_orfa):
+    def sample_rhosigma(self, params, orf=hd_orfa):
+        Phi = self.psls[0].gw.Phi.getN(params)
+        sPhi = matrix.jnp.sqrt(Phi)
+
+        Nmats, Fmats, Pmats, Tmats = zip(*[(psl.N.N.N, psl.N.F, psl.N.P_var.getN(params), psl.gw.F) for psl in self.psls])
+
+        Ks = [matrix.WoodburyKernel_novar(matrix.NoiseMatrix1D_novar(Nmat), Fmat, matrix.NoiseMatrix1D_novar(Pmat))
+              for Nmat, Fmat, Pmat in zip(Nmats, Fmats, Pmats)]
+        K1s = [K.make_solve_1d() for K in Ks]
+
+        TtKmTs = [Tmat.T @ K.solve_2d(Tmat)[0] for K, Tmat in zip(Ks, Tmats)]
+        PsTtKmFsPs = [sPhi[:,matrix.jnp.newaxis] * (Tmat.T @ K.solve_2d(Fmat)[0]) * matrix.jnp.sqrt(Pmat)[matrix.jnp.newaxis,:]
+                      for K, Tmat, Fmat, Pmat in zip(Ks, Tmats, Fmats, Pmats)]
+        PsTts = [sPhi[:,matrix.jnp.newaxis] * Tmat.T for Tmat in Tmats]
+
+        Ds = [sPhi[:,matrix.jnp.newaxis] * TtKmT * sPhi[matrix.jnp.newaxis,:] for TtKmT in TtKmTs]
+        bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+
+        cnt, iNs, iPs = 0, [], []
+        for Nmat in Nmats:
+            iNs.append(slice(cnt, cnt + Nmat.shape[0]))
+            cnt += Nmat.shape[0]
+        for Fmat in Fmats:
+            iPs.append(slice(cnt, cnt + Fmat.shape[1]))
+            cnt += Fmat.shape[1]
+
+        # @jax.jit
+        # @jax.vmap
+        # def makets(keys):
+        #     uks = [PsTt @ K1(matrix.jnp.sqrt(Nmat) * matrix.jnpnormal(key, Nmat.shape[0]))[0] +
+        #            PsTtKmFsP @ matrix.jnpnormal(key, Fmat.shape[1])
+        #            for key, K1, Nmat, Fmat, PsTt, PsTtKmFsP in zip(keys, K1s, Nmats, Fmats, PsTts, PsTtKmFsPs)]
+
+        #     return matrix.jnparray([matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in self.pairs])
+
+        # ts = makets(jax.random.split(key, (n, len(self.psls))))
+
+        def xs2snrs(xs):
+            uks = [PsTt @ K1(matrix.jnp.sqrt(Nmat) * xs[iN])[0] + PsTtKmFsP @ xs[iP]
+                   for PsTt, K1, Nmat, iN, PsTtKmFsP, iP in zip(PsTts, K1s, Nmats, iNs, PsTtKmFsPs, iPs)]
+
+            # use with matrix.jnpnormal(key, cnt)
+            ts = matrix.jnparray([matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in self.pairs])
+
+            gwnorm = 10**(2.0 * params[self.gwpar])
+            rhos = gwnorm * (matrix.jnparray(ts) / matrix.jnparray(bs))
+            sigmas = gwnorm / matrix.jnp.sqrt(matrix.jnparray(bs))
+
+            orfs = orf(matrix.jnparray(self.angles))
+
+            os = matrix.jnp.sum(rhos * orfs / sigmas**2) / matrix.jnp.sum(orfs**2 / sigmas**2)
+            os_sigma = 1.0 / matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 / sigmas**2))
+            snr = os / os_sigma
+
+            return snr
+        xs2snrs.cnt = cnt
+
+        return xs2snrs
 
     @functools.cached_property
     def os_rhosigma(self):
@@ -73,12 +136,12 @@ class OS:
 
                 bs = [matrix.jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
             else:
-                U = matrix.jnp.linalg.cholesky(N, upper=True) # N = U^T U
+                U = matrix.jnp.linalg.cholesky(N, upper=True) # N = U^T U, so y = U^T x
 
                 uks = [U @ k[0] for k in ks]
                 ds = [U @ k[1] @ U.T for k in ks]
 
-                ts  = [matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in pairs]
+                ts = [matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in pairs]
                 bs = [matrix.jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
 
                 # slower:
