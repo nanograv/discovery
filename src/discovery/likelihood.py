@@ -132,8 +132,8 @@ class PulsarLikelihood:
         # if there's only one woodbury to do (N + T Phi T)
         # as opposed to (N + T Phi T + ... + T Phi T)
         if isinstance(self.N.N, matrix.NoiseMatrix):
+            ksolve = self.N.make_kernelsolve_simple(self.y)
             def cond(params):
-                ksolve = self.N.make_kernelsolve_simple(self.y)
                 mu, Sigma = ksolve(params)
                 return mu, matrix.jsp.linalg.cho_factor(Sigma, lower=True)
             cond.params = sorted(self.N.N.params + self.N.P_var.params)
