@@ -1764,7 +1764,7 @@ class VectorWoodburyKernel_varP(VariableKernel):
                 a0 = kmeans(params)   # (npsr, ngp)
                 FtNmFa0 = jax.vmap(jnp.matmul)(FtNmF, a0)
                 # FtNmFa0 = jnp.einsum('kij,kj->ki', FtNmF, a0)  # (npsr, ngp, ngp) @ (npsr, ngp)
-                logp = logp - jnp.sum(0.5 * (FtNmFa0 - NmFty) * (a0 - matrix_solve(cf, FtNmFa0))) # (npsr, ngp) * (npsr, ngp)
+                logp = logp - jnp.sum( (0.5 * FtNmFa0 - NmFty) * (a0 - matrix_solve(cf, FtNmFa0)) ) # (npsr, ngp) * (npsr, ngp)
 
             return logp
 
