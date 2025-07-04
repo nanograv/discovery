@@ -35,10 +35,10 @@ priordict_standard = {
 def gps2commongp(gps):
     priors = [gp.Phi.getN for gp in gps]
     pmax = len(gps)
-    
+
     ns = [gp.F.shape[1] for gp in gps]
-    nmax = max(ns)    
-    
+    nmax = max(ns)
+
     def prior(params):
         yp = matrix.jnp.full((pmax, nmax), 1e-40)
 
@@ -46,8 +46,8 @@ def gps2commongp(gps):
             yp = yp.at[i, :ns[i]].set(p(params))
 
         return yp
-    prior.params = sorted(set([par for p in priors for par in p.params])) 
-    
+    prior.params = sorted(set([par for p in priors for par in p.params]))
+
     Fs = [np.pad(gp.F, [(0,0), (0,nmax - gp.F.shape[1])]) for gp in gps]
 
     return matrix.VariableGP(matrix.VectorNoiseMatrix1D_var(prior), Fs)
@@ -56,12 +56,12 @@ def gps2commongp(gps):
 def _makegps(psr, Tred):
     return (([signals.makegp_fourier(psr, signals.powerlaw,
                                      components=psr.noisedict[psr.name + '_dm_gp_components'], T=signals.getspan(psr),
-                                     fourierbasis=signals.make_dmfourierbasis(alpha=2.0, tndm=False), name='dm_gp')]
+                                     fourierbasis=signals.make_fourierbasis_dm(tndm=False), name='dm_gp')]
              if psr.noisedict[psr.name + '_dm_gp_components'] else []) +
             ([signals.makegp_fourier(psr, signals.powerlaw,
                                      components=psr.noisedict[psr.name + '_chrom_components'], T=signals.getspan(psr),
-                                     fourierbasis=signals.make_dmfourierbasis(alpha=4.0, tndm=False), name='chrom_gp')]
-             if psr.noisedict[psr.name + '_chrom_components'] else []) + 
+                                     fourierbasis=signals.make_fourierbasis_chrom(alpha=4.0, tndm=False), name='chrom_gp')]
+             if psr.noisedict[psr.name + '_chrom_components'] else []) +
             ([signals.makegp_fourier(psr, signals.powerlaw,
                                      components=psr.noisedict[psr.name + '_red_components'], T=Tred, name='red_noise')]
              if psr.noisedict[psr.name + '_red_components'] else []))
@@ -111,7 +111,7 @@ def makemodel_hd(psrs, gw_components=30, array=False):
         cgp = gps2commongp([matrix.CompoundGP(_makegps(psr, tspan)) for psr in psrs])
         ggp = signals.makeglobalgp_fourier(psrs, signals.powerlaw, signals.hd_orf, components=gw_components, T=tspan, name='gw_hd')
 
-        return likelihood.ArrayLikelihood(psls, commongp=cgp, globalgp=ggp)        
+        return likelihood.ArrayLikelihood(psls, commongp=cgp, globalgp=ggp)
     else:
         psls = [likelihood.PulsarLikelihood([psr.residuals,
                                             signals.makenoise_measurement(psr, psr.noisedict),

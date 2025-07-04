@@ -298,14 +298,14 @@ def fourierbasis(psr, components, T=None):
 
     return np.repeat(f, 2), np.repeat(df, 2), fmat
 
-def dmfourierbasis(psr, components, T=None, fref=1400.0):
+def fourierbasis_dm(psr, components, T=None, fref=1400.0):
     f, df, fmat = fourierbasis(psr, components, T)
 
     Dm = (fref / psr.freqs)**2
 
     return f, df, fmat * Dm[:, None]
 
-def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
+def fourierbasis_chrom(psr, components, T=None, fref=1400.0):
     f, df, fmat = fourierbasis(psr, components, T)
 
     fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
@@ -314,7 +314,27 @@ def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
 
     return f, df, fmatfunc
 
-def make_dmfourierbasis(alpha=2.0, tndm=False):
+def fourierbasis_band_low(psr, components, T=None, fref=1400.0):
+    f, df, fmat = fourierbasis(psr, components, T)
+
+    fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
+    def fmatfunc(fcutoff):
+        band_filter = jnp.heaviside(fcutoff - psr.freqs, 0.0) # 0.0 for freqs >= fcutoff
+        return fmat * fnorm[:, None] * band_filter[:, None]
+
+    return f, df, fmatfunc
+
+def fourierbasis_band_low_alpha(psr, components, T=None, fref=1400.0):
+    f, df, fmat = fourierbasis(psr, components, T)
+
+    fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
+    def fmatfunc(fcutoff, alpha):
+        band_filter = jnp.heaviside(fcutoff - psr.freqs, 0.0) # 0.0 for freqs >= fcutoff
+        return fmat * fnorm[:, None]**alpha * band_filter[:, None]
+
+    return f, df, fmatfunc
+
+def make_fourierbasis_dm(alpha=2.0, tndm=False): #  DM fourier basis shouldn't have alpha
     def basis(psr, components, T=None, fref=1400.0):
         f, df, fmat = fourierbasis(psr, components, T)
 
@@ -326,6 +346,9 @@ def make_dmfourierbasis(alpha=2.0, tndm=False):
         return f, df, fmat * Dm[:, None]
 
     return basis
+
+def make_fourierbasis_chrom(alpha=4.0, tndm=False):
+    return make_fourierbasis_dm(alpha=alpha, tndm=tndm)
 
 def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], name='fourierGP'):
     argspec = inspect.getfullargspec(prior)
@@ -686,6 +709,32 @@ def make_timeinterpbasis_chromatic(start_time=None, order=1, fref=1400.0):
 
     return timeinterpbasis_chrom
 
+def make_timeinterpbasis_band(start_time=None, order=1, fref=1400.0):
+    timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
+
+    def timeinterpbasis_band(psr, nmodes, T):
+        t_coarse, dt_coarse, Bmat = timeinterpbasis_achrom(psr, nmodes, T)
+        scale = (fref / psr.freqs)
+        def Bmat_func(fcutoff):
+            band_filter = jnp.heaviside(fcutoff - psr.freqs, 0.0) # 0.0 for freqs >= fcutoff
+            return scale[:, None] * Bmat * band_filter[:, None]
+        return t_coarse, dt_coarse, Bmat_func
+
+    return timeinterpbasis_band
+
+def make_timeinterpbasis_band_alpha(start_time=None, order=1, fref=1400.0):
+    timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
+
+    def timeinterpbasis_band_alpha(psr, nmodes, T):
+        t_coarse, dt_coarse, Bmat = timeinterpbasis_achrom(psr, nmodes, T)
+        scale = (fref / psr.freqs)
+        def Bmat_func(fcutoff, alpha):
+            band_filter = jnp.heaviside(fcutoff - psr.freqs, 0.0) # 0.0 for freqs >= fcutoff
+            return scale[:, None]**alpha * Bmat * band_filter[:, None]  # 0.0 for freqs >= fcutoff
+        return t_coarse, dt_coarse, Bmat_func
+
+    return timeinterpbasis_band_alpha
+
 def make_timeinterpbasis_dm(start_time=None, order=1, fref=1400.0):
     timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
 
@@ -757,6 +806,16 @@ def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversa
     T = getspan(psr) if T is None else T
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=make_timeinterpbasis_chromatic(start_time=t0, order=order, fref=fref), common=common, name=name)
+
+def makegp_fftcov_band(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP_chrom', fref=1400.0):
+    T = getspan(psr) if T is None else T
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
+                          components, T=T, fourierbasis=make_timeinterpbasis_band(start_time=t0, order=order, fref=fref), common=common, name=name)
+
+def makegp_fftcov_band_alpha(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP_chrom', fref=1400.0):
+    T = getspan(psr) if T is None else T
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
+                          components, T=T, fourierbasis=make_timeinterpbasis_band_alpha(start_time=t0, order=order, fref=fref), common=common, name=name)
 
 def makegp_fftcov_solar(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP_solar'):
     T = getspan(psr) if T is None else T
