@@ -163,39 +163,26 @@ def makefourier_binary(pulsarterm=True):
 
     return fourier_binary
 
-def chromaticdelay(toas, freqs, t0, log10_Amp, log10_tau, idx):
-    toadays, invnormfreqs = toas / const.day, 1400.0 / freqs
-    dt = toadays - t0
-    
-    return matrix.jnp.where(dt > 0.0, -1.0 * (10**log10_Amp) * matrix.jnp.exp(-dt / (10**log10_tau)) * invnormfreqs**idx, 0.0)
+def chromatic_exponential(psr, fref=1400.0):
+    toas, fnorm = matrix.jnparray(psr.toas / const.day), matrix.jnparray(fref / psr.freqs)
 
-def make_chromaticdelay(psr):
-    toadays, invnormfreqs = matrix.jnparray(psr.toas / const.day), matrix.jnparray(1400.0 / psr.freqs)
-    
-    def decay(t0, log10_Amp, log10_tau, idx):
-        dt = toadays - t0
-        
-        return matrix.jnp.where(dt > 0.0, -1.0 * (10**log10_Amp) * matrix.jnp.exp(-dt / (10**log10_tau)) * invnormfreqs**idx, 0.0)
-        
-    return decay
+    def chrom_exp(t0, log10_Amp, log10_tau, alpha, sign_param):
+        return jnp.sign(sign_param) * 10**log10_Amp * jnp.exp(- (toas - t0) / 10**log10_tau) * fnorm**alpha * jnp.heaviside(toas - t0, 1.0)
 
-def make_chromatic_annualdelay(psr):
-    toas, invnormfreqs = matrix.jnparray(psr.toas), matrix.jnparray(1400.0 / psr.freqs)
-    
-    def delay(log10_Amp, phase, idx):
-        wf = (10**log10_Amp) * jnp.sin(2 * np.pi * const.fyr * toas + phase)
-        
-        return matrix.jnparray(wf * invnormfreqs ** idx)
-        
-    return delay
+    return chrom_exp
 
-def make_chromatic_gaussian(psr):
-    toadays, invnormfreqs = matrix.jnparray(psr.toas / const.day), matrix.jnparray(1400.0 / psr.freqs)
-    
-    def delay(t0, log10_Amp, sign_param, sigma, idx):
-        dt = toadays - t0
-        wf = (10**log10_Amp) * matrix.jnp.exp(-dt**2/2/sigma**2)
-        
-        return jnp.sign(sign_param) * matrix.jnparray(wf * invnormfreqs ** idx)
-        
-    return delay
+def chromatic_annual(psr, fref=1400.0):
+    toas, fnorm = matrix.jnparray(psr.toas / const.day), matrix.jnparray(fref / psr.freqs)
+
+    def chrom_annual(log10_Amp, phase, alpha):
+        return 10**log10_Amp * jnp.sin(2 * jnp.pi * const.fyr * toas + phase) * fnorm**alpha
+
+    return chrom_annual
+
+def chromatic_gaussian(psr, fref=1400.0):
+    toas, fnorm = matrix.jnparray(psr.toas / const.day), matrix.jnparray(fref / psr.freqs)
+
+    def chrom_gauss(t0, log10_Amp, sign_param, sigma, alpha):
+        return jnp.sign(sign_param) * 10**log10_Amp * jnp.exp(-(toas - t0)**2 / (2 * sigma**2)) * fnorm**alpha
+
+    return chrom_gauss
