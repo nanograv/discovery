@@ -72,24 +72,21 @@ def make_psr_gps_fftint(psr, max_cadence_days=14, red=True, dm=True, chrom=True,
 
 def make_common_gps_fourier(psrs, common_components=30, max_cadence_days=14, red=True, dm=True, chrom=True, sw=True, band=True, band_alpha=False):
     Tspan = signals.getspan(psrs)
-    compound_gp = [matrix.CompoundGP(make_psr_gps_fourier(psr, max_cadence_days=max_cadence_days, red=red, dm=dm, chrom=chrom, sw=sw, band=band, band_alpha=band_alpha) +
-                                     [signals.makegp_fourier(psr, signals.powerlaw, common_components, Tspan, common=['curn_log10_A', 'curn_gamma'], name='curn')])
-                   for psr in psrs]
     if not chrom and not band and not band_alpha:  # Static Fs, so we can use gps2commongp
-       return gps2commongp(compound_gp)
+       return gps2commongp([matrix.CompoundGP(make_psr_gps_fourier(psr, max_cadence_days=max_cadence_days, red=red, dm=dm, chrom=chrom, sw=sw, band=band, band_alpha=band_alpha) +
+                                              [signals.makegp_fourier(psr, signals.powerlaw, common_components, Tspan, common=['curn_log10_A', 'curn_gamma'], name='curn')])
+                            for psr in psrs])
     else:
-        return compound_gp  # Does not work yet
+        return # Does not work yet
 
 def make_common_gps_fftint(psrs, common_knots=61, max_cadence_days=14, red=True, dm=True, chrom=True, sw=True, band=True, band_alpha=False):
     Tspan = signals.getspan(psrs)
-    compound_gp = [matrix.CompoundGP(make_psr_gps_fftint(psr, max_cadence_days=max_cadence_days, red=red, dm=dm, chrom=chrom, sw=sw, band=band, band_alpha=band_alpha) +
-                                     [signals.makegp_fftcov(psr, signals.powerlaw, common_knots, Tspan, common=['curn_log10_A', 'curn_gamma'], name='curn')])
-                   for psr in psrs]
     if not chrom and not band and not band_alpha: # Static Fs, so we can use gps2commongp
-        return gps2commongp(compound_gp)
+        return gps2commongp([matrix.CompoundGP(make_psr_gps_fftint(psr, max_cadence_days=max_cadence_days, red=red, dm=dm, chrom=chrom, sw=sw, band=band, band_alpha=band_alpha) +
+                                               [signals.makegp_fftcov(psr, signals.powerlaw, common_knots, Tspan, common=['curn_log10_A', 'curn_gamma'], name='curn')])
+                            for psr in psrs]) # Does not work yet
     else:
-        return compound_gp  # Does not work yet
-
+        return # Does not work yet
 
 def single_pulsar_noise(psr, fftint=True, max_cadence_days=14, red=True, dm=True, chrom=True, sw=True, band=True, band_alpha=False):
     psr_Tspan = signals.getspan(psr)
