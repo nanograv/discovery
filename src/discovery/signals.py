@@ -682,8 +682,8 @@ def make_timeinterpbasis_chromatic(start_time=None, order=1, fref=1400.0):
         scale = (fref / psr.freqs)
         def Bmat_func(alpha):
             return (scale[:, None]**alpha) * Bmat
-        return t_coarse, dt_coarse, Bmat_func 
-        
+        return t_coarse, dt_coarse, Bmat_func
+
     return timeinterpbasis_chrom
 
 def make_timeinterpbasis_dm(start_time=None, order=1, fref=1400.0):
@@ -692,8 +692,8 @@ def make_timeinterpbasis_dm(start_time=None, order=1, fref=1400.0):
     def timeinterpbasis_dm(psr, nmodes, T):
         t_coarse, dt_coarse, Bmat = timeinterpbasis_achrom(psr, nmodes, T)
         scale = (fref / psr.freqs) ** 2
-        return t_coarse, dt_coarse, scale[:, None] * Bmat 
-        
+        return t_coarse, dt_coarse, scale[:, None] * Bmat
+
     return timeinterpbasis_dm
 
 def make_timeinterpbasis_solar(start_time=None, order=1):
@@ -705,7 +705,7 @@ def make_timeinterpbasis_solar(start_time=None, order=1):
         theta, R_earth, _, _ = theta_impact(psr)
         dm_sol_wind = dm_solar(1.0, theta, R_earth)
         dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
-        return t_coarse, dt_coarse, dt_DM[:, None] * Bmat  
+        return t_coarse, dt_coarse, dt_DM[:, None] * Bmat
     return timeinterpbasis_solar
 
 def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
@@ -760,7 +760,7 @@ def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversa
 
 def makegp_fftcov_solar(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='fftcovGP_solar'):
     T = getspan(psr) if T is None else T
-    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), 
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=make_timeinterpbasis_solar(start_time=t0, order=order), common=common, name=name)
 
 def makecommongp_fftcov(psrs, prior, components, T, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], vector=False, name='fftcovCommonGP'):
