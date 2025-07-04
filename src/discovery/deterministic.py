@@ -186,3 +186,8 @@ def chromatic_gaussian(psr, fref=1400.0):
         return jnp.sign(sign_param) * 10**log10_Amp * jnp.exp(-(toas - t0)**2 / (2 * sigma**2)) * fnorm**alpha
 
     return chrom_gauss
+
+# def jump(): # To add
+
+# def glitch(): # To add
+
