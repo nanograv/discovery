@@ -318,8 +318,9 @@ def fourierbasis_band_low(psr, components, T=None, fref=1400.0):
     f, df, fmat = fourierbasis(psr, components, T)
 
     fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
-    def fmatfunc(fcutoff):
-        band_filter = jnp.heaviside(fcutoff - psr.freqs, 0.0) # 0.0 for freqs >= fcutoff
+    def fmatfunc(fcutoff, scale=5.0):
+        band_filter = jnp.reciprocal(1.0 + jnp.exp((psr.freqs - fcutoff) / scale))  # at scale=5.0 MHz, the 10% to 90% roll-off happens across ~22MHz.
+        # band_filter = jnp.heaviside(fcutoff - psr.freqs, 0.0) # 0.0 for freqs >= fcutoff
         return fmat * fnorm[:, None] * band_filter[:, None]
 
     return f, df, fmatfunc
@@ -328,8 +329,9 @@ def fourierbasis_band_low_alpha(psr, components, T=None, fref=1400.0):
     f, df, fmat = fourierbasis(psr, components, T)
 
     fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
-    def fmatfunc(fcutoff, alpha):
-        band_filter = jnp.heaviside(fcutoff - psr.freqs, 0.0) # 0.0 for freqs >= fcutoff
+    def fmatfunc(fcutoff, alpha, scale=5.0):
+        band_filter = jnp.reciprocal(1.0 + jnp.exp((psr.freqs - fcutoff) / scale))  # at scale=5.0 MHz, the 10% to 90% roll-off happens across ~22MHz.
+        # band_filter = jnp.heaviside(fcutoff - psr.freqs, 0.0) # 0.0 for freqs >= fcutoff
         return fmat * fnorm[:, None]**alpha * band_filter[:, None]
 
     return f, df, fmatfunc
