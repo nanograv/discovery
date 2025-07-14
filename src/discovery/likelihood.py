@@ -194,7 +194,15 @@ class PulsarLikelihood:
 
     @functools.cached_property
     def logL(self):
-        return self.N.make_kernelproduct(self.y)
+        if callable(self.y):
+            def logl(params):
+                y_eval = self.y(params)  # evaluate the delay function with current params
+                return self.N.make_kernelproduct(y_eval)(params)  # pass y_eval to get the kernel product function, then evaluate with params
+
+            logl.params = sorted(set(self.all_params + getattr(self.y, 'params', [])))
+            return logl
+        else:
+            return self.N.make_kernelproduct(self.y)
 
     @functools.cached_property
     def sample(self):
