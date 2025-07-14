@@ -24,7 +24,7 @@ prior.priordict_standard.update({
     '(.*_)?sw_gp_gamma':        [0, 4],
     '(.*_)?band_gp_log10_A':    [-18, -11],
     '(.*_)?band_gp_gamma':      [0, 7],
-    '(.*_)?band_gp_alpha':      [0, 14],
+    '(.*_)?band_gp_alpha':      [0, 7],
     '(.*_)?band_gp_fcutoff':    [856, 1712],
     # common noise parameters
     'curn_log10_A':             [-18, -11],
