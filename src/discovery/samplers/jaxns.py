@@ -59,7 +59,7 @@ def makesampler_nested(model, max_samples=1e6, num_live_points=None, **kwargs):
 
     class Sampler:
         def __init__(self, nested_sampler):
-            self.ns = jax.jit(nested_sampler)
+            self.ns = nested_sampler
 
         def run(self, key):
             self.termination, self.state = self.ns(key)

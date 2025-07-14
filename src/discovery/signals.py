@@ -228,17 +228,13 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
 
         return gp
 
-
 # timing model
-
 def makegp_improper(psr, fmat, constant=1.0e40, name='improperGP', variable=False):
     if variable:
-        phi = matrix.jnparray(constant * np.ones(fmat.shape[1]))
-
         def getphi(params):
-            return phi
-        getphi.params = []
+            return params[f"{psr.name}_{name}_coefficients({fmat.shape[1]})"]
 
+        getphi.params = [f"{psr.name}_{name}_coefficients({fmat.shape[1]})"]
         gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
         gp.index = {f'{psr.name}_{name}_coefficients({fmat.shape[1]})': slice(0, fmat.shape[1])}
     else:
@@ -249,24 +245,47 @@ def makegp_improper(psr, fmat, constant=1.0e40, name='improperGP', variable=Fals
 
     return gp
 
-def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, variable=False):
-    if svd:
+def makegp_timing(psr, constant=1.0e40, variance=None, svd=False, scale=1.0, variable=False, timing_inds=None):
+    # Set prior for marginalisation
+    if variance is not None:
+        constant = variance * psr.Mmat.shape[0] / psr.Mmat.shape[1]
+
+    # Scale the design matrix
+    if svd and timing_inds is None:
         fmat, _, _ = np.linalg.svd(scale * psr.Mmat, full_matrices=False)
     else:
-        fmat = np.array(psr.Mmat / np.sqrt(np.sum(psr.Mmat**2, axis=0)), dtype=np.float64)
+        fmat = np.asarray(psr.Mmat / np.sqrt(np.sum(psr.Mmat**2, axis=0)), dtype=np.float64)
 
-    if variance is None:
-        if constant is None:
-            constant = 1.0e40
-        # else constant can stay what it is
-    else:
-        if constant is None:
-            constant = variance * psr.Mmat.shape[0] / psr.Mmat.shape[1]
-            return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
-        else:
-            raise ValueError("signals.makegp_timing() can take a specification of _either_ `constant` or `variance`.")
+    # Case 1: variable=False, full analytical marginalisation.
+    #       Return a constant GP.
+    if not variable:
+        return makegp_improper(psr, fmat, constant=constant, name='timingmodel_marg')
 
-    return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
+    # Case 2: variable=True and timing_inds=None, sampling all timing model coefficients.
+    #       Return a variable GP.
+    if timing_inds is None:
+        return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=True)
+
+    # Case 3: variable=True and timing_inds is not None, sampling only a subset of timing model coefficients.
+    #       Force svd=False and return a constant GP plus a variable GP.
+    if svd:
+        print("Warning: `svd=True` ignored when sampling a subset of the raw timing model design matrix.")
+        M = np.asarray(psr.Mmat) # Do not normalise the design matrix. Sample as-is
+
+    timing_inds = jnp.asarray(timing_inds, dtype=int)
+    mask = np.zeros(fmat.shape[1], dtype=bool)
+    mask[timing_inds] = True
+
+    fmat_marg = fmat[:, ~mask] # Marginalised design matrix
+    gp_marg = makegp_improper(psr, fmat_marg, constant=constant, name='timingmodel_marg')
+
+    fmat_var = M[:, mask] # Sampled design matrix
+    coeffs = f"{psr.name}_timingmodel_coefficients({fmat_var.shape[1]})"
+    def tm_delay(params):
+        return jnp.dot(fmat_var, jnp.asarray(params[coeffs]))
+    tm_delay.params = [coeffs]
+
+    return [tm_delay, gp_marg]
 
 
 # Fourier GP
