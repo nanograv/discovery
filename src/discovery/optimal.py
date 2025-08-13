@@ -43,6 +43,56 @@ class OS:
     def params(self):
         return self.os_rhosigma.params
 
+    def sample_rhosigma_lowrank(self, params, orf=hd_orfa):
+        # y_i^T K_i^{-1} T_i Phi_{ij} T_j^T K_j^{-1} y_j
+        # with y_j =
+
+        Phi = self.psls[0].gw.Phi.getN(params)
+        sPhi = matrix.jnp.sqrt(Phi)
+
+        Nmats, Fmats, Pmats, Tmats = zip(*[(psl.N.N.N, psl.N.F, psl.N.P_var.getN(params), psl.gw.F) for psl in self.psls])
+
+        LNms = [1.0 / matrix.jnp.sqrt(Nmat) for Nmat in Nmats]
+        Fts = [LNm[:,None] * Fmat for LNm, Fmat in zip(LNms, Fmats)]
+        Tts = [LNm[:,None] * Tmat for LNm, Tmat in zip(LNms, Tmats)] # this is GW-only
+
+        cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1/Pmat) + Ft.T @ Ft) for Pmat, Ft in zip(Pmats, Fts)]
+        Ss = [Tt.T @ (Tt - Ft @ matrix.jsp.linalg.cho_solve(c, Ft.T @ Tt)) for c, Ft, Tt in zip(cs, Fts, Tts)]
+
+        # Rs = [matrix.jnp.linalg.cholesky(matrix.jnp.diag(1/Pmat) + Ft.T @ Ft, upper=True) for Pmat, Ft in zip(Pmats, Fts)]
+        # Ys = [matrix.jsp.linalg.solve_triangular(R, Ft.T @ Tt, lower=False) for R, Ft, Tt in zip(Rs, Fts, Tts)]
+        # Ss = [Tt.T @ Tt - Y.T @ Y for Tt, Y in zip(Tts, Ys)]
+
+        As = [matrix.jnp.linalg.cholesky(S, upper=False) for S in Ss]
+
+        Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
+        bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+
+        inds, cnt = [], 0
+        for A in As:
+            inds.append(slice(cnt, cnt + A.shape[0])) # these are all the same length, could simplify
+            cnt += A.shape[0]
+
+        def xs2snrs(xs):
+            uks = [sPhi * (A @ xs[ind]) for A, ind in zip(As, inds)]
+
+            ts = matrix.jnparray([matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in self.pairs])
+
+            gwnorm = 10**(2.0 * params[self.gwpar])
+            rhos = gwnorm * (matrix.jnparray(ts) / matrix.jnparray(bs))
+            sigmas = gwnorm / matrix.jnp.sqrt(matrix.jnparray(bs))
+
+            orfs = orf(matrix.jnparray(self.angles))
+
+            os = matrix.jnp.sum(rhos * orfs / sigmas**2) / matrix.jnp.sum(orfs**2 / sigmas**2)
+            os_sigma = 1.0 / matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 / sigmas**2))
+            snr = os / os_sigma
+
+            return snr
+        xs2snrs.cnt = cnt
+
+        return xs2snrs
+
 #    def sample_rhosigma(self, key, params, n=1, orf=hd_orfa):
     def sample_rhosigma(self, params, orf=hd_orfa):
         Phi = self.psls[0].gw.Phi.getN(params)
