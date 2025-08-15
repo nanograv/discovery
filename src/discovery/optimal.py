@@ -43,10 +43,167 @@ class OS:
     def params(self):
         return self.os_rhosigma.params
 
-    def sample_rhosigma_lowrank(self, params, orf=hd_orfa):
-        # y_i^T K_i^{-1} T_i Phi_{ij} T_j^T K_j^{-1} y_j
-        # with y_j =
+    # TO DO: make opQ, and share init code between opQ, Q, and sample
 
+    @functools.cached_property
+    def Q(self):
+        Nmats, Fmats, Tmats = zip(*[(psl.N.N.N, psl.N.F, psl.gw.F) for psl in self.psls])
+
+        LNms = [1.0 / matrix.jnp.sqrt(Nmat) for Nmat in Nmats]
+        Fts = [LNm[:,None] * Fmat for LNm, Fmat in zip(LNms, Fmats)]
+        Tts = [LNm[:,None] * Tmat for LNm, Tmat in zip(LNms, Tmats)] # this is GW-only
+
+        FFts = [matrix.jnparray(Ft.T @ Ft) for Ft in Fts]
+        TTts = [matrix.jnparray(Tt.T @ Tt) for Tt in Tts]
+        FTts = [matrix.jnparray(Ft.T @ Tt) for Ft, Tt in zip(Fts, Tts)]
+
+        Phivar = self.psls[0].gw.Phi.getN
+        Pvars = [psl.N.P_var.getN for psl in self.psls]
+
+        ngw = Tts[0].shape[1]
+        cnt = len(self.psls) * ngw
+        inds = [slice(i * ngw, (i + 1) * ngw) for i in range(len(self.psls))]
+
+        def get_Q(params, orf=hd_orfa):
+            sPhi = matrix.jnp.sqrt(Phivar(params))
+
+            cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1.0 / Pvar(params)) + FFt) for Pvar, FFt in zip(Pvars, FFts)]
+            Ss = [TTt - FTt.T @ matrix.jsp.linalg.cho_solve(c, FTt) for c, TTt, FTt in zip(cs, TTts, FTts)]
+
+            Ss = [0.5 * (S + S.T) for S in Ss]  # ensure symmetry
+            As = [matrix.jnp.linalg.cholesky(S + (1e-10 * matrix.jnp.trace(S) / S.shape[0]) * matrix.jnp.eye(S.shape[0]))
+                for S in Ss]
+
+            Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
+            bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+
+            orfs = orf(matrix.jnparray(self.angles))
+            # note the 2 to get OS = x^T Q x
+            denom = 2.0 * matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 * matrix.jnparray(bs)))
+
+            Q = matrix.jnpzeros((cnt, cnt))
+
+            A_scaled = [sPhi[:, None] * A for A in As]
+
+            for w, (i, j) in zip(orfs, self.pairs):
+                Bij = w * (A_scaled[i].T @ A_scaled[j])
+
+                Q = Q.at[inds[i], inds[j]].add(Bij)
+                Q = Q.at[inds[j], inds[i]].add(Bij.T)
+
+            return Q / denom
+        get_Q.params = self.os_rhosigma.params
+
+        return get_Q
+
+    @functools.cached_property
+    def opQ(self):
+        Nmats, Fmats, Tmats = zip(*[(psl.N.N.N, psl.N.F, psl.gw.F) for psl in self.psls])
+
+        LNms = [1.0 / matrix.jnp.sqrt(Nmat) for Nmat in Nmats]
+        Fts = [LNm[:,None] * Fmat for LNm, Fmat in zip(LNms, Fmats)]
+        Tts = [LNm[:,None] * Tmat for LNm, Tmat in zip(LNms, Tmats)] # this is GW-only
+
+        FFts = [matrix.jnparray(Ft.T @ Ft) for Ft in Fts]
+        TTts = [matrix.jnparray(Tt.T @ Tt) for Tt in Tts]
+        FTts = [matrix.jnparray(Ft.T @ Tt) for Ft, Tt in zip(Fts, Tts)]
+
+        Phivar = self.psls[0].gw.Phi.getN
+        Pvars = [psl.N.P_var.getN for psl in self.psls]
+
+        ngw = Tts[0].shape[1]
+        cnt = len(self.psls) * ngw
+        inds = [slice(i * ngw, (i + 1) * ngw) for i in range(len(self.psls))]
+
+        def get_opQ(params, orf=hd_orfa):
+            sPhi = matrix.jnp.sqrt(Phivar(params))
+
+            cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1.0 / Pvar(params)) + FFt) for Pvar, FFt in zip(Pvars, FFts)]
+            Ss = [TTt - FTt.T @ matrix.jsp.linalg.cho_solve(c, FTt) for c, TTt, FTt in zip(cs, TTts, FTts)]
+
+            Ss = [0.5 * (S + S.T) for S in Ss]  # ensure symmetry
+            As = [matrix.jnp.linalg.cholesky(S + (1e-10 * matrix.jnp.trace(S) / S.shape[0]) * matrix.jnp.eye(S.shape[0]))
+                for S in Ss]
+
+            Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
+            bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+
+            orfs = orf(matrix.jnparray(self.angles))
+            # note the 2 to get OS = x^T Q x
+            denom = 2.0 * matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 * matrix.jnparray(bs)))
+
+            Bs = [sPhi[:, None] * A for A in As]   # B_i = diag(sPhi) @ A_i
+
+            # currently not traceable; too bad
+            def op(x):
+                zs = [B @ x[ii] for B, ii in zip(Bs, inds)]
+
+                y = matrix.jnp.zeros_like(x)
+                for w, (i, j) in zip(orfs, self.pairs):
+                    y = y.at[inds[i]].add((w / denom) * (Bs[i].T @ zs[j]))
+                    y = y.at[inds[j]].add((w / denom) * (Bs[j].T @ zs[i]))
+
+                return y
+
+            return op
+        get_opQ.params = self.os_rhosigma.params
+
+        return get_opQ
+
+    @functools.cached_property
+    def sample(self):
+        Nmats, Fmats, Tmats = zip(*[(psl.N.N.N, psl.N.F, psl.gw.F) for psl in self.psls])
+
+        LNms = [1.0 / matrix.jnp.sqrt(Nmat) for Nmat in Nmats]
+        Fts = [LNm[:,None] * Fmat for LNm, Fmat in zip(LNms, Fmats)]
+        Tts = [LNm[:,None] * Tmat for LNm, Tmat in zip(LNms, Tmats)] # this is GW-only
+
+        FFts = [matrix.jnparray(Ft.T @ Ft) for Ft in Fts]
+        TTts = [matrix.jnparray(Tt.T @ Tt) for Tt in Tts]
+        FTts = [matrix.jnparray(Ft.T @ Tt) for Ft, Tt in zip(Fts, Tts)]
+
+        Phivar = self.psls[0].gw.Phi.getN
+        Pvars = [psl.N.P_var.getN for psl in self.psls]
+
+        ngw = Tts[0].shape[1]
+        cnt = len(self.psls) * ngw
+        inds = [slice(i * ngw, (i + 1) * ngw) for i in range(len(self.psls))]
+
+        def get_sample(key, params, orf=hd_orfa):
+            sPhi = matrix.jnp.sqrt(Phivar(params))
+
+            # TO DO: should probably close on Ft.T @ Ft, Tt.T @ Tt, and Tt.T @ Ft (and Ft.T @ Tt) rather than on Fts and Tts
+            cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1.0 / Pvar(params)) + FFt) for Pvar, FFt in zip(Pvars, FFts)]
+            Ss = [TTt - FTt.T @ matrix.jsp.linalg.cho_solve(c, FTt) for c, TTt, FTt in zip(cs, TTts, FTts)]
+
+            Ss = [0.5 * (S + S.T) for S in Ss]  # ensure symmetry
+            As = [matrix.jnp.linalg.cholesky(S + (1e-10 * matrix.jnp.trace(S) / S.shape[0]) * matrix.jnp.eye(S.shape[0]))
+                  for S in Ss]
+
+            Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
+            bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+
+            xs = matrix.jnpnormal(key, cnt)
+            uks = [sPhi * (A @ xs[ind]) for A, ind in zip(As, inds)]
+
+            ts = matrix.jnparray([matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in self.pairs])
+
+            gwnorm = 10**(2.0 * params[self.gwpar])
+            rhos = gwnorm * (matrix.jnparray(ts) / matrix.jnparray(bs))
+            sigmas = gwnorm / matrix.jnp.sqrt(matrix.jnparray(bs))
+
+            orfs = orf(matrix.jnparray(self.angles))
+
+            os = matrix.jnp.sum(rhos * orfs / sigmas**2) / matrix.jnp.sum(orfs**2 / sigmas**2)
+            os_sigma = 1.0 / matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 / sigmas**2))
+            snr = os / os_sigma
+
+            return snr
+        get_sample.params = self.os_rhosigma.params
+
+        return get_sample
+
+    def sample_rhosigma_lowrank(self, params, orf=hd_orfa):
         Phi = self.psls[0].gw.Phi.getN(params)
         sPhi = matrix.jnp.sqrt(Phi)
 
@@ -57,13 +214,25 @@ class OS:
         Tts = [LNm[:,None] * Tmat for LNm, Tmat in zip(LNms, Tmats)] # this is GW-only
 
         cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1/Pmat) + Ft.T @ Ft) for Pmat, Ft in zip(Pmats, Fts)]
-        Ss = [Tt.T @ (Tt - Ft @ matrix.jsp.linalg.cho_solve(c, Ft.T @ Tt)) for c, Ft, Tt in zip(cs, Fts, Tts)]
+        Xs = [Tt - Ft @ matrix.jsp.linalg.cho_solve(c, Ft.T @ Tt) for c, Ft, Tt in zip(cs, Fts, Tts)]
 
+        Ss = [Tt.T @ X for Tt, X in zip(Tts, Xs)]
+
+        # alternative formulation (numerically unstable?):
+        # R = chol(Pmat^-1 + Ft.T @ Ft)
+        # Y = R^-1 @ Ft.T @ Tt
+        # S = Tt.T @ Tt - Y.T @ Y
+        #
         # Rs = [matrix.jnp.linalg.cholesky(matrix.jnp.diag(1/Pmat) + Ft.T @ Ft, upper=True) for Pmat, Ft in zip(Pmats, Fts)]
         # Ys = [matrix.jsp.linalg.solve_triangular(R, Ft.T @ Tt, lower=False) for R, Ft, Tt in zip(Rs, Fts, Tts)]
         # Ss = [Tt.T @ Tt - Y.T @ Y for Tt, Y in zip(Tts, Ys)]
 
-        As = [matrix.jnp.linalg.cholesky(S, upper=False) for S in Ss]
+        # with ridge regularization; the simple estimate based on the trace seems fine
+        # a more precise possibility is eps = matrix.jnp.maximum(0.0, -matrix.jnp.linalg.eigvalsh(S).min())
+        #                                     + 1e-10 * matrix.jnp.trace(S) / S.shape[0]
+        Ss = [0.5 * (S + S.T) for S in Ss]  # ensure symmetry
+        As = [matrix.jnp.linalg.cholesky(S + (1e-10 * matrix.jnp.trace(S) / S.shape[0]) * matrix.jnp.eye(S.shape[0]))
+              for S in Ss]
 
         Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
         bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
@@ -119,17 +288,6 @@ class OS:
         for Fmat in Fmats:
             iPs.append(slice(cnt, cnt + Fmat.shape[1]))
             cnt += Fmat.shape[1]
-
-        # @jax.jit
-        # @jax.vmap
-        # def makets(keys):
-        #     uks = [PsTt @ K1(matrix.jnp.sqrt(Nmat) * matrix.jnpnormal(key, Nmat.shape[0]))[0] +
-        #            PsTtKmFsP @ matrix.jnpnormal(key, Fmat.shape[1])
-        #            for key, K1, Nmat, Fmat, PsTt, PsTtKmFsP in zip(keys, K1s, Nmats, Fmats, PsTts, PsTtKmFsPs)]
-
-        #     return matrix.jnparray([matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in self.pairs])
-
-        # ts = makets(jax.random.split(key, (n, len(self.psls))))
 
         def xs2snrs(xs):
             uks = [PsTt @ K1(matrix.jnp.sqrt(Nmat) * xs[iN])[0] + PsTtKmFsP @ xs[iP]
@@ -311,6 +469,8 @@ class OS:
         get_shift.params = os_rhosigma_complex.params
 
         return get_shift
+
+    # TODO: work in progress...
 
     @functools.cached_property
     def gx2mat(self):
