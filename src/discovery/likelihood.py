@@ -44,10 +44,15 @@ class PulsarLikelihood:
         vgps  = [arg for arg in args if isinstance(arg, matrix.VariableGP)]
         # pgps  = [arg for arg in args if isinstance(arg, matrix.ComponentGP)]
 
+        if len(y) == 0 and len(delay) == 0:
+            raise ValueError("I need exactly one residual vector or one or more delay functions.")
         if len(y) > 1 or len(noise) > 1:
             raise ValueError("Only one residual vector and one noise Kernel allowed.")
         elif len(noise) == 0:
             raise ValueError("I need exactly one noise Kernel.")
+
+        if len(y) == 0:
+            y = [0.0]
 
         noise, y = noise[0], y[0]
 
@@ -169,9 +174,9 @@ class PulsarLikelihood:
     @functools.cached_property
     def sample(self):
         if callable(self.y):
-            raise NotImplementedError('No PulsarLikelihood.sample with delays so far.')
-        else:
-            return self.N.make_sample()
+            print('Warning: delays are ignored in PulsarLikelihood.sample.')
+
+        return self.N.make_sample()
 
 
 class GlobalLikelihood:
@@ -540,6 +545,7 @@ class ArrayLikelihood:
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
         self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
         self.vsm.index = getattr(commongp, 'index', None)
+        self.vsm.means = getattr(commongp, 'means', None)
 
         if self.globalgp is None:
             loglike = self.vsm.make_kernelproduct(self.ys)
@@ -590,7 +596,7 @@ class ArrayLikelihood:
 
         return loglike
 
-    def cglogL(self, cgmaxiter=100, detmatvecs=40, detsamples=1000, make_logdet=True):
+    def cglogL(self, cgmaxiter=100, make_logdet='CG-MDL', detmatvecs=5, detsamples=200, clip=None):
         commongp = matrix.VectorCompoundGP(self.commongp)
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
@@ -606,7 +612,7 @@ class ArrayLikelihood:
             npsr = len(self.globalgp.Fs)
             ngp = self.globalgp.Fs[0].shape[1]
 
-            logdet_estimator = matrix.make_logdet_estimator(npsr * ngp, detmatvecs, detsamples)
+            logdet_estimator = matrix.make_logdet_estimator(npsr * ngp, detmatvecs, detsamples, clip)
             rndkey = jax.random.PRNGKey(1)
 
             def loglike(params):
@@ -617,7 +623,7 @@ class ArrayLikelihood:
                 # get Cholesky factors of orf and phi matrices
                 orfcf, phicf = factors(params)
 
-                # compute log Phi
+                # compute log Phi (not needed for Gseries)
                 ldP = (npsr * 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(phicf[0]))) +
                        ngp  * 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(orfcf[0]))))
 
@@ -637,21 +643,75 @@ class ArrayLikelihood:
 
                 sol = matrix.cgsolve(matvec, FtNmy, M=precond, maxiter=cgmaxiter)
 
-                if make_logdet:
-                    # combine preconditioner and matrix application for logdet estimation
-                    # compute also preconditioner logdet correction
+                jnp, jspa = matrix.jnp, matrix.jsp.linalg
+
+                if make_logdet == 'G-series':
+                    # expand in G
+                    # log |Phi| = m log |Gamma^-1| + n log |phi^-1| + sum_i Gamma_ii Tr (phi G_i)
+                    #                                                 - 1/2 sum_i Gamma_ii^2 Tr (phi G_i)^2
+                    #                                                 + 1/3 sum_i Gamma_ii^3 Tr (phi G_i)^3
+                    # furthermore the first term cancels with ldP, so ldP not needed
+
+                    phiG = phicf[0].T @ (phicf[0] @ FtNmF)
+                    orfdiag = matrix.jnp.diag(orfcf[0].T @ orfcf[0])
+                    logdet = (orfdiag @ matrix.jnp.trace(phiG, axis1=1, axis2=2)
+                            -0.5 * orfdiag**2 @ jax.numpy.trace(phiG @ phiG, axis1=1, axis2=2)
+                            +(1/3.0) * orfdiag**3 @ jax.numpy.trace(phiG @ phiG @ phiG, axis1=1, axis2=2))
+
+                    return p0 + 0.5 * (matrix.jnp.sum(FtNmy * sol) - logdet)
+                elif make_logdet == 'D-series':
+                    # let Phi = D + B with D diagonal
+                    # then log |D + B| = log |D| - 1/2 Tr((D^-1 B)^2) + 1/3 Tr((D^-1 B)^3) - ...
+                    # (first order Tr(D^-1 B) vanishes)
+
+                    cfD = jspa.cho_factor(jnp.diag(orfinv)[:,None,None] * phiinv[None,:,:] + FtNmF)
+                    i1, i2 = jnp.diag_indices(ngp, ndim=2)
+                    logD = 2.0 * jnp.sum(jnp.log(jnp.abs(cfD[0][:, i1, i2])))
+
+                    E = jax.vmap(lambda c, m: jspa.cho_solve((c, False), m), in_axes=(0, None))(cfD[0], phiinv)
+
+                    traces = jnp.einsum('nij,mji->nm', E, E)
+                    gamma_prod = orfinv * orfinv.T
+                    off_diag_mask = ~jnp.eye(npsr, dtype=bool)
+
+                    traces3 = jnp.einsum('aij,bjk,ckl->abc', E, E, E)
+                    gamma_prod3 = jnp.einsum('ij,jk,ki->ijk', orfinv, orfinv, orfinv)
+                    i_idx, j_idx, k_idx = jnp.meshgrid(jnp.arange(npsr), jnp.arange(npsr), jnp.arange(npsr), indexing="ij")
+                    off_diag_mask3 = (i_idx != j_idx) & (j_idx != k_idx) & (k_idx != i_idx)
+
+                    logdet = logD - 0.5 * jnp.sum(gamma_prod * traces * off_diag_mask) + (1/3.0) * jnp.sum(gamma_prod3 * traces3 * off_diag_mask3)
+
+                    return p0 + 0.5 * (matrix.jnp.sum(FtNmy * sol) - ldP - logdet)
+                elif make_logdet == 'CG-MDL':
+                    # Lanczos-Hutchinson for log |K + F Phi F^T| = log |K| + log |I + F^T K^{-1} F Phi|
+
+                    def detmatvec(y):
+                        Y = y.reshape((npsr, ngp))
+                        AY = jnp.einsum('akl,al->ak',
+                                        FtNmF, jnp.einsum('ab,bc,cl->al',
+                                                          orfcf[0].T, orfcf[0], jnp.einsum('li,ij,aj->al',
+                                                                                           phicf[0].T, phicf[0], Y))) + Y
+                        return AY.reshape(npsr * ngp)
+
+                    logdet = logdet_estimator(detmatvec, rndkey)
+
+                    return p0 + 0.5 * (matrix.jnp.sum(FtNmy * sol) - logdet)
+                elif make_logdet == 'CG-Woodbury':
+                    # Lanczos-Hutchinson for Sigma with preconditioner
+
                     i1, i2 = matrix.jnp.diag_indices(precf[0].shape[1], ndim=2)
                     logpre = 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.abs(precf[0][:, i1, i2])))
-                    def prematvec(FtNmyvec):
-                        FtNmy = FtNmyvec.reshape((npsr, ngp))
-                        pcnd = matrix.jsp.linalg.cho_solve(precf, matvec(FtNmy))
-                        return pcnd.reshape(npsr * ngp)
+
+                    def prematvec(y):
+                        Y = y.reshape((npsr, ngp))
+                        AY = jspa.cho_solve(precf, matvec(Y))
+                        return AY.reshape(npsr * ngp)
 
                     logdet = logdet_estimator(prematvec, rndkey) + logpre
-                else:
-                    logdet = 0.0
 
-                return p0 + 0.5 * (matrix.jnp.sum(FtNmy * sol) - ldP - logdet)
+                    return p0 + 0.5 * (matrix.jnp.sum(FtNmy * sol) - ldP - logdet)
+                else:
+                    raise ValueError("Unknown logdet method: {}".format(make_logdet))
 
             loglike.params = sorted(kterms.params + factors.params)
 
