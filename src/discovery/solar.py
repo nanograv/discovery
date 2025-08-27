@@ -58,7 +58,7 @@ def fourierbasis_solar_dm(psr,
     # get base Fourier design matrix and frequencies
     f, df, fmat = fourierbasis(psr, components, T)
 
-    dt_DM = make_solardm(psr) * 4.148808e3 / (psr.freqs**2) # DM constant from Pulsar handbook
+    dt_DM = make_solardm(psr)
 
     return f, df, fmat * dt_DM[:, None]
 
