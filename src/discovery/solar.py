@@ -67,7 +67,7 @@ def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, common=[], name='timedom
      argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
                for arg in argspec.args if arg not in ['tau']]
 
-     dt_DM = make_solardm(psr) * 4.148808e3 / (psr.freqs**2)
+     dt_DM = make_solardm(psr)
  
      bins = quantize(psr.toas, dt)
      Umat = np.vstack([bins == i for i in range(bins.max() + 1)]).T.astype('d')
