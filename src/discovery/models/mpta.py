@@ -107,11 +107,14 @@ def make_common_gps_fftint(psrs, common_knots=61, max_cadence_days=14, red=True,
     else:
         return # Does not work yet
 
-def single_pulsar_noise(psr, fftint=True, max_cadence_days=14, tm_variable=False, timing_inds=None,
-                        red=True, dm=True, chrom=True, sw=True, band=True, band_alpha=False, # GP models
+def single_pulsar_noise(psr, noisedict, fftint=True, max_cadence_days=14, tm_variable=False, timing_inds=None,
+                        wn=True, red=True, dm=True, chrom=True, sw=True, band=True, band_alpha=False, # GP models
                         chrom_annual=False, chrom_exponential=False, chrom_gaussian=False): # Deterministic chromatic models
     # Set up white noise
-    measurement_noise = signals.makenoise_measurement(psr, tnequad=True)
+    if wn:
+        measurement_noise = signals.makenoise_measurement(psr, tnequad=True)
+    else:
+        measurement_noise = signals.makenoise_measurement(psr, noisedict, tnequad=True)
     # Set up timing model
     tm = signals.makegp_timing(psr, svd=True, variable=tm_variable, timing_inds=timing_inds)  # ensure the timing model is unpacked if returning a list
     if not isinstance(tm, list):
@@ -120,7 +123,10 @@ def single_pulsar_noise(psr, fftint=True, max_cadence_days=14, tm_variable=False
     model_components = [psr.residuals]
     model_components += tm
     model_components += [measurement_noise]
-    model_components += [signals.makegp_ecorr(psr)]
+    if wn:
+        model_components += [signals.makegp_ecorr(psr)]
+    else:
+        model_components += [signals.makegp_ecorr(psr, noisedict)]
     if chrom_annual:
         model_components += [signals.makedelay(psr, deterministic.chromatic_annual(psr), name='chrom_1yr')]
     if chrom_exponential:

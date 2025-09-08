@@ -5,6 +5,7 @@ import jax.numpy as jnp
 import tensorflow_probability.substrates.jax as tfp
 tfpd = tfp.distributions
 
+import numpyro.distributions as dist
 from jaxns import Model, Prior, NestedSampler, resample
 from .. import prior
 

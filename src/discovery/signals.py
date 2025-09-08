@@ -335,17 +335,17 @@ def fourierbasis_chrom(psr, components, T=None, fref=1400.0):
 
 
 
-def make_fourierbasis_chrom_inj(alpha):
-    def fourierbasis_chrom_inj(psr, components, alpha, T=None, fref=1400.0):
-        f, df, fmat = fourierbasis(psr, components, T)
+#def make_fourierbasis_chrom_inj(alpha):
+def fourierbasis_chrom_inj(psr, components, T=None, fref=1400.0, alpha=4.0):
+    f, df, fmat = fourierbasis(psr, components, T)
 
-        fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
+    fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
 
-        chrom = (fref / psr.freqs)**alpha
+    chrom = (fref / psr.freqs)**alpha
 
-        return f, df,  fmat * chrom[:, None]
-    
-	return fourierbasis_chrom_inj
+    return f, df,  fmat * chrom[:, None]
+
+    #return fourierbasis_chrom_inj
 
 
 def fourierbasis_band_low(psr, components, T=None, fref=1400.0):
