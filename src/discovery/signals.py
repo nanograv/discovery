@@ -182,7 +182,7 @@ def makegp_ecorr_simple(psr, noisedict={}):
         return matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), Umat)
 
 # nanograv backends
-def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selection_backend_flags, name='ecorrGP'):
+def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selection_backend_flags, variable=False, name='ecorrGP'):
     log10_ecorrs, Umats = [], []
 
     backend_flags = selection(psr)
@@ -215,7 +215,19 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
     if all(par in noisedict for par in params):
         phi = sum(10.0**(2 * (logscale + noisedict[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(log10_ecorrs, pmasks))
 
-        return matrix.ConstantGP(matrix.NoiseMatrix1D_novar(phi), Umatall)
+        if variable:
+            def getphi(params):
+                return phi
+            getphi.params = []
+
+            gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), Umatall)
+            gp.index = {f'{psr.name}_{name}_coefficients({Umatall.shape[1]})': slice(0,Umatall.shape[1])} # better for cosine
+            gp.name, gp.pos = psr.name, psr.pos
+            gp.gpname, gp.gpcommon = name, []
+
+            return gp
+        else:
+            return matrix.ConstantGP(matrix.NoiseMatrix1D_novar(phi), Umatall)
     else:
         pmasks = [matrix.jnparray(pmask) for pmask in pmasks]
         def getphi(params):
