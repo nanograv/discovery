@@ -79,7 +79,7 @@ class OS:
 
             orfs = orf(matrix.jnparray(self.angles))
             # note the 2 to get OS = x^T Q x
-            denom = 2.0 * matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 * matrix.jnparray(bs)))
+            denom = 2.0 * matrix.jnp.sqrt(2 * matrix.jnp.sum(orfs**2 * matrix.jnparray(bs)))
 
             Q = matrix.jnpzeros((cnt, cnt))
 
@@ -130,7 +130,7 @@ class OS:
 
             orfs = orf(matrix.jnparray(self.angles))
             # note the 2 to get OS = x^T Q x
-            denom = 2.0 * matrix.jnp.sqrt(matrix.jnp.sum(orfs**2 * matrix.jnparray(bs)))
+            denom = 2.0 * matrix.jnp.sqrt(2 * matrix.jnp.sum(orfs**2 * matrix.jnparray(bs)))
 
             Bs = [sPhi[:, None] * A for A in As]   # B_i = diag(sPhi) @ A_i
 
