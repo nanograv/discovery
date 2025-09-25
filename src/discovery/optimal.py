@@ -470,68 +470,24 @@ class OS:
 
         return get_shift
 
-    # TODO: work in progress...
+    def gx2cdf(self, params, osxs, cutoff=1e-6, limit=100, epsabs=1e-6):
+        Qmat = self.Q(params)
+        eigx = matrix.jnp.linalg.eigh(Qmat)[0]
 
-    @functools.cached_property
-    def gx2mat(self):
-        kernelsolves = [psl.N.make_kernelsolve(psl.N.F, gw.F) for (psl, gw) in zip(self.psls, self.gws)]
-        phis = [psr.N.P_var.getN for psr in self.psls]
-        getN = self.gws[0].Phi.getN
+        return eig2cdf(osxs, eigx, cutoff=cutoff, limit=limit, epsabs=epsabs)
 
-        orfmat = matrix.jnparray([[signals.hd_orf(p1, p2) for p1 in self.pos] for p2 in self.pos])
-        gwpar, pairs, orfs = self.gwpar, self.pairs, [signals.hd_orf(self.pos[i], self.pos[j]) for i, j in self.pairs]
 
-        # GP-only random data is sqrt(N) X, with X normal deviate
-        # SNR is os / os_sigma
-        #
-        # amat_ij is  sqrt(phi_i) F_i* K_i^-1 T_i (Gamma_ij Phi) T_j* K_j^-1 F_j sqrt(phi_j) / sqrt(b)
-        # with b = tr(  Phi Gamma_ji T_i* K_i^{-1} T_i Phi Gamma_ij T_j* K_i^{-1} T_j )
+@jax.jit
+def imhof(u, x, eigs):
+    theta = 0.5 * matrix.jnp.sum(matrix.jnp.arctan(eigs * u), axis=0) - 0.5 * x * u
+    rho = matrix.jnp.prod((1.0 + (eigs * u)**2)**0.25, axis=0)
 
-        def get_gx2mat(params):
-            N = getN(params)
-            ks = [k(params) for k in kernelsolves]
+    return matrix.jnp.sin(theta) / (u * rho)
 
-            A = 10**params[gwpar]
+def eig2cdf(osxs, eigs, cutoff=1e-6, limit=100, epsabs=1e-6):
+    # cutoff by number of eigenvalues is more friendly to jitted imhof
+    eigs = eigs[:cutoff] if cutoff > 1 else eigs[matrix.jnp.abs(eigs) > cutoff]
 
-            if N.ndim == 1:
-                sN = matrix.jnp.sqrt(N)
-
-                ts = [sN[:,matrix.jnp.newaxis] * k[0] * matrix.jnp.sqrt(phi(params)) / A for k, phi in zip(ks, phis)]
-                ds = [sN[:,matrix.jnp.newaxis] * k[1] * sN[matrix.jnp.newaxis,:] / A**2 for k in ks]
-            else:
-                U = matrix.jnp.linalg.cholesky(N, upper=True)
-
-                ts = [U @ k[0] @ matrix.jnp.linalg.cholesky(phi(params), upper=True) / A for k, phi in zip(ks, phis)]
-                ds = [U @ k[1] * U.T / A**2 for k in ks]
-
-            b = sum(matrix.jnp.trace(ds[i] @ ds[j] * orf**2) for (i,j), orf in zip(pairs, orfs))
-
-            amat = 0.5 * matrix.jnp.block([[(0.0 if i == j else orfmat[i,j] / matrix.jnp.sqrt(b)) * matrix.jnp.dot(t1.T, t2)
-                                            for i, t1 in enumerate(ts)] for j, t2 in enumerate(ts)])
-
-            return amat
-
-        get_gx2mat.params = sorted(set.union(*[set(k.params) for k in kernelsolves], getN.params))
-
-        return get_gx2mat
-
-    @functools.cached_property
-    def imhof(self):
-        def get_imhof(u, x, eigs):
-            theta = 0.5 * matrix.jnp.sum(matrix.jnp.arctan(eigs * u), axis=0) - 0.5 * x * u
-            rho = matrix.jnp.prod((1.0 + (eigs * u)**2)**0.25, axis=0)
-
-            return matrix.jnp.sin(theta) / (u * rho)
-
-        return jax.jit(get_imhof)
-
-    # note this returns a numpy array, and the integration is handled by non-jax scipy
-    def gx2cdf(self, params, xs, cutoff=1e-6, limit=100, epsabs=1e-6):
-        amat = self.gx2mat(params)
-        eigr = matrix.jnp.real(matrix.jnp.linalg.eig(amat)[0])
-
-        # cutoff by number of eigenvalues is more friendly to jitted imhof
-        eigs = eigr[:cutoff] if cutoff > 1 else eigr[matrix.jnp.abs(eigr) > cutoff]
-
-        return np.array([0.5 - scipy.integrate.quad(lambda u: float(self.imhof(u, x, eigs)),
-                                                    0, np.inf, limit=limit, epsabs=epsabs)[0] / np.pi for x in xs])
+    # jax.scipy.integrate is mostly not implemented. Could try quadax
+    return np.array([0.5 - scipy.integrate.quad(lambda u: float(imhof(u, osx, eigs)),
+                                                0, np.inf, limit=limit, epsabs=epsabs)[0] / np.pi for osx in osxs])
