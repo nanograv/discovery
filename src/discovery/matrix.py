@@ -433,7 +433,7 @@ class NoiseMatrix1D_novar(NoiseMatrix, ConstantKernel):
     def make_sample(self):
         N12 = jnparray(np.sqrt(self.N))
 
-        def sample(key):
+        def sample(key, params={}):
             key, subkey = jnpsplit(key)
             return key, jnpnormal(subkey, N12.shape) * N12
 
@@ -891,7 +891,7 @@ class WoodburyKernel_novar(ConstantKernel):
         P_sample = self.P.make_sample()
         F = jnparray(self.F)
 
-        def sample(key):
+        def sample(key, params={}):
             key, n = N_sample(key)
             key, c = P_sample(key)
 

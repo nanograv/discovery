@@ -182,7 +182,15 @@ class PulsarLikelihood:
     @functools.cached_property
     def sample(self):
         if callable(self.y):
-            print('Warning: delays are ignored in PulsarLikelihood.sample.')
+            noiseonly = self.N.make_sample()
+            delays = self.delay
+
+            def make_sample(key, params):
+                key, noise = noiseonly(key, params)
+                return key, noise + sum(delay(params) for delay in delays)
+            make_sample.params = sorted(set(noiseonly.params + sum([delay.params for delay in delays], [])))
+
+            return make_sample
 
         return self.N.make_sample()
 
