@@ -492,11 +492,12 @@ class GlobalLikelihood:
 
 
 class ArrayLikelihood:
-    def __init__(self, psls, *, commongp=None, globalgp=None, transform=None):
+    def __init__(self, psls, *, commongp=None, globalgp=None, transform=None, decenter=False):
         self.psls = psls
         self.commongp = commongp
         self.globalgp = globalgp
         self.transform = transform
+        self.decenter = decenter
 
     # @functools.cached_property
     # def cloglast(self):
@@ -531,16 +532,53 @@ class ArrayLikelihood:
         else:
             # merge common GPs and global GP
             cgp = self.commongp if isinstance(self.commongp, list) else [self.commongp]
+            gplist = cgp + [self.globalgp]
             commongp = matrix.VectorCompoundGP(cgp + [self.globalgp])
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+
+        # Both this line, and the decentering code below assumes that
+        # N and F are constants.
         self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
+
+        if self.decenter:
+            # create decentering transformation
+
+            NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.vsm.Ns, self.vsm.Fs)])
+            FtNmFs = [F.T @ NmF for F, NmF in zip(self.vsm.Fs, NmFs)]
+            NmFtys = [NmF.T @ y for NmF, y in zip(NmFs, self.ys)]
+            FtNmF, NmFty = matrix.jnparray(FtNmFs), matrix.jnparray(NmFtys)
+            def decenter_transform(params, c):
+                phis_invs_commongp = [gp.Phi.getN(params)**-1 for gp in (self.commongp if isinstance(self.commongp, list) else [self.commongp])]
+                # get diagonal piece of the globalGP (decenter using CURN)
+                if self.globalgp is not None:
+                    phis_invs_globalgp = matrix.jnp.diag(self.globalgp.Phi.getN(params)**-1).reshape((len(self.psls), -1))
+                    phis_invs = matrix.jnp.concatenate([*phis_invs_commongp, phis_invs_globalgp], axis=1)
+                else:
+                    phis_invs = matrix.jnp.concatenate([*phis_invs_commongp], axis=1)
+                i1, i2 = matrix.jnp.diag_indices(phis_invs.shape[1], ndim=2)
+                cf = matrix.matrix_factor(FtNmF.at[:,i1,i2].add(phis_invs))
+                mus = matrix.matrix_solve(cf, NmFty)
+                am = jax.vmap(lambda x, y: matrix.jsp.linalg.solve_triangular(x, y, lower=True, trans=1))(cf[0], c)
+                c = am + mus
+                # jacobian of our transformation | d f^{-1} / d(xi) | = |L|. cf[0] is L^{-1}.
+                ldL = -matrix.jnp.logdet(cf[0][:,i1,i2])
+                return c, ldL
+            decenter_transform.params = []
+
+
         if hasattr(commongp, 'prior'):
             self.vsm.prior = commongp.prior
         if hasattr(commongp, 'index'):
             self.vsm.index = commongp.index
 
-        loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys, transform=self.transform)
+        if self.transform is not None and self.decenter is True:
+            raise ValueError("Can't decenter and add a transformation right now.")
+
+        if self.decenter:
+            loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys, transform=decenter_transform)
+        else:
+            loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys, transform=self.transform)
 
         return loglike
 
