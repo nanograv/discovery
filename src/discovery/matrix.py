@@ -1090,7 +1090,47 @@ class WoodburyKernel_varNP(VariableKernel):
     def __init__(self, N_var, F, P_var):
         self.N, self.F, self.P_var = N_var, F, P_var
 
+    def make_kernelproduct_vary(self, y):
+        y_var = y
+
+        N_solve_1d = self.N.make_solve_1d()
+        N_solve_2d = self.N.make_solve_2d()
+
+        # avoid a separate WoodburyKernel_varNFP
+        if callable(self.F):
+            Ffunc = self.F
+        else:
+            Fmat = jnparray(self.F)
+            Ffunc = lambda params: Fmat
+            Ffunc.params = []
+
+        P_var_inv = self.P_var.make_inv()
+
+        def kernelproduct(params):
+            yp = y_var(params)
+            Fmat = Ffunc(params)
+
+            Nmy, ldN = N_solve_1d(params, yp)
+            ytNmy = yp @ Nmy
+
+            NmF, _ = N_solve_2d(params, Fmat)
+            FtNmF = Fmat.T @ NmF
+            NmFty = NmF.T @ yp
+
+            Pinv, ldP = P_var_inv(params)
+            cf = matrix_factor(Pinv + FtNmF)
+            ytXy = NmFty.T @ matrix_solve(cf, NmFty)
+
+            return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
+
+        kernelproduct.params = sorted(self.N.params + P_var_inv.params + Ffunc.params)
+
+        return kernelproduct
+
     def make_kernelproduct(self, y):
+        if callable(y):
+            return self.make_kernelproduct_vary(y)
+
         y = jnparray(y)
 
         N_solve_1d = self.N.make_solve_1d()
@@ -1102,6 +1142,7 @@ class WoodburyKernel_varNP(VariableKernel):
         else:
             Fmat = jnparray(self.F)
             Ffunc = lambda params: Fmat
+            Ffunc.params = []
 
         P_var_inv = self.P_var.make_inv()
 
@@ -1121,7 +1162,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = sorted(self.N.params + P_var_inv.params)
+        kernelproduct.params = sorted(self.N.params + P_var_inv.params + Ffunc.params)
 
         return kernelproduct
 
