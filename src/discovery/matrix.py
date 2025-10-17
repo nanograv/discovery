@@ -1250,6 +1250,53 @@ class WoodburyKernel_varNP(VariableKernel):
         return solve_1d
 
 
+    def make_kernelterms(self, y, T):
+        # Sigma = (N + F P Ft)
+        # Sigma^-1 = Nm - Nm F (P^-1 + Ft Nm F)^-1 Ft Nm
+        #
+        # yt Sigma^-1 y = yt Nm y - (yt Nm F) C^-1 (Ft Nm y)
+        # Tt Sigma^-1 y = Tt Nm y - Tt Nm F C^-1 (Ft Nm y)
+        # Tt Sigma^-1 T = Tt Nm T - (Tt Nm F) C^-1 (Ft Nm T)
+
+        # if callable(y):
+        #     return self.make_kernelterms_vary(y, T)
+        Nsolve1d = self.N_var.make_solve_1d()
+        Nsolve2d = self.N_var.make_solve_2d()
+
+        P_var_inv = self.P_var.make_inv()
+        F = jnparray(self.F)
+
+        # closes on P_var_inv, Nsolve1d, Nsolve2d
+        def kernelterms(params):
+            Nmy, ldN = Nsolve1d(params, y)
+            ytNmy = y @ Nmy
+            FtNmy = F.T @ Nmy
+            NmF, _ = Nsolve2d(params, F)
+            TtNmy = T.T @ Nmy
+            FtNmF = F.T @ NmF
+            TtNmF = T.T @ NmF
+
+            NmT, _ = Nsolve2d(params, T)
+            FtNmT = self.F.T @ NmT
+            TtNmT = T.T @ NmT
+
+            Pinv, ldP = P_var_inv(params)
+            cf = matrix_factor(Pinv + FtNmF)
+
+            sol = matrix_solve(cf, FtNmy)
+            sol2 = matrix_solve(cf, FtNmT)
+
+            a = -0.5 * (ytNmy - FtNmy.T @ sol) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
+            b = TtNmy - TtNmF @ sol
+            c = TtNmT - TtNmF @ sol2
+
+            return a, b, c
+
+        kernelterms.params = self.P_var.params
+
+        return kernelterms
+
+
 
 
 
