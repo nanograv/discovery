@@ -1088,13 +1088,13 @@ class WoodburyKernel_varFP(VariableKernel):
 
 class WoodburyKernel_varNP(VariableKernel):
     def __init__(self, N_var, F, P_var):
-        self.N, self.F, self.P_var = N_var, F, P_var
+        self.N_var, self.F, self.P_var = N_var, F, P_var
 
     def make_kernelproduct(self, y):
         y = jnparray(y)
 
-        N_solve_1d = self.N.make_solve_1d()
-        N_solve_2d = self.N.make_solve_2d()
+        N_solve_1d = self.N_var.make_solve_1d()
+        N_solve_2d = self.N_var.make_solve_2d()
 
         # avoid a separate WoodburyKernel_varNFP
         if callable(self.F):
@@ -1121,7 +1121,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = sorted(self.N.params + P_var_inv.params)
+        kernelproduct.params = sorted(self.N_var.params + P_var_inv.params)
 
         return kernelproduct
 
@@ -1129,7 +1129,7 @@ class WoodburyKernel_varNP(VariableKernel):
     def make_kernelproduct_gpcomponent(self, y):
         # -0.5 (y - F a)^T N^-1 (y - F a) - 0.5 a^T P^-1 a
 
-        N_solve_1d = self.N.make_solve_1d()
+        N_solve_1d = self.N_var.make_solve_1d()
         P_solve = self.P_var.make_solve_1d()
 
         cvars = list(self.index.keys())
@@ -1145,13 +1145,13 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (yp @ Nmyp + c @ Pmc + ldP + ldN)
 
-        kernelproduct.params = sorted(self.N.params + self.P_var.params + cvars)
+        kernelproduct.params = sorted(self.N_var.params + self.P_var.params + cvars)
 
         return kernelproduct
 
     def make_kernelsolve(self, y, T):
-        N_solve_1d = self.N.make_solve_1d()
-        N_solve_2d = self.N.make_solve_2d()
+        N_solve_1d = self.N_var.make_solve_1d()
+        N_solve_2d = self.N_var.make_solve_2d()
 
         P_var_inv = self.P_var.make_inv()
 
@@ -1178,7 +1178,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return TtSy, TtST
 
-        kernelsolve.params = sorted(self.N.params + P_var_inv.params)
+        kernelsolve.params = sorted(self.N_var.params + P_var_inv.params)
 
         return kernelsolve
 
@@ -1186,7 +1186,7 @@ class WoodburyKernel_varNP(VariableKernel):
         # for when there is only one
         # GP, and it hasn't been marginalized over
         P_var = self.P_var
-        Nvar = self.N
+        Nvar = self.N_var
         F = jnparray(self.F)
         y = jnparray(y)
         P_var_inv = P_var.make_inv()
@@ -1204,8 +1204,53 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return b_mean, Sigma
 
-        kernelsolve.params = sorted(self.N.params + P_var.params)
+        kernelsolve.params = sorted(self.N_var.params + P_var.params)
         return kernelsolve
+
+    def make_solve_2d(self):
+        N_solve_2d = self.N_var.make_solve_2d()
+        P_var = self.P_var
+        P_var_inv = P_var.make_inv()
+
+        Fl = jnparray(self.F)
+
+        def solve_2d(params, Fr):
+            Pinv, ldP = P_var_inv(params)
+
+            NmFl, ldN = N_solve_2d(params, Fl)
+            NmFltFr = NmFl.T @ Fr
+
+            cf = matrix_factor(Pinv + Fl.T @ NmFl)
+            ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
+
+            return N_solve_2d(params, Fr)[0] - NmFl @ matrix_solve(cf, NmFltFr), ld
+        solve_2d.params = self.N_var.params
+
+        return solve_2d
+
+    def make_solve_1d(self):
+        N_solve_1d = self.N_var.make_solve_1d()
+        N_solve_2d = self.N_var.make_solve_2d()
+        P_var = self.P_var
+        P_var_inv = P_var.make_inv()
+
+        F = jnparray(self.F)
+
+        def solve_1d(params, y):
+            Pinv, ldP = P_var_inv(params)
+            NmF, ldN = N_solve_2d(params, F)
+            NmFty = NmF.T @ y
+
+            cf = matrix_factor(Pinv + F.T @ NmF)
+            ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
+
+            return N_solve_1d(params, y)[0] - NmF @ matrix_solve(cf, NmFty), ld
+        solve_1d.params = self.N_var.params
+
+        return solve_1d
+
+
+
 
 
 class WoodburyKernel_varP(VariableKernel):
