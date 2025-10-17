@@ -557,12 +557,18 @@ class ArrayLikelihood:
                 else:
                     phis_invs = matrix.jnp.concatenate([*phis_invs_commongp], axis=1)
                 i1, i2 = matrix.jnp.diag_indices(phis_invs.shape[1], ndim=2)
-                cf = matrix.matrix_factor(FtNmF.at[:,i1,i2].add(phis_invs))
+
+                # supposedly, the native batching here should be better
+                # than vmap.
+
+                cf = matrix.matrix_factor(FtNmF.at[:,i1,i2].add(phis_invs), lower=True)
+                am = matrix.jsp.linalg.solve_triangular(cf[0], c, trans=1, lower=cf[1])
                 mus = matrix.matrix_solve(cf, NmFty)
-                am = jax.vmap(lambda x, y: matrix.jsp.linalg.solve_triangular(x, y, lower=True, trans=1))(cf[0], c)
-                c = am + mus
                 # jacobian of our transformation | d f^{-1} / d(xi) | = |L|. cf[0] is L^{-1}.
                 ldL = -matrix.jnp.logdet(cf[0][:,i1,i2])
+
+                c = am + mus
+
                 return c, ldL
             decenter_transform.params = []
 
