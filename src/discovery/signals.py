@@ -546,7 +546,14 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
 
             # the jnp.dot handles the "pixel basis" case where the elements of orfmat are n-vectors
             # and phidiag is an (m x n)-matrix; here n is the number of pixels and m of Fourier components
-            return jnp.block([[jnp.make2d(jnp.dot(phi, val)) for val in row] for row in orfmat])
+            #
+            if jnp is jax.numpy:
+                # this seems to speed things up, pre-compilation at least.
+                tmp = jnp.kron(orfmat, jnp.diag(phi))
+                return tmp
+            else:
+                return jnp.block([[jnp.make2d(jnp.dot(phi, val)) for val in row] for row in orfmat])
+
         priorfunc.params = argmap
         priorfunc.type = jax.Array
 
@@ -562,8 +569,10 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
                 # log |S_ij Gamma_ab| = log (prod_i S_i^npsr) + log prod_i |Gamma_ab|
                 #                     = npsr * sum_i log S_i + nfreqs |Gamma_ab|
 
-                return (jnp.block([[jnp.make2d(val * invphi) for val in row] for row in invorf]),
-                        phi.shape[0] * orflogdet + orfmat.shape[0] * logdetphi)
+                # return (jnp.block([[jnp.make2d(val * invphi) for val in row] for row in invorf]),
+                #         phi.shape[0] * orflogdet + orfmat.shape[0] * logdetphi)
+                return (jnp.kron(invorf, jnp.make2d(invphi)),
+                            phi.shape[0] * orflogdet + orfmat.shape[0] * logdetphi)
                         # was -orfmat.shape[0] * jnp.sum(jnp.log(invphidiag)))
             invprior.params = argmap
             invprior.type = jax.Array
