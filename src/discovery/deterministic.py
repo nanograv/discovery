@@ -82,6 +82,122 @@ def makedelay_binary(pulsarterm=True):
     return delay_binary
 
 
+def makedelay_binary_phases(pulsarterm=True):
+    """Factory for computing cphase and sphase vectors from binary parameters."""
+    def delay_binary_phases(toas, log10_f0):
+        """Compute cosine and sine phase vectors.
+
+        Returns:
+            cphase: cosine phase vector (toas,)
+            sphase: sine phase vector (toas,)
+        """
+        f0 = 10**log10_f0
+        tref = 86400.0 * 51544.5  # MJD J2000 in seconds
+
+        # Compute base phase vectors from frequency evolution only
+        phase_base = 2.0 * jnp.pi * f0 * (toas - tref)
+        cphase = jnp.cos(phase_base)
+        sphase = jnp.sin(phase_base)
+
+        return jnp.array([cphase, sphase])
+
+    return delay_binary_phases
+
+
+def makedelay_binary_coefficients(pulsarterm=True):
+    """Factory for computing coefficients to multiply phase vectors."""
+    def delay_binary_coefficients(pos, log10_h0, log10_f0, ra, sindec, cosinc, psi, phi_earth, phi_psr):
+        """Compute antenna pattern factors and phase coefficients.
+
+        Returns:
+            coeffs: dictionary with keys:
+                - 'fplus', 'fcross': antenna pattern factors
+                - 'rplus_coeff_c', 'rplus_coeff_s': coefficients for cphase/sphase in rplus
+                - 'rcross_coeff_c', 'rcross_coeff_s': coefficients for cphase/sphase in rcross
+
+            Full response is reconstructed as:
+            res = -fplus * (rplus_coeff_c * cphase + rplus_coeff_s * sphase)
+                  -fcross * (rcross_coeff_c * cphase + rcross_coeff_s * sphase)
+        """
+        h0 = 10**log10_h0
+        f0 = 10**log10_f0
+
+        dec, inc = jnp.arcsin(sindec), jnp.arccos(cosinc)
+
+        # calculate antenna pattern (note: pos is pulsar sky position unit vector)
+        fplus, fcross = fpc_fast(pos, 0.5 * jnp.pi - dec, ra)  # careful with dec -> gwtheta conversion
+
+        # Calculate coefficients that multiply cphase and sphase
+        # Apply addition theorem: cos(phi_avg + phase_base) = cos(phi_avg)*cos(phase_base) - sin(phi_avg)*sin(phase_base)
+        # Original cphase_orig = cos(phi_avg + phase_base)
+        # Original sphase_orig = sin(phi_avg + phase_base)
+        if pulsarterm:
+            phi_avg = 0.5 * (phi_earth + phi_psr)
+            phi_diff = 0.5 * (phi_earth - phi_psr)
+
+            cos_avg = jnp.cos(phi_avg)
+            sin_avg = jnp.sin(phi_avg)
+            sin_diff = jnp.sin(phi_diff)
+
+            # cphase_orig = cos_avg * cphase - sin_avg * sphase
+            # sphase_orig = sin_avg * cphase + cos_avg * sphase
+            # delta_sin =  2.0 * cphase_orig * sin_diff
+            # delta_cos = -2.0 * sphase_orig * sin_diff
+
+            c_coeff_sin = 2.0 * cos_avg * sin_diff    # coefficient for cphase in delta_sin
+            s_coeff_sin = -2.0 * sin_avg * sin_diff   # coefficient for sphase in delta_sin
+            c_coeff_cos = -2.0 * sin_avg * sin_diff   # coefficient for cphase in delta_cos
+            s_coeff_cos = -2.0 * cos_avg * sin_diff   # coefficient for sphase in delta_cos
+        else:
+            # cphase_orig = cos(phi_earth + phase_base) = cos(phi_earth)*cphase - sin(phi_earth)*sphase
+            # sphase_orig = sin(phi_earth + phase_base) = sin(phi_earth)*cphase + cos(phi_earth)*sphase
+            # delta_sin = sphase_orig
+            # delta_cos = cphase_orig
+            cos_earth = jnp.cos(phi_earth)
+            sin_earth = jnp.sin(phi_earth)
+
+            c_coeff_sin = sin_earth    # coefficient for cphase in delta_sin
+            s_coeff_sin = cos_earth    # coefficient for sphase in delta_sin
+            c_coeff_cos = cos_earth    # coefficient for cphase in delta_cos
+            s_coeff_cos = -sin_earth   # coefficient for sphase in delta_cos
+
+        # At = -1.0 * (1.0 + cos(inc)^2) * delta_sin
+        # Bt = 2.0 * cos(inc) * delta_cos
+        cos_inc = jnp.cos(inc)
+        At_coeff_c = -1.0 * (1.0 + cos_inc**2) * c_coeff_sin
+        At_coeff_s = -1.0 * (1.0 + cos_inc**2) * s_coeff_sin
+        Bt_coeff_c = 2.0 * cos_inc * c_coeff_cos
+        Bt_coeff_s = 2.0 * cos_inc * s_coeff_cos
+
+        alpha = h0 / (2 * jnp.pi * f0)
+        cos_2psi = jnp.cos(2 * psi)
+        sin_2psi = jnp.sin(2 * psi)
+
+        # rplus = alpha * (-At * cos(2*psi) + Bt * sin(2*psi))
+        # rcross = alpha * (At * sin(2*psi) + Bt * cos(2*psi))
+
+        # Coefficient for cphase in rplus: alpha * (-At_coeff_c * cos(2*psi) + Bt_coeff_c * sin(2*psi))
+        rplus_coeff_c = alpha * (-At_coeff_c * cos_2psi + Bt_coeff_c * sin_2psi)
+        # Coefficient for sphase in rplus: alpha * (-At_coeff_s * cos(2*psi) + Bt_coeff_s * sin(2*psi))
+        rplus_coeff_s = alpha * (-At_coeff_s * cos_2psi + Bt_coeff_s * sin_2psi)
+
+        # Coefficient for cphase in rcross: alpha * (At_coeff_c * sin(2*psi) + Bt_coeff_c * cos(2*psi))
+        rcross_coeff_c = alpha * (At_coeff_c * sin_2psi + Bt_coeff_c * cos_2psi)
+        # Coefficient for sphase in rcross: alpha * (At_coeff_s * sin(2*psi) + Bt_coeff_s * cos(2*psi))
+        rcross_coeff_s = alpha * (At_coeff_s * sin_2psi + Bt_coeff_s * cos_2psi)
+
+        Ac = -fplus * rplus_coeff_c - fcross * rcross_coeff_c
+        As = -fplus * rplus_coeff_s - fcross * rcross_coeff_s
+
+        return jnp.array([Ac, As])
+
+    if not pulsarterm:
+        delay_binary_coefficients = functools.partial(delay_binary_coefficients, phi_psr=jnp.nan)
+
+    return delay_binary_coefficients
+
+
+
 def cos2comp(f, df, A, f0, phi, t0):
     """Project signal A * cos(2pi f t + phi) onto Fourier basis
     cos(2pi k t/T), sin(2pi k t/T) for t in [t0, t0+T]."""
