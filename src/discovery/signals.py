@@ -191,16 +191,35 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
     for backend, mask in zip(backends, masks):
         log10_ecorrs.append(f'{psr.name}_{backend}_log10_ecorr')
 
-        # TOAs that do not belong to this mask get index zero, which is ignored below.
-        # This will fail if there's only one mask that covers all TOAs
+
+        # For handling the single backend case
+        if len(np.unique(masks)) == 1:
+            # for those pulsar with only one backend
+            first_valid_bin = 0
+        else:
+            # if the mask contains zeros
+            # the zeros in quantize below end up in the
+            # first entry, which we skip later.
+            first_valid_bin = 1
+
         bins = quantize(psr.toas * mask)
 
         if enterprise:
             # legacy accounting of degrees of freedom
-            uniques, counts = np.unique(quantize(psr.toas * mask), return_counts=True)
-            Umats.append(np.vstack([bins == i for i, cnt in zip(uniques[1:], counts[1:]) if cnt > 1]).T)
+            uniques, counts = np.unique(bins, return_counts=True)
+            epoch_masks = [bins == i for i, cnt in zip(
+                uniques[first_valid_bin:],
+                counts[first_valid_bin:]) if cnt > 1]
+
+            if epoch_masks:
+                U_backend = np.vstack(epoch_masks).T
+            else:
+                # if there is no ToAs observed at the same time
+                U_backend = np.zeros((len(bins), 0))
+
+            Umats.append(U_backend)
         else:
-            Umats.append(np.vstack([bins == i for i in range(1, bins.max() + 1)]).T)
+            Umats.append(np.vstack([bins == i for i in range(first_valid_bin, bins.max() + 1)]).T)
     Umatall = np.hstack(Umats)
     params = log10_ecorrs
 
