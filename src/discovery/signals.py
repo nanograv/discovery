@@ -177,7 +177,7 @@ def makegp_ecorr_simple(psr, noisedict={}):
         ones = matrix.jnparray(ones)
         def getphi(params):
             return (10.0**(2.0 * params[log10_ecorr])) * ones
-        getphi.params = Params
+        getphi.params = params
 
         return matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), Umat)
 
