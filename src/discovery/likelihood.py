@@ -37,7 +37,7 @@ from . import signals
 
 class PulsarLikelihood:
     def __init__(self, args, concat=True):
-        y     = [arg for arg in args if isinstance(arg, np.ndarray)]
+        y     = [arg for arg in args if isinstance(arg, np.ndarray) or isinstance(arg, jax.Array)]
         delay = [arg for arg in args if callable(arg)]
         noise = [arg for arg in args if isinstance(arg, matrix.Kernel)]
         cgps  = [arg for arg in args if isinstance(arg, matrix.ConstantGP)]
@@ -182,7 +182,15 @@ class PulsarLikelihood:
     @functools.cached_property
     def sample(self):
         if callable(self.y):
-            print('Warning: delays are ignored in PulsarLikelihood.sample.')
+            noiseonly = self.N.make_sample()
+            delays = self.delay
+
+            def make_sample(key, params):
+                key, noise = noiseonly(key, params)
+                return key, noise + sum(delay(params) for delay in delays)
+            make_sample.params = sorted(set(noiseonly.params + sum([delay.params for delay in delays], [])))
+
+            return make_sample
 
         return self.N.make_sample()
 
