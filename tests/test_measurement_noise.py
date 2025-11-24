@@ -31,7 +31,7 @@ def test_makenoise_measurement_fixed_params():
     noisedict = {}
     for backend in backends:
         noisedict[f'{psr.name}_{backend}_efac'] = 1.2
-        noisedict[f'{psr.name}_{backend}_log10_t2equad'] = -7.5
+        noisedict[f'{psr.name}_{backend}_log10_t2equad'] = -2.5
 
     # Get noise matrix
     noise = signals.makenoise_measurement(psr, noisedict=noisedict, ecorr=False)
@@ -71,8 +71,8 @@ def test_makenoise_measurement_with_ecorr():
     noisedict = {}
     for backend in backends:
         noisedict[f'{psr.name}_{backend}_efac'] = 1.0
-        noisedict[f'{psr.name}_{backend}_log10_t2equad'] = -7.0
-        noisedict[f'{psr.name}_{backend}_log10_ecorr'] = -7.5
+        noisedict[f'{psr.name}_{backend}_log10_t2equad'] = -2.5
+        noisedict[f'{psr.name}_{backend}_log10_ecorr'] = -2.5
 
     noise = signals.makenoise_measurement(psr, noisedict=noisedict, ecorr=True)
 
@@ -90,7 +90,7 @@ def test_makenoise_measurement_tnequad():
 
     noisedict = {
         f'{psr.name}_{backend}_efac': 1.3,
-        f'{psr.name}_{backend}_log10_tnequad': -7.0
+        f'{psr.name}_{backend}_log10_tnequad': -2.5
     }
 
     noise = signals.makenoise_measurement(psr, noisedict=noisedict, tnequad=True)
@@ -144,7 +144,7 @@ def test_makenoise_measurement_single_backend():
     backend = list(set(psr.backend_flags))[0]
     noisedict = {
         f'{psr.name}_{backend}_efac': 1.1,
-        f'{psr.name}_{backend}_log10_t2equad': -7.5
+        f'{psr.name}_{backend}_log10_t2equad': -2.5
     }
 
     # Should work without errors
@@ -154,6 +154,7 @@ def test_makenoise_measurement_single_backend():
 @pytest.mark.unit
 def test_makenoise_measurement_vectorize():
     """Test vectorize parameter affects implementation but gives same results"""
+    np.random.seed(1)
     psr = MockPulsar('J0437-4715', ntoas=50, nbackends=2)
 
     noise_vec = signals.makenoise_measurement(psr, noisedict={}, vectorize=True, ecorr=False)
@@ -171,11 +172,11 @@ def test_makenoise_measurement_vectorize():
     params = {}
     for backend in backends:
         params[f'{psr.name}_{backend}_efac'] = 1.2
-        params[f'{psr.name}_{backend}_log10_t2equad'] = -7.5
+        params[f'{psr.name}_{backend}_log10_t2equad'] = -2.5
 
     result_vec = noise_vec.getN(params)
     result_novec = noise_novec.getN(params)
-
+    print(result_vec, result_novec)
     np.testing.assert_allclose(result_vec, result_novec, rtol=1e-10)
 
 
@@ -186,7 +187,7 @@ def test_makenoise_measurement_tnequad_equivalence():
     backend = sorted(set(psr.backend_flags))[0]
 
     # With efac=1, tnequad and t2equad should give the same results
-    log10_equad_value = -7.5
+    log10_equad_value = -2.5
 
     noisedict_tnequad = {
         f'{psr.name}_{backend}_efac': 1.0,
@@ -235,7 +236,7 @@ def test_makenoise_measurement_tnequad_variable():
     params = {}
     for backend in backends:
         params[f'{psr.name}_{backend}_efac'] = 1.2
-        params[f'{psr.name}_{backend}_log10_tnequad'] = -7.5
+        params[f'{psr.name}_{backend}_log10_tnequad'] = -2.5
 
     result_vec = noise_vec.getN(params)
     result_novec = noise_novec.getN(params)
@@ -296,7 +297,7 @@ def test_makenoise_measurement_outliers_error_fixed():
     alpha_param = f'{psr.name}_alpha_scaling({psr.toas.size})'
     noisedict = {
         f'{psr.name}_{backend}_efac': 1.0,
-        f'{psr.name}_{backend}_log10_t2equad': -7.5,
+        f'{psr.name}_{backend}_log10_t2equad': -2.5,
         alpha_param: np.ones(psr.toas.size),
     }
 
@@ -314,11 +315,11 @@ def test_makenoise_measurement_simple_consistency():
     # Test with fixed parameters
     noisedict_simple = {
         f'{psr.name}_efac': 1.2,
-        f'{psr.name}_log10_t2equad': -7.5
+        f'{psr.name}_log10_t2equad': -2.5
     }
     noisedict_full = {
         f'{psr.name}_{backend}_efac': 1.2,
-        f'{psr.name}_{backend}_log10_t2equad': -7.5
+        f'{psr.name}_{backend}_log10_t2equad': -2.5
     }
 
     noise_simple = signals.makenoise_measurement_simple(psr, noisedict=noisedict_simple)
@@ -342,11 +343,11 @@ def test_makenoise_measurement_simple_consistency():
     # Test they give same results with corresponding parameter names
     params_simple = {
         f'{psr.name}_efac': 1.2,
-        f'{psr.name}_log10_t2equad': -7.5
+        f'{psr.name}_log10_t2equad': -2.5
     }
     params_full = {
         f'{psr.name}_{backend}_efac': 1.2,
-        f'{psr.name}_{backend}_log10_t2equad': -7.5
+        f'{psr.name}_{backend}_log10_t2equad': -2.5
     }
 
     result_simple = noise_simple_var.getN(params_simple)
@@ -364,10 +365,10 @@ def test_makegp_ecorr_simple_consistency():
 
     # Test with fixed parameters
     noisedict_simple = {
-        f'{psr.name}_log10_ecorr': -7.5
+        f'{psr.name}_log10_ecorr': -2.5
     }
     noisedict_full = {
-        f'{psr.name}_{backend}_log10_ecorr': -7.5
+        f'{psr.name}_{backend}_log10_ecorr': -2.5
     }
 
     gp_simple = signals.makegp_ecorr_simple(psr, noisedict=noisedict_simple)
@@ -402,11 +403,11 @@ def test_makegp_ecorr_simple_variable():
         assert f'{psr.name}_log10_ecorr' in params
 
         # Try to evaluate it
-        test_params = {f'{psr.name}_log10_ecorr': -7.5}
+        test_params = {f'{psr.name}_log10_ecorr': -2.5}
         phi = gp.Phi.getN(test_params)
 
         # Should be all equal values
-        expected_phi = 10.0 ** (2.0 * -7.5)
+        expected_phi = 10.0 ** (2.0 * -2.5)
         np.testing.assert_allclose(phi, expected_phi, rtol=1e-10)
 
     except NameError as e:
@@ -426,7 +427,7 @@ def test_makegp_ecorr_variable_flag():
     backend = sorted(set(psr.backend_flags))[0]
 
     noisedict = {
-        f'{psr.name}_{backend}_log10_ecorr': -7.5
+        f'{psr.name}_{backend}_log10_ecorr': -2.5
     }
 
     # With variable=False (default), should get ConstantGP
@@ -459,6 +460,88 @@ def test_makegp_ecorr_variable_flag():
     phi_constant = gp_constant.Phi.N
     phi_variable = gp_variable.Phi.getN({})  # empty params dict
     np.testing.assert_allclose(phi_constant, phi_variable, rtol=1e-10)
+
+
+@pytest.mark.unit
+def test_ecorr_gp_vs_noise_equivalence():
+    """Test that ECORR as a GP component gives same result as ECORR in noise matrix.
+
+    Two approaches should be equivalent:
+    1. makenoise_measurement(ecorr=False) + makegp_ecorr as separate GP
+    2. makenoise_measurement(ecorr=True) with ECORR in noise matrix
+
+    Both should produce the same effective noise covariance matrix.
+    Tests both enterprise=True and enterprise=False modes.
+    """
+    try:
+        import discovery as ds
+    except ImportError:
+        pytest.skip("discovery package not installed")
+
+    # Create a mock pulsar with single backend
+    psr = MockPulsar('J0437-4715', ntoas=100, nbackends=1)
+    backend = sorted(set(psr.backend_flags))[0]
+
+    # Fixed noise parameters
+    noisedict = {
+        f'{psr.name}_{backend}_efac': 1.2,
+        f'{psr.name}_{backend}_log10_t2equad': -2.5,
+        f'{psr.name}_{backend}_log10_ecorr': -2.5
+    }
+
+    # Test with enterprise=True (only multi-TOA epochs)
+    # Approach 1: ECORR as separate GP component
+    noise_no_ecorr = ds.makenoise_measurement(psr, noisedict=noisedict, ecorr=False)
+    gp_ecorr = ds.makegp_ecorr(psr, noisedict=noisedict, enterprise=True)
+
+    likelihood1 = ds.PulsarLikelihood([psr.residuals, noise_no_ecorr, gp_ecorr])
+
+    # Approach 2: ECORR in noise matrix (Sherman-Morrison form)
+    noise_with_ecorr = ds.makenoise_measurement(psr, noisedict=noisedict, ecorr=True, enterprise=True)
+
+    likelihood2 = ds.PulsarLikelihood([psr.residuals, noise_with_ecorr])
+
+    # Get the top-level N from each likelihood
+    N1 = likelihood1.N
+    N2 = likelihood2.N
+
+    # Test solve_1d on a random vector
+    # The two approaches use different internal representations (Woodbury vs Sherman-Morrison)
+    # but should give the same results for solve_1d
+    np.random.seed(42)  # For reproducibility
+    y = np.random.randn(len(psr.toas))
+    Nmy1, logN1 = N1.solve_1d(y)
+    Nmy2, logN2 = N2.solve_1d(y)
+
+    # Both should give the same result
+    np.testing.assert_allclose(Nmy1, Nmy2, rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(logN1, logN2, rtol=1e-10, atol=1e-10)
+
+    # Test with enterprise=False (all epochs including single-TOA)
+    # Approach 1: ECORR as separate GP component
+    noise_no_ecorr_all = ds.makenoise_measurement(psr, noisedict=noisedict, ecorr=False)
+    gp_ecorr_all = ds.makegp_ecorr(psr, noisedict=noisedict, enterprise=False)
+
+    likelihood3 = ds.PulsarLikelihood([psr.residuals, noise_no_ecorr_all, gp_ecorr_all])
+
+    # Approach 2: ECORR in noise matrix (Sherman-Morrison form)
+    noise_with_ecorr_all = ds.makenoise_measurement(psr, noisedict=noisedict, ecorr=True, enterprise=False)
+
+    likelihood4 = ds.PulsarLikelihood([psr.residuals, noise_with_ecorr_all])
+
+    # Get the top-level N from each likelihood
+    N3 = likelihood3.N
+    N4 = likelihood4.N
+
+    # Test solve_1d on a random vector
+    np.random.seed(43)  # Different seed for second test
+    y2 = np.random.randn(len(psr.toas))
+    Nmy3, logN3 = N3.solve_1d(y2)
+    Nmy4, logN4 = N4.solve_1d(y2)
+
+    # Both should give the same result
+    np.testing.assert_allclose(Nmy3, Nmy4, rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(logN3, logN4, rtol=1e-10, atol=1e-10)
 
 
 """

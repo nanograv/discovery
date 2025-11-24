@@ -47,7 +47,7 @@ def selection_backend_flags(psr):
 
 
 def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, ecorr=False, selection=selection_backend_flags, vectorize=True,
-                          outliers=False):
+                          outliers=False, enterprise=False):
     backend_flags = selection(psr)
     backends = [b for b in sorted(set(backend_flags)) if b != '']
 
@@ -78,7 +78,7 @@ def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, ecorr=Fal
                         for mask, efac, log10_t2equad in zip(masks, efacs, log10_t2equads))
 
         if ecorr:
-            egp = makegp_ecorr(psr, noisedict=noisedict, enterprise=True, scale=scale, selection=selection)
+            egp = makegp_ecorr(psr, noisedict=noisedict, enterprise=enterprise, scale=scale, selection=selection)
             return matrix.NoiseMatrixSM_novar(noise, egp.F, egp.Phi.N)
         else:
             return matrix.NoiseMatrix1D_novar(noise)
@@ -130,7 +130,7 @@ def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, ecorr=Fal
         getnoise.params = params
 
         if ecorr:
-            egp = makegp_ecorr(psr, noisedict={}, enterprise=True, scale=scale, selection=selection)
+            egp = makegp_ecorr(psr, noisedict={}, enterprise=enterprise, scale=scale, selection=selection)
             return matrix.NoiseMatrixSM_var(getnoise, egp.F, egp.Phi.getN)
         else:
             return matrix.NoiseMatrix1D_var(getnoise)
