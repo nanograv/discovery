@@ -1061,7 +1061,40 @@ class WoodburyKernel_varFP(VariableKernel):
     def __init__(self, N, F_var, P_var):
         self.N, self.F, self.P_var = N, F_var, P_var
 
+    def make_kernelproduct_vary(self, y):
+        y_var = y
+
+        N_solve_1d = self.N.make_solve_1d()
+        N_solve_2d = self.N.make_solve_2d()
+
+        F_var = self.F
+        P_var_inv = self.P_var.make_inv()
+
+        def kernelproduct(params):
+            yp = y_var(params)
+            F = F_var(params)
+
+            Nmy, ldN = N_solve_1d(yp)
+            ytNmy = yp @ Nmy
+
+            NmF, _ = N_solve_2d(F)
+            FtNmF = F.T @ NmF
+            NmFty = NmF.T @ yp
+
+            Pinv, ldP = P_var_inv(params)
+            cf = matrix_factor(Pinv + FtNmF)
+            ytXy = NmFty.T @ matrix_solve(cf, NmFty)
+
+            return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
+
+        kernelproduct.params = sorted(F_var.params + P_var_inv.params + y_var.params)
+
+        return kernelproduct
+
     def make_kernelproduct(self, y):
+        if callable(y):
+            return self.make_kernelproduct_vary(y)
+
         Nmy, _  = self.N.solve_1d(y)
         ytNmy = y @ Nmy
 
@@ -1081,7 +1114,7 @@ class WoodburyKernel_varFP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = F_var.params + P_var_inv.params
+        kernelproduct.params = sorted(F_var.params + P_var_inv.params)
 
         return kernelproduct
 
@@ -1123,7 +1156,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = sorted(self.N.params + P_var_inv.params + Ffunc.params)
+        kernelproduct.params = sorted(self.N.params + P_var_inv.params + Ffunc.params + y_var.params)
 
         return kernelproduct
 
