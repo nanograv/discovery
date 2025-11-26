@@ -1,0 +1,29 @@
+abstract: <p>Next-generation pulsar-timing-array data analysis</p>
+authors:
+- family-names: Vallisneri
+  given-names: Michele
+  orcid: "https://orcid.org/0000-0002-4162-0033"
+- family-names: Meyers
+  given-names: Patrick M.
+  orcid: "https://orcid.org/0000-0002-2689-0190"
+- family-names: Wright
+  given-names: David
+  orcid: "https://orcid.org/0000-0003-1562-4679"
+- family-names: Johnson
+  given-names: Aaron D.
+  orcid: "https://orcid.org/0000-0002-7445-8423"
+- family-names: Baier
+  given-names: Jeremy G.
+  orcid: "https://orcid.org/0000-0002-4972-1525"
+- family-names: van Haasteren
+  given-names: Rutger
+  orcid: "https://orcid.org/0000-0002-6428-2620"
+cff-version: 1.2.0
+date-released: '2025-11-25'
+doi: 10.5281/zenodo.17711453
+license:
+- MIT
+message: If you use this software, please cite it using the metadata from this file.
+repository-code: https://github.com/nanograv/discovery
+title: 'nanograv/discovery'
+type: software

@@ -1,4 +1,5 @@
 # Discovery
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17711453.svg)](https://doi.org/10.5281/zenodo.17711453)
 
 <img src="discovery.png" alt="Logo" width="300" align="left" style="margin-right: 20px;"/>
 
