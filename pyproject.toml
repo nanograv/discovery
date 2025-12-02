@@ -3,7 +3,7 @@ requires = ["flit"]
 build-backend = "flit.buildapi"
 
 [project]
-name =  "discovery"
+name =  "discovery-pulsar"
 authors = [
     {name = "Michele Vallisneri", email = "vallis@vallis.org"},
 ]
@@ -68,9 +68,9 @@ flow = [
 ]
 
 [project.urls]
-# Documentation = "https://github.com/microsoft/python-package-template/tree/main#readme"
-Source = "https://github.com/vallis/discovery"
-# Tracker = "https://github.com/microsoft/python-package-template/issues"
+Documentation = "https://github.com/nanograv/discovery"
+Source = "https://github.com/nanograv/discovery"
+Tracker = "https://github.com/nanograv/discovery/issues"
 
 [tool.flit.module]
 name = "discovery"
