@@ -12,7 +12,7 @@ import jax.numpy as jnp
 
 from . import matrix
 from . import const
-
+from . import solar
 
 # residuals
 
@@ -345,6 +345,12 @@ def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
         return fmat * fnorm[:, None]**alpha
 
     return f, df, fmatfunc
+
+def dmfourierbasis_solar(psr, components, T=None):
+    f, df, fmat = fourierbasis(psr, components, T)
+    shape = solar.make_solardm(psr)(1.0)
+
+    return f, df, fmat * shape[:, None]
 
 def make_dmfourierbasis(alpha=2.0, tndm=False):
     def basis(psr, components, T=None, fref=1400.0):
