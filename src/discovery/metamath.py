@@ -235,6 +235,7 @@ class CompoundGP:
         N = self._concat([gp.Phi.N for gp in self.gplist])
         return NoiseMatrix(N)
 
+
 def CompoundDelay(residuals, delays):
     return functools.reduce(lambda x, y: mm.func(delay(x, y)), [residuals, *delays])
 

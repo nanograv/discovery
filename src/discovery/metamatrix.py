@@ -13,6 +13,7 @@ from . import prior
 
 Array = jax.Array
 
+# ===== Graph library =====
 
 # ---- Leaf node types ----
 
@@ -98,10 +99,13 @@ def build_callable_from_graph(graph: Graph,
     """
     Take a graph (preferably already constant-folded) and produce a function:
 
-        f(params) -> env[output_name]
+        f(*args, params=...) -> env[output_name]
 
-    where params is an arbitrary pytree consumed by some of the FuncLeaf.fn
-    (those that have a non-empty attribute params).
+    where args are assigned to the ArgLeafs in the graph (which were originally
+    passed as None to the graph factor), and params is a dict consumed by some
+    of the FuncLeafs. The function will have an attribute `params` based on
+    the union of the FuncLeafs' `params`, and an attribute `args` listing
+    the names of the ArgLeafs in order.
     """
 
     # figure out the outputs of this graph
@@ -208,6 +212,7 @@ def prune_graph(graph: Graph,
     return pruned
 
 
+# helper for print_graph
 def _print_array_summary(arr: Any) -> str:
     if isinstance(arr, (np.ndarray, jnp.ndarray)):
         return f"array(shape={arr.shape}, dtype={arr.dtype})"
@@ -216,9 +221,10 @@ def _print_array_summary(arr: Any) -> str:
     else:
         return f"{arr}"
 
+
 def print_graph(graph: Graph, simplify=False) -> None:
     """
-    Pretty-print a computational graph.
+    Pretty-print a computational graph, applying constant folding and pruning if simplify=True
     """
     if simplify:
         graph = prune_graph(fold_constants(graph))
@@ -237,6 +243,9 @@ def print_graph(graph: Graph, simplify=False) -> None:
 
 
 def sample_graph(graph: Graph, *args, display=False) -> Graph:
+    """
+    Make a function from a graph, draw parameters from the prior, and evaluate it.
+    """
     f = func(graph, jit=False)
 
     ret = f(*args, params=prior.sample_uniform(f.params))
@@ -252,16 +261,15 @@ def func(graph: Graph,
          jit=True) -> Callable[[Any], Array]:
     """
     Given a computational graph, produce a JAX-jittable function
-    that computes the output of the graph.
-
-    This first folds constant subgraphs, then prunes the graph, then builds the callable.
+    that computes the graph output. This first folds constant subgraphs,
+    then prunes the graph, then builds the callable.
     """
     folded = fold_constants(graph)
     pruned = prune_graph(folded, outputs=outputs)
     return build_callable_from_graph(pruned, outputs=outputs, jit=jit)
 
-make = func
 
+# ===== Matrix operations =====
 
 def matrix_inv(amat, params={}):
     if amat.ndim == 1:
@@ -309,6 +317,8 @@ def matrix_unstack(bAmat, params={}):
     return bAmat[:,0], bAmat[:,1:]
 matrix_unstack.args, matrix_unstack.params = ['bAmat'], []
 
+
+# ===== Symbolic graph builder =====
 
 @dataclass
 class Sym:
