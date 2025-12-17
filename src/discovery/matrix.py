@@ -12,7 +12,7 @@ import jax.tree_util
 
 def config(**kwargs):
     global jnp, jsp, jnparray, jnpzeros, intarray, jnpkey, jnpsplit, jnpnormal
-    global matrix_factor, matrix_solve, matrix_norm, partial, SM_algorithm
+    global matrix_factor, matrix_solve, matrix_norm, partial, SM_algorithm, regularize_FtNmF
 
     np.logdet = lambda a: np.sum(np.log(np.abs(a)))
     jax.numpy.logdet = lambda a: jax.numpy.sum(jax.numpy.log(jax.numpy.abs(a)))
@@ -35,11 +35,11 @@ def config(**kwargs):
         jnpkey    = lambda seed: np.random.default_rng(seed)
         jnpsplit  = lambda gen: (gen, gen)
         jnpnormal = lambda gen, shape: gen.normal(size=shape)
-
+        single_precision = False
         partial = functools.partial
     elif backend == 'jax':
         jnp, jsp = jax.numpy, jax.scipy
-
+        single_precision = not jax.config.x64_enabled
         jnparray = lambda a: jnp.array(a, dtype=jnp.float64 if jax.config.x64_enabled else jnp.float32)
         jnpzeros = lambda a: jnp.zeros(a, dtype=jnp.float64 if jax.config.x64_enabled else jnp.float32)
         intarray = lambda a: jnp.array(a, dtype=jnp.int64)
@@ -50,6 +50,7 @@ def config(**kwargs):
 
         partial = jax.tree_util.Partial
 
+    regularize_FtNmF = kwargs.get('regularize_FtNmF', single_precision)
     factor = kwargs.get('factor')
 
     if factor == 'cholesky':
@@ -69,7 +70,6 @@ def rngkey(seed):
     return jnpkey(seed)
 
 # CG solver and Lanczos-Hutchinson logdet estimator, need matfree and jaxopt
-
 try:
     import jaxopt
     from matfree import decomp, funm, stochtrace
@@ -1121,13 +1121,13 @@ class WoodburyKernel_varFP(VariableKernel):
 
 class WoodburyKernel_varNP(VariableKernel):
     def __init__(self, N_var, F, P_var):
-        self.N, self.F, self.P_var = N_var, F, P_var
+        self.N_var, self.F, self.P_var = N_var, F, P_var
 
     def make_kernelproduct_vary(self, y):
         y_var = y
 
-        N_solve_1d = self.N.make_solve_1d()
-        N_solve_2d = self.N.make_solve_2d()
+        N_solve_1d = self.N_var.make_solve_1d()
+        N_solve_2d = self.N_var.make_solve_2d()
 
         # avoid a separate WoodburyKernel_varNFP
         if callable(self.F):
@@ -1156,7 +1156,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = sorted(self.N.params + P_var_inv.params + Ffunc.params + y_var.params)
+        kernelproduct.params = sorted(self.N_var.params + P_var_inv.params + Ffunc.params + y_var.params)
 
         return kernelproduct
 
@@ -1166,8 +1166,8 @@ class WoodburyKernel_varNP(VariableKernel):
 
         y = jnparray(y)
 
-        N_solve_1d = self.N.make_solve_1d()
-        N_solve_2d = self.N.make_solve_2d()
+        N_solve_1d = self.N_var.make_solve_1d()
+        N_solve_2d = self.N_var.make_solve_2d()
 
         # avoid a separate WoodburyKernel_varNFP
         if callable(self.F):
@@ -1195,7 +1195,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = sorted(self.N.params + P_var_inv.params + Ffunc.params)
+        kernelproduct.params = sorted(self.N_var.params + P_var_inv.params + Ffunc.params)
 
         return kernelproduct
 
@@ -1203,7 +1203,7 @@ class WoodburyKernel_varNP(VariableKernel):
     def make_kernelproduct_gpcomponent(self, y):
         # -0.5 (y - F a)^T N^-1 (y - F a) - 0.5 a^T P^-1 a
 
-        N_solve_1d = self.N.make_solve_1d()
+        N_solve_1d = self.N_var.make_solve_1d()
         P_solve = self.P_var.make_solve_1d()
 
         cvars = list(self.index.keys())
@@ -1219,13 +1219,13 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (yp @ Nmyp + c @ Pmc + ldP + ldN)
 
-        kernelproduct.params = sorted(self.N.params + self.P_var.params + cvars)
+        kernelproduct.params = sorted(self.N_var.params + self.P_var.params + cvars)
 
         return kernelproduct
 
     def make_kernelsolve(self, y, T):
-        N_solve_1d = self.N.make_solve_1d()
-        N_solve_2d = self.N.make_solve_2d()
+        N_solve_1d = self.N_var.make_solve_1d()
+        N_solve_2d = self.N_var.make_solve_2d()
 
         P_var_inv = self.P_var.make_inv()
 
@@ -1252,7 +1252,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return TtSy, TtST
 
-        kernelsolve.params = sorted(self.N.params + P_var_inv.params)
+        kernelsolve.params = sorted(self.N_var.params + P_var_inv.params)
 
         return kernelsolve
 
@@ -1260,7 +1260,7 @@ class WoodburyKernel_varNP(VariableKernel):
         # for when there is only one
         # GP, and it hasn't been marginalized over
         P_var = self.P_var
-        Nvar = self.N
+        Nvar = self.N_var
         F = jnparray(self.F)
         y = jnparray(y)
         P_var_inv = P_var.make_inv()
@@ -1278,8 +1278,100 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return b_mean, Sigma
 
-        kernelsolve.params = sorted(self.N.params + P_var.params)
+        kernelsolve.params = sorted(self.N_var.params + P_var.params)
         return kernelsolve
+
+    def make_solve_2d(self):
+        N_solve_2d = self.N_var.make_solve_2d()
+        P_var = self.P_var
+        P_var_inv = P_var.make_inv()
+
+        Fl = jnparray(self.F)
+
+        def solve_2d(params, Fr):
+            Pinv, ldP = P_var_inv(params)
+
+            NmFl, ldN = N_solve_2d(params, Fl)
+            NmFltFr = NmFl.T @ Fr
+
+            cf = matrix_factor(Pinv + Fl.T @ NmFl)
+            ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
+
+            return N_solve_2d(params, Fr)[0] - NmFl @ matrix_solve(cf, NmFltFr), ld
+        solve_2d.params = sorted(self.N_var.params + P_var.params)
+
+        return solve_2d
+
+    def make_solve_1d(self):
+        N_solve_1d = self.N_var.make_solve_1d()
+        N_solve_2d = self.N_var.make_solve_2d()
+        P_var = self.P_var
+        P_var_inv = P_var.make_inv()
+
+        F = jnparray(self.F)
+
+        def solve_1d(params, y):
+            Pinv, ldP = P_var_inv(params)
+            NmF, ldN = N_solve_2d(params, F)
+            NmFty = NmF.T @ y
+
+            cf = matrix_factor(Pinv + F.T @ NmF)
+            ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
+
+            return N_solve_1d(params, y)[0] - NmF @ matrix_solve(cf, NmFty), ld
+        solve_1d.params = sorted(self.N_var.params + P_var.params)
+
+        return solve_1d
+
+
+    def make_kernelterms(self, y, T):
+        # Sigma = (N + F P Ft)
+        # Sigma^-1 = Nm - Nm F (P^-1 + Ft Nm F)^-1 Ft Nm
+        #
+        # yt Sigma^-1 y = yt Nm y - (yt Nm F) C^-1 (Ft Nm y)
+        # Tt Sigma^-1 y = Tt Nm y - Tt Nm F C^-1 (Ft Nm y)
+        # Tt Sigma^-1 T = Tt Nm T - (Tt Nm F) C^-1 (Ft Nm T)
+
+        # if callable(y):
+        #     return self.make_kernelterms_vary(y, T)
+        Nsolve1d = self.N_var.make_solve_1d()
+        Nsolve2d = self.N_var.make_solve_2d()
+
+        P_var_inv = self.P_var.make_inv()
+        F = jnparray(self.F)
+
+        # closes on P_var_inv, Nsolve1d, Nsolve2d
+        def kernelterms(params):
+            Nmy, ldN = Nsolve1d(params, y)
+            ytNmy = y @ Nmy
+            FtNmy = F.T @ Nmy
+            NmF, _ = Nsolve2d(params, F)
+            TtNmy = T.T @ Nmy
+            FtNmF = F.T @ NmF
+            TtNmF = T.T @ NmF
+
+            NmT, _ = Nsolve2d(params, T)
+            FtNmT = self.F.T @ NmT
+            TtNmT = T.T @ NmT
+
+            Pinv, ldP = P_var_inv(params)
+            cf = matrix_factor(Pinv + FtNmF)
+
+            sol = matrix_solve(cf, FtNmy)
+            sol2 = matrix_solve(cf, FtNmT)
+
+            a = -0.5 * (ytNmy - FtNmy.T @ sol) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
+            b = TtNmy - TtNmF @ sol
+            c = TtNmT - TtNmF @ sol2
+
+            return a, b, c
+
+        kernelterms.params = sorted(self.N_var.params + self.P_var.params)
+
+        return kernelterms
+
+
+
 
 
 class WoodburyKernel_varP(VariableKernel):
@@ -1826,7 +1918,10 @@ class VectorWoodburyKernel_varP(VariableKernel):
 
     def make_kernelproduct_vary(self, ys):
         NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs)])
-        FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+        if regularize_FtNmF:
+            FtNmFs = [zero_out_negative_eigenvalues(F.T @ NmF) for F, NmF in zip(self.Fs, NmFs)]
+        else:
+            FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
 
         # tricky... when defining multiple closures like this, one must take care
         # not to refer to variables that change values in the enclosing
@@ -1886,7 +1981,11 @@ class VectorWoodburyKernel_varP(VariableKernel):
         # closes on self.Fs, ys - will it be a problem?
         def kernelproduct(params):
             NmFs, ldNs = zip(*[N_solve_2d(params, F) for N_solve_2d, F in zip(N_solve_2ds, self.Fs)])
-            FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+            if regularize_FtNmF:
+                FtNmFs = [zero_out_negative_eigenvalues(F.T @ NmF) for F, NmF in zip(self.Fs, NmFs)]
+            else:
+                FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+
             FtNmys = [NmF.T @ y for NmF, y in zip(NmFs, ys)]
 
             Nmys, _  = zip(*[N_solve_1d(params, y) for N_solve_1d, y in zip(N_solve_1ds, ys)])
@@ -1934,7 +2033,15 @@ class VectorWoodburyKernel_varP(VariableKernel):
         kmeans = getattr(self, 'means', None)
 
         NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs)])
+
+
+
         FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+        if regularize_FtNmF:
+            FtNmFs = [zero_out_negative_eigenvalues(0.5 * (FtNmF + FtNmF.T)) for FtNmF in FtNmFs]
+        else:
+            FtNmFs = [0.5 * (FtNmF + FtNmF.T) for FtNmF in FtNmFs]
+
         NmFtys = [NmF.T @ y for NmF, y in zip(NmFs, ys)]
 
         Nmys, _  = zip(*[N.solve_1d(y) for N, y in zip(self.Ns, ys)])
@@ -1946,18 +2053,17 @@ class VectorWoodburyKernel_varP(VariableKernel):
 
         def kernelproduct(params):
             Pinv, ldP = P_var_inv(params)            # Pinv.shape = FtNmF.shape = [npsr, ngp, ngp]
-
+            i1, i2 = jnp.diag_indices(Pinv.shape[1], ndim=2)
             if Pinv.ndim == 2:
                 # Pinv is diagonal
                 i1, i2 = jnp.diag_indices(Pinv.shape[1], ndim=2)
                 cf = matrix_factor(FtNmF.at[:,i1,i2].add(Pinv))
             else:
                 cf = matrix_factor(FtNmF + Pinv)
-
             ytXy = jnp.sum(NmFty * matrix_solve(cf, NmFty)) # was NmFty.T @ jsp.linalg.cho_solve(...)
 
             i1, i2 = jnp.diag_indices(cf[0].shape[1], ndim=2) # it's hard to vectorize numpy.diag!
-            logp = -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + jnp.sum(ldP) + matrix_norm * jnp.logdet(cf[0][:,i1,i2]))
+            logp = -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + jnp.sum(ldP) + matrix_norm * jnp.sum(jnp.log(jnp.abs(cf[0][:, i1, i2]))))
 
             if kmeans is not None:
                 a0 = kmeans(params)   # (npsr, ngp)
@@ -1976,7 +2082,10 @@ class VectorWoodburyKernel_varP(VariableKernel):
         # -0.5 yt Nm y + yt Nm F a - 0.5 ct Ft Nm F c - 0.5 log |2 pi N| - 0.5 cT Pm c - 0.5 log |2 pi P|
 
         NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs)])
-        FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+        if regularize_FtNmF:
+            FtNmFs = [zero_out_negative_eigenvalues(F.T @ NmF) for F, NmF in zip(self.Fs, NmFs)]
+        else:
+            FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
 
         Nmys, _  = zip(*[N.solve_1d(y) for N, y in zip(self.Ns, ys)])
         ytNmys = [y @ Nmy for y, Nmy in zip(ys, Nmys)]
@@ -2048,7 +2157,10 @@ class VectorWoodburyKernel_varP(VariableKernel):
 
     def make_kernelterms_vary(self, ys, Ts):
         NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs)])
-        FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+        if regularize_FtNmF:
+            FtNmFs = [zero_out_negative_eigenvalues(F.T @ NmF) for F, NmF in zip(self.Fs, NmFs)]
+        else:
+            FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
         TtNmFs = [T.T @ NmF for T, NmF in zip(Ts, NmFs)]
 
         NmTs, _ = zip(*[N.solve_2d(T) for N, T in zip(self.Ns, Ts)])
@@ -2122,7 +2234,11 @@ class VectorWoodburyKernel_varP(VariableKernel):
         TtNmys = [T.T @ Nmy for T, Nmy in zip(Ts, Nmys)]
 
         NmFs, _ = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs)])
-        FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+        if regularize_FtNmF:
+            FtNmFs = [zero_out_negative_eigenvalues(F.T @ NmF) for F, NmF in zip(self.Fs, NmFs)]
+        else:
+            FtNmFs = [F.T @ NmF for F, NmF in zip(self.Fs, NmFs)]
+
         TtNmFs = [T.T @ NmF for T, NmF in zip(Ts, NmFs)]
 
         NmTs, _ = zip(*[N.solve_2d(T) for N, T in zip(self.Ns, Ts)])
@@ -2156,3 +2272,7 @@ class VectorWoodburyKernel_varP(VariableKernel):
         kernelterms.params = self.P_var.params
 
         return kernelterms
+
+def zero_out_negative_eigenvalues(M):
+    eigs, vecs = np.linalg.eigh(M)
+    return (vecs * np.maximum(eigs, 0)) @ vecs.T
