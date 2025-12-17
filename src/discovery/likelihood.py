@@ -37,7 +37,7 @@ from . import signals
 
 class PulsarLikelihood:
     def __init__(self, args, concat=True):
-        y     = [arg for arg in args if isinstance(arg, np.ndarray)]
+        y     = [arg for arg in args if isinstance(arg, np.ndarray) or isinstance(arg, jax.Array)]
         delay = [arg for arg in args if callable(arg)]
         noise = [arg for arg in args if isinstance(arg, matrix.Kernel)]
         cgps  = [arg for arg in args if isinstance(arg, matrix.ConstantGP)]

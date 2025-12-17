@@ -7,6 +7,16 @@ from . import matrix
 AU_light_sec = const.AU / const.c  # 1 AU in light seconds
 AU_pc = const.AU / const.pc        # 1 AU in parsecs (for DM normalization)
 
+def make_solardmfourierbasis(psr, components, T=None):
+    """
+    for a fourier basis for the solar wind gp. this assumes
+    that you include a deterministic solar wind delay, which samples
+    n_earth, and here these are stochastic fluctuations on top of that. 
+    """
+    f, df, fmat = ds.fourierbasis(psr, components, T)
+    shape = ds.make_solardm(psr)
+    return f, df, fmat * shape(1.)[:, None]
+
 def theta_impact(psr):
     """From enterprise_extensions: use the attributes of an Enterprise
     Pulsar object to calculate the solar impact angle.

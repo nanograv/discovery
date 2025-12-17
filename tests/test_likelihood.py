@@ -125,6 +125,84 @@ class TestLikelihood:
                                                         ds.makegp_fourier(psr, ds.powerlaw, components=30, T=T, name='rednoise')]) for psr in psrs],
                                   globalgp = ds.makeglobalgp_fourier(psrs, ds.powerlaw, ds.hd_orf, components=14, T=T, name='gw')), p0
 
+    def _multipsr_fftcov_likelihoods(self, psrs):
+        """Test likelihoods using FFT-based covariance GPs"""
+        T = ds.getspan(psrs)
+        t0 = ds.getstart(psrs)
+
+        # Test with makecommongp_fftcov for red noise
+        mdl = ds.ArrayLikelihood([ds.PulsarLikelihood([psr.residuals,
+                                                       ds.makenoise_measurement(psr, psr.noisedict),
+                                                       ds.makegp_ecorr(psr, psr.noisedict),
+                                                       ds.makegp_timing(psr, svd=True)]) for psr in psrs],
+                                 commongp = ds.makecommongp_fftcov(psrs, ds.powerlaw, components=51, T=T, t0=t0,
+                                                                   order=1, name='rednoise'))
+        # Access params to initialize and calculate matrices
+        params = mdl.logL.params
+        p0 = ds.sample_uniform(params)
+        yield mdl, p0
+
+        # Test with GlobalLikelihood using makeglobalgp_fftcov
+        mdl = ds.GlobalLikelihood([ds.PulsarLikelihood([psr.residuals,
+                                                        ds.makenoise_measurement(psr, psr.noisedict),
+                                                        ds.makegp_ecorr(psr, psr.noisedict),
+                                                        ds.makegp_timing(psr, svd=True),
+                                                        ds.makegp_fftcov(psr, ds.powerlaw, components=51, T=T,
+                                                                         t0=t0, order=1, name='rednoise')]) for psr in psrs],
+                                  globalgp = ds.makeglobalgp_fftcov(psrs, ds.powerlaw, ds.hd_orf,
+                                                                    components=21, T=T, t0=t0, order=1, name='gw'))
+        params = mdl.logL.params
+        p0 = ds.sample_uniform(params)
+        yield mdl, p0
+
+        # Test with different oversample and fmax_factor parameters
+        mdl = ds.ArrayLikelihood([ds.PulsarLikelihood([psr.residuals,
+                                                       ds.makenoise_measurement(psr, psr.noisedict),
+                                                       ds.makegp_ecorr(psr, psr.noisedict),
+                                                       ds.makegp_timing(psr, svd=True)]) for psr in psrs],
+                                 commongp = ds.makecommongp_fftcov(psrs, ds.powerlaw, components=51, T=T, t0=t0,
+                                                                   order=1, name='rednoise'),
+                                 globalgp = ds.makeglobalgp_fftcov(psrs, ds.powerlaw, ds.hd_orf,
+                                                                   components=21, T=T, t0=t0, order=1,
+                                                                   oversample=5, fmax_factor=2, name='gw'))
+        params = mdl.logL.params
+        p0 = ds.sample_uniform(params)
+        yield mdl, p0
+
+        # Test with monopole ORF
+        mdl = ds.GlobalLikelihood([ds.PulsarLikelihood([psr.residuals,
+                                                        ds.makenoise_measurement(psr, psr.noisedict),
+                                                        ds.makegp_ecorr(psr, psr.noisedict),
+                                                        ds.makegp_timing(psr, svd=True)]) for psr in psrs],
+                                  globalgp = ds.makeglobalgp_fftcov(psrs, ds.powerlaw, ds.monopole_orf,
+                                                                    components=21, T=T, t0=t0, order=1, name='gw'))
+        params = mdl.logL.params
+        p0 = ds.sample_uniform(params)
+        yield mdl, p0
+
+    @pytest.mark.integration
+    def test_multipsr_fftcov_likelihood(self):
+        """Test multi-pulsar likelihoods with FFT-based covariance GPs"""
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+
+        psrfile1 = data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
+        psrfile2 = data_dir / "v1p1_de440_pint_bipm2019-J0023+0923.feather"
+        psrs = [ds.Pulsar.read_feather(psrfile1),
+                ds.Pulsar.read_feather(psrfile2)]
+
+        for model in self._multipsr_fftcov_likelihoods(psrs):
+            # All models return a suggested parameter set
+            if isinstance(model, tuple):
+                model, p0 = model
+                logl = model.logL
+            else:
+                logl = model.logL
+                p0 = ds.sample_uniform(logl.params)
+
+            # Verify params are accessible (this initializes matrices)
+            assert logl.params is not None
+            assert len(logl.params) > 0
+
     @pytest.mark.integration
     def test_multipsr_likelihood(self):
         data_dir = Path(__file__).resolve().parent.parent / "data"
