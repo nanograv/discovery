@@ -239,9 +239,3 @@ def CompoundDelay(residuals, delays):
     return functools.reduce(lambda x, y: mm.func(delay(x, y)), [residuals, *delays])
 
 
-# monkeypatching
-
-signals.matrix.NoiseMatrix1D_novar = NoiseMatrix
-signals.matrix.NoiseMatrix1D_var = NoiseMatrix
-signals.matrix.CompoundGP = CompoundGP
-signals.matrix.CompoundDelay = CompoundDelay
