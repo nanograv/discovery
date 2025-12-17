@@ -1126,8 +1126,8 @@ class WoodburyKernel_varNP(VariableKernel):
     def make_kernelproduct_vary(self, y):
         y_var = y
 
-        N_solve_1d = self.N.make_solve_1d()
-        N_solve_2d = self.N.make_solve_2d()
+        N_solve_1d = self.N_var.make_solve_1d()
+        N_solve_2d = self.N_var.make_solve_2d()
 
         # avoid a separate WoodburyKernel_varNFP
         if callable(self.F):
@@ -1156,7 +1156,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = sorted(self.N.params + P_var_inv.params + Ffunc.params + y_var.params)
+        kernelproduct.params = sorted(self.N_var.params + P_var_inv.params + Ffunc.params + y_var.params)
 
         return kernelproduct
 
@@ -1195,7 +1195,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return -0.5 * (ytNmy - ytXy) - 0.5 * (ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0])))
 
-        kernelproduct.params = sorted(self.N.params + P_var_inv.params + Ffunc.params)
+        kernelproduct.params = sorted(self.N_var.params + P_var_inv.params + Ffunc.params)
 
         return kernelproduct
 
@@ -1298,7 +1298,7 @@ class WoodburyKernel_varNP(VariableKernel):
             ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
 
             return N_solve_2d(params, Fr)[0] - NmFl @ matrix_solve(cf, NmFltFr), ld
-        solve_2d.params = self.N_var.params
+        solve_2d.params = sorted(self.N_var.params + P_var.params)
 
         return solve_2d
 
@@ -1319,7 +1319,7 @@ class WoodburyKernel_varNP(VariableKernel):
             ld = ldN + ldP + matrix_norm * jnp.logdet(jnp.diag(cf[0]))
 
             return N_solve_1d(params, y)[0] - NmF @ matrix_solve(cf, NmFty), ld
-        solve_1d.params = self.N_var.params
+        solve_1d.params = sorted(self.N_var.params + P_var.params)
 
         return solve_1d
 
@@ -1366,7 +1366,7 @@ class WoodburyKernel_varNP(VariableKernel):
 
             return a, b, c
 
-        kernelterms.params = self.P_var.params
+        kernelterms.params = sorted(self.N_var.params + self.P_var.params)
 
         return kernelterms
 
