@@ -6,6 +6,7 @@ import jax
 
 from . import matrix
 from . import signals
+from . import metamath
 
 # import jax
 
@@ -34,6 +35,14 @@ from . import signals
 #                                              je.makepowerlaw_crn(5), 10, T=Tspan,
 #                                              common=['crn_log10_A', 'crn_gamma']),
 #                            concat=True)
+
+def ffunc(func):
+    def outfunc(params):
+        return func(params=params)
+    outfunc.params = func.params
+
+    return outfunc
+
 
 class PulsarLikelihood:
     def __init__(self, args, concat=True):
@@ -177,7 +186,8 @@ class PulsarLikelihood:
 
     @functools.cached_property
     def logL(self):
-        return self.N.make_kernelproduct(self.y)
+        return ffunc(self.N.make_kernelproduct(self.y))
+
 
     @functools.cached_property
     def sample(self):
@@ -275,51 +285,57 @@ class GlobalLikelihood:
 
             loglike.params = sorted(set.union(*[set(logl.params) for logl in logls]))
         else:
-            P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
-            kterms = [psl.N.make_kernelterms(psl.y, Fmat) for psl, Fmat in zip(self.psls, self.globalgp.Fs)]
+            if isinstance(self.globalgp.Phi, metamath.NoiseMatrix):
+                Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+                self.gsm = metamath.GlobalWoodburyKernel(Ns, self.globalgp.Fs, self.globalgp.Phi)
 
-            if len(kterms) == 0:
-                raise ValueError('No PulsarLikelihoods in GlobalLikelihood: ' +
-                    'if you provided them using a generator, it may have been consumed already. ' +
-                    'In that case you can use a list.')
+                loglike = ffunc(self.gsm.make_kernelproduct(self.ys))
+            else:
+                P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
+                kterms = [psl.N.make_kernelterms(psl.y, Fmat) for psl, Fmat in zip(self.psls, self.globalgp.Fs)]
 
-            # npsr = len(self.globalgp.Fs)
-            # ngp = self.globalgp.Fs[0].shape[1]
+                if len(kterms) == 0:
+                    raise ValueError('No PulsarLikelihoods in GlobalLikelihood: ' +
+                        'if you provided them using a generator, it may have been consumed already. ' +
+                        'In that case you can use a list.')
 
-            kmeans = getattr(self.globalgp, 'means', None)
+                # npsr = len(self.globalgp.Fs)
+                # ngp = self.globalgp.Fs[0].shape[1]
 
-            def loglike(params):
-                terms = [kterm(params) for kterm in kterms]
+                kmeans = getattr(self.globalgp, 'means', None)
 
-                p0 = sum([term[0] for term in terms])
-                FtNmy = matrix.jnp.concatenate([term[1] for term in terms])
+                def loglike(params):
+                    terms = [kterm(params) for kterm in kterms]
 
-                Pinv, ldP = P_var_inv(params)
+                    p0 = sum([term[0] for term in terms])
+                    FtNmy = matrix.jnp.concatenate([term[1] for term in terms])
 
-                # for i, term in enumerate(terms):
-                #     Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(term[2])
-                # cf = matrix.jsp.linalg.cho_factor(Pinv)
+                    Pinv, ldP = P_var_inv(params)
 
-                # this seems a bit slower than the .at/.set scheme in plogL below
-                FtNmF = matrix.jsp.linalg.block_diag(*[term[2] for term in terms])
-                cf = matrix.jsp.linalg.cho_factor(Pinv + FtNmF)
+                    # for i, term in enumerate(terms):
+                    #     Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(term[2])
+                    # cf = matrix.jsp.linalg.cho_factor(Pinv)
 
-                logp = p0 + 0.5 * (FtNmy.T @ matrix.jsp.linalg.cho_solve(cf, FtNmy) - ldP - 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
+                    # this seems a bit slower than the .at/.set scheme in plogL below
+                    FtNmF = matrix.jsp.linalg.block_diag(*[term[2] for term in terms])
+                    cf = matrix.jsp.linalg.cho_factor(Pinv + FtNmF)
 
-                if kmeans is not None:
-                    # -0.5 a0t.FtNmF.a0 + 0.5 a0t.FtNmF.Sm.FtNmF.a0 + a0t.FtNmy - a0t.FtNmF.Sm.FtNmy
-                    # -0.5 (a0t.FtNmF).a0 + (FtNmy)t.a0 + 0.5 (a0t.FtNmF).Sm.FtNmF.a0 - (FtNmy)t.Sm.FtNmF.a0
-                    # -0.5 (a0t.FtNmF).(a0 - Sm.FtNmF.a0) + (FtNmy)t.(a0 - Sm.FtNmF.a0)
+                    logp = p0 + 0.5 * (FtNmy.T @ matrix.jsp.linalg.cho_solve(cf, FtNmy) - ldP - 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
 
-                    a0 = kmeans(params)
-                    FtNmFa0 = FtNmF @ a0
-                    logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
+                    if kmeans is not None:
+                        # -0.5 a0t.FtNmF.a0 + 0.5 a0t.FtNmF.Sm.FtNmF.a0 + a0t.FtNmy - a0t.FtNmF.Sm.FtNmy
+                        # -0.5 (a0t.FtNmF).a0 + (FtNmy)t.a0 + 0.5 (a0t.FtNmF).Sm.FtNmF.a0 - (FtNmy)t.Sm.FtNmF.a0
+                        # -0.5 (a0t.FtNmF).(a0 - Sm.FtNmF.a0) + (FtNmy)t.(a0 - Sm.FtNmF.a0)
 
-                return logp
+                        a0 = kmeans(params)
+                        FtNmFa0 = FtNmF @ a0
+                        logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
 
-            params_kterms = list(set.union(*[set(kterm.params) for kterm in kterms]))
-            params_kmeans = kmeans.params if kmeans is not None else []
-            loglike.params = sorted(params_kterms + params_kmeans + P_var_inv.params)
+                    return logp
+
+                params_kterms = list(set.union(*[set(kterm.params) for kterm in kterms]))
+                params_kmeans = kmeans.params if kmeans is not None else []
+                loglike.params = sorted(params_kterms + params_kmeans + P_var_inv.params)
 
         return loglike
 
@@ -498,22 +514,6 @@ class ArrayLikelihood:
         self.globalgp = globalgp
         self.transform = transform
 
-    # @functools.cached_property
-    # def cloglast(self):
-    #     commongp = matrix.VectorCompoundGP(self.commongp[:-1])
-    #     lastgp = self.commongp[-1]
-
-    #     Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-    #     csm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
-
-    #     vsm = matrix.VectorWoodburyKernel_varP(Ns, lastgp.F, lastgp.Phi)
-    #     if hasattr(lastgp, 'prior'):
-    #         vsm.prior = lastgp.prior
-    #     if hasattr(lastgp, 'index'):
-    #         vsm.index = lastgp.index
-
-    #     return vsm.make_kernelproduct_gpcomponent(self.ys)
-
     @functools.cached_property
     def clogL(self):
         if self.commongp is None and self.globalgp is None:
@@ -548,9 +548,11 @@ class ArrayLikelihood:
     def logL(self):
         if self.commongp is None:
             if self.globalgp is None:
+                logls = [ffunc(psl.logL) for psl in self.psls]
+
                 def loglike(params):
-                    return sum(psl.logL(params) for psl in self.psls)
-                loglike.params = sorted(set.union(*[set(psl.logL.params) for psl in self.psls]))
+                    return sum(logl(params) for logl in logls)
+                loglike.params = sorted(set.union(*[set(logl.params) for logl in logls]))
 
                 return loglike
             else:
@@ -564,51 +566,57 @@ class ArrayLikelihood:
         self.vsm.means = getattr(commongp, 'means', None)
 
         if self.globalgp is None:
-            loglike = self.vsm.make_kernelproduct(self.ys)
+            loglike = ffunc(self.vsm.make_kernelproduct(self.ys))
         else:
-            P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
-            kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs)
+            if isinstance(self.globalgp.Phi, metamath.NoiseMatrix):
+                Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+                self.gsm = metamath.GlobalWoodburyKernel(self.vsm, self.globalgp.Fs, self.globalgp.Phi)
 
-            npsr = len(self.globalgp.Fs)
-            ngp = self.globalgp.Fs[0].shape[1]
+                loglike = ffunc(self.gsm.make_kernelproduct(self.ys))
+            else:
+                P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
+                kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs)
 
-            kmeans = getattr(self.globalgp, 'means', None)
+                npsr = len(self.globalgp.Fs)
+                ngp = self.globalgp.Fs[0].shape[1]
 
-            def loglike(params):
-                terms = kterms(params)
+                kmeans = getattr(self.globalgp, 'means', None)
 
-                p0 = matrix.jnp.sum(terms[0])
-                FtNmy = terms[1].reshape(npsr * ngp)
+                def loglike(params):
+                    terms = kterms(params)
 
-                Pinv, ldP = P_var_inv(params)
+                    p0 = matrix.jnp.sum(terms[0])
+                    FtNmy = terms[1].reshape(npsr * ngp)
 
-                # alternatives to block_diag (with similar runtimes on CPU, slower on GPU)
-                # for i in range(npsr):
-                #    Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(terms[2][i,:,:])
-                #    cf = matrix.jsp.linalg.cho_factor(Pinv)
-                #
-                #    Pinv = jax.lax.fori_loop(0, npsr,
-                #               lambda i, Pinv: jax.lax.dynamic_update_slice(Pinv,
-                #                   jax.lax.dynamic_slice(Pinv, (i*ngp,i*ngp), (ngp,ngp)) +
-                #                   jax.lax.squeeze(jax.lax.dynamic_slice(terms[2], (i,0,0), (1,ngp,ngp)), [0]),
-                #                   (i*ngp,i*ngp)),
-                #               Pinv)
-                #    cf = matrix.jsp.linalg.cho_factor(Pinv)
+                    Pinv, ldP = P_var_inv(params)
 
-                FtNmF = matrix.jsp.linalg.block_diag(*terms[2])
-                cf = matrix.matrix_factor(Pinv + FtNmF)
+                    # alternatives to block_diag (with similar runtimes on CPU, slower on GPU)
+                    # for i in range(npsr):
+                    #    Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(terms[2][i,:,:])
+                    #    cf = matrix.jsp.linalg.cho_factor(Pinv)
+                    #
+                    #    Pinv = jax.lax.fori_loop(0, npsr,
+                    #               lambda i, Pinv: jax.lax.dynamic_update_slice(Pinv,
+                    #                   jax.lax.dynamic_slice(Pinv, (i*ngp,i*ngp), (ngp,ngp)) +
+                    #                   jax.lax.squeeze(jax.lax.dynamic_slice(terms[2], (i,0,0), (1,ngp,ngp)), [0]),
+                    #                   (i*ngp,i*ngp)),
+                    #               Pinv)
+                    #    cf = matrix.jsp.linalg.cho_factor(Pinv)
 
-                logp = p0 + 0.5 * (FtNmy.T @ matrix.matrix_solve(cf, FtNmy) - ldP - matrix.matrix_norm * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
+                    FtNmF = matrix.jsp.linalg.block_diag(*terms[2])
+                    cf = matrix.matrix_factor(Pinv + FtNmF)
 
-                if kmeans is not None:
-                    a0 = kmeans(params)
-                    FtNmFa0 = FtNmF @ a0
-                    logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
+                    logp = p0 + 0.5 * (FtNmy.T @ matrix.matrix_solve(cf, FtNmy) - ldP - matrix.matrix_norm * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
 
-                return logp
+                    if kmeans is not None:
+                        a0 = kmeans(params)
+                        FtNmFa0 = FtNmF @ a0
+                        logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
 
-            params_kmeans = kmeans.params if kmeans is not None else []
-            loglike.params = sorted(kterms.params + params_kmeans + P_var_inv.params)
+                    return logp
+
+                params_kmeans = kmeans.params if kmeans is not None else []
+                loglike.params = sorted(kterms.params + params_kmeans + P_var_inv.params)
 
         return loglike
 
