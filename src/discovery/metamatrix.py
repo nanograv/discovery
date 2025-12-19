@@ -97,7 +97,7 @@ def fold_constants(graph: Graph) -> Graph:
 
 def build_callable_from_graph(graph: Graph,
                               outputs: Union[str, Iterable[str], None] = None,
-                              jit=True):
+                              jit=False):
     """
     Take a graph (preferably already constant-folded) and produce a function:
 
@@ -260,7 +260,7 @@ def sample_graph(graph: Graph, *args, display=False) -> Graph:
 
 def func(graph: Graph,
          outputs: Union[str, Iterable[str], None] = None,
-         jit=True) -> Callable[[Any], Array]:
+         jit=False) -> Callable[[Any], Array]:
     """
     Given a computational graph, produce a JAX-jittable function
     that computes the graph output. This first folds constant subgraphs,

@@ -112,13 +112,10 @@ def vectorwoodbury(g, ys, Nsolves, Fs, Pinv):
     mu = g.cho_solve(cf, FtNmy)
 
     cond = g.pair(mu, cf, name='cond')
-
-    lP = lP.sum()
-    lS = lS.sum()
-
-    logp = -0.5 * (ytNmy - g.dot(FtNmy, mu)) - 0.5 * (lP + lS)
+    logp = -0.5 * (ytNmy - g.dot(FtNmy, mu)) - 0.5 * (lP.sum() + lS.sum())
 
 
+# TO DO - implement in standard vectorwoodbury
 @mm.graph
 def vectorwoodburysolve(g, ys, Nsolves, Fs, Pinv):
     Nmys, NmFs, FtNmys, FtNmFs, lNs = [], [], [], [], []
@@ -136,14 +133,13 @@ def vectorwoodburysolve(g, ys, Nsolves, Fs, Pinv):
 
     Pm, lP = Pinv                      # Pm: (np, k, k), lP: (np,)
     cf, lS = g.cho_factor(Pm + FtNmF)  # cf: (np, k, k), lS: (np,)
-
-    cfFtNmy = g.cho_solve(cf, FtNmy)   # cfFtNmy: (np, k)
+    mu = g.cho_solve(cf, FtNmy)   # cfFtNmy: (np, k)
 
     solves = []
     for i, (Nmy, NmF) in enumerate(zip(Nmys, NmFs)):
-       solves.append(g.pair(Nmy - NmF @ cfFtNmy[i, :], lNs[i] + lP[i] + lS[i]))
+       solves.append(g.pair(Nmy - NmF @ mu[i, :], lNs[i] + lP[i] + lS[i]))
 
-    result = g.ntuple(solves)
+    solve = g.ntuple(solves)
 
 
 
@@ -170,7 +166,10 @@ class NoiseMatrix(matrix.Kernel):
 
     @property
     def make_inv(self):
-        return mm.func(noiseinv(self.N))
+        if getattr(self, 'inv', None):
+            return self.inv # shortcut for GPs with custom make_inv
+        else:
+            return mm.func(noiseinv(self.N))
 
     def make_kernelproduct(self, y):
         return mm.func(normal(y, self.make_solve))

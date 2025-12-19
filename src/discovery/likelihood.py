@@ -293,6 +293,7 @@ class GlobalLikelihood:
         else:
             if isinstance(self.globalgp.Phi, metamath.NoiseMatrix):
                 Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+                self.globalgp.Phi.inv = getattr(self.globalgp, 'Phi_inv', None)
                 self.gsm = metamath.GlobalWoodburyKernel(Ns, self.globalgp.Fs, self.globalgp.Phi)
 
                 loglike = ffunc(self.gsm.make_kernelproduct(self.ys))
