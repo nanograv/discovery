@@ -26,33 +26,32 @@ def normal(g, y, Nsolve):
 
 @mm.graph
 def woodbury(g, y, Nsolve, F, Pinv):
-    Nmy, lN = Nsolve(y)
+    # Nmy, lN = Nsolve(y)
+    # NmF, _ = Nsolve(F)
+    (Nmy, NmF), lN = g.stacksolve(Nsolve, y, F)
     FtNmy = F.T @ Nmy
-
-    NmF, _ = Nsolve(F)
     FtNmF = F.T @ NmF
 
     Pm, lP = Pinv
-    cf, lS = g.factor(Pm + FtNmF)
+    cf, lS = g.cho_factor(Pm + FtNmF)
+    mu = g.cho_solve(cf, FtNmy)
+    ld = lN + lP + lS
 
-    logp = -0.5 * (y.T @ Nmy - FtNmy.T @ cf(FtNmy)) - 0.5 * (lN + lP + lS)
+    cond = g.pair(mu, cf, name='cond')
+    solve = g.pair(Nmy - NmF @ mu, ld, name='solve')
+    logp = -0.5 * (y.T @ Nmy - FtNmy.T @ mu) - 0.5 * ld
 
 
 @mm.graph
-def woodburysolve(g, y, Nsolve, F, Pinv):
-    Nmy, lN = Nsolve(y)
-    FtNmy = F.T @ Nmy
+def woodburylatent(g, y, Nsolve, F, Psolve, getc):
+    c = getc
 
-    NmF, _ = Nsolve(F)
-    FtNmF = F.T @ NmF
+    yp = y - F @ c
+    Nmyp, lN = Nsolve(yp)
 
-    Pm, lP = Pinv
-    cf, lS = g.factor(Pm + FtNmF)
+    Pmc, lP = Psolve(c)
 
-    solve = Nmy - NmF @ cf(FtNmy)
-    ld = lN + lP + lS
-
-    result = g.pair(solve, ld)
+    logp = -0.5 * (yp.T @ Nmyp + c.T @ Pmc + lP + lN)
 
 
 @mm.graph
@@ -68,6 +67,7 @@ def globalwoodbury(g, ys, Nsolves, Fs, Pinv):
             FtNmys.append(F.T @ Nmy)
             FtNmFs.append(F.T @ NmF)
     else:
+        # ingest output from vectorwoodburysolve
         Nmy_lNs = Nsolves(*ys)
         NmF_lNs = Nsolves(*Fs)
 
@@ -79,16 +79,16 @@ def globalwoodbury(g, ys, Nsolves, Fs, Pinv):
             FtNmys.append(F.T @ Nmy)
             FtNmFs.append(F.T @ NmF)
 
-    ytNmy = g.node(lambda *fts: sum(fts), inputs=ytNmys)
-    FtNmy = g.node(lambda *vecs: jnp.hstack(vecs), inputs=FtNmys)
-    FtNmF = g.node(lambda *mats: jsp.linalg.block_diag(*mats), inputs=FtNmFs)
+    ytNmy = g.sum_all(ytNmys)
+    FtNmy = g.hstack(FtNmys)
+    FtNmF = g.block_diag(FtNmFs)
 
     Pm, lP = Pinv
-    cf, lS = g.factor(Pm + FtNmF)
+    cf, lS = g.cho_factor(Pm + FtNmF)
 
     lP = lP.sum() # g.node(lambda x: jnp.sum(x), inputs=[lP]) # should be an op
 
-    logp = -0.5 * (ytNmy - g.dot(FtNmy, cf(FtNmy))) - 0.5 * (lP + lS)
+    logp = -0.5 * (ytNmy - g.dot(FtNmy, g.cho_solve(cf, FtNmy))) - 0.5 * (lP + lS)
 
 
 @mm.graph
@@ -103,17 +103,20 @@ def vectorwoodbury(g, ys, Nsolves, Fs, Pinv):
         FtNmys.append(F.T @ Nmy)
         FtNmFs.append(F.T @ NmF)
 
-    ytNmy = g.node(lambda *fts: sum(fts), inputs=ytNmys)
-    FtNmy = g.node(lambda *vecs: jnp.array(vecs), inputs=FtNmys)
-    FtNmF = g.node(lambda *mats: jnp.array(mats), inputs=FtNmFs)
+    ytNmy = g.sum_all(ytNmys)
+    FtNmy = g.array(FtNmys)
+    FtNmF = g.array(FtNmFs)
 
     Pm, lP = Pinv
-    cf, lS = g.factor(Pm + FtNmF)
+    cf, lS = g.cho_factor(Pm + FtNmF)
+    mu = g.cho_solve(cf, FtNmy)
+
+    cond = g.pair(mu, cf, name='cond')
 
     lP = lP.sum()
     lS = lS.sum()
 
-    logp = -0.5 * (ytNmy - g.dot(FtNmy, cf(FtNmy))) - 0.5 * (lP + lS)
+    logp = -0.5 * (ytNmy - g.dot(FtNmy, mu)) - 0.5 * (lP + lS)
 
 
 @mm.graph
@@ -128,19 +131,19 @@ def vectorwoodburysolve(g, ys, Nsolves, Fs, Pinv):
         Nmys.append(Nmy); NmFs.append(NmF)
         FtNmys.append(F.T @ Nmy); FtNmFs.append(F.T @ NmF) # F.T @ Nmy: (k,); F.T @ NmF: (k, k)
 
-    FtNmy = g.node(lambda *vecs: jnp.array(vecs), inputs=FtNmys) # FtNmy: (np, k)
-    FtNmF = g.node(lambda *mats: jnp.array(mats), inputs=FtNmFs) # FtNmF: (np, k, k)
+    FtNmy = g.array(FtNmys) # FtNmy: (np, k)
+    FtNmF = g.array(FtNmFs) # FtNmF: (np, k, k)
 
-    Pm, lP = Pinv                  # Pm: (np, k, k), lP: (np,)
-    cf, lS = g.factor(Pm + FtNmF)  # why is lS just one number???
+    Pm, lP = Pinv                      # Pm: (np, k, k), lP: (np,)
+    cf, lS = g.cho_factor(Pm + FtNmF)  # cf: (np, k, k), lS: (np,)
 
-    cfFtNmy = cf(FtNmy)            # cfFtNmy: (np, k)
+    cfFtNmy = g.cho_solve(cf, FtNmy)   # cfFtNmy: (np, k)
 
     solves = []
     for i, (Nmy, NmF) in enumerate(zip(Nmys, NmFs)):
        solves.append(g.pair(Nmy - NmF @ cfFtNmy[i, :], lNs[i] + lP[i] + lS[i]))
 
-    result = g.node(lambda *ss: tuple(ss), inputs=solves)
+    result = g.ntuple(solves)
 
 
 
@@ -179,10 +182,21 @@ class WoodburyKernel(matrix.Kernel):
 
     @property
     def make_solve(self):
-        return mm.func(woodburysolve(None, self.N.make_solve, self.F, self.P.make_inv))
+        return mm.func(woodbury(None, self.N.make_solve, self.F, self.P.make_inv), outputs='solve')
 
     def make_kernelproduct(self, y):
         return mm.func(woodbury(y, self.N.make_solve, self.F, self.P.make_inv))
+
+    def make_conditional(self, y):
+        return mm.func(woodbury(y, self.N.make_solve, self.F, self.P.make_inv), outputs='cond')
+
+    def make_coefficientproduct(self, y):
+        cvars = list(self.index.keys())
+        def getc(params):
+            return jnp.concatenate([params[cvar] for cvar in cvars])
+        getc.args, getc.params = [], cvars
+
+        return mm.func(woodburylatent(y, self.N.make_solve, self.F, self.P.make_solve, getc))
 
 
 class GlobalWoodburyKernel(matrix.Kernel):
@@ -207,6 +221,9 @@ class VectorWoodburyKernel(matrix.Kernel):
     def make_kernelproduct(self, ys):
         return mm.func(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv))
 
+    def make_conditional(self, ys):
+        return mm.func(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv), outputs='cond')
+
 
 class CompoundGP:
     def __new__(cls, x):
@@ -218,6 +235,9 @@ class CompoundGP:
 
     def __init__(self, gplist):
         self.gplist = gplist
+
+        if all(hasattr(gp, 'index') for gp in gplist):
+            self.index = {k: v for d in gplist for k, v in d.index.items()}
 
     def _concat(self, vecmats):
         return functools.reduce(lambda x, y: mm.func(concat(x, y)), vecmats)

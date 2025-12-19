@@ -2,12 +2,14 @@ from dataclasses import dataclass
 from collections import OrderedDict, deque
 from typing import Callable, Dict, List, Union, Iterable, Any, Optional
 import inspect
+from unicodedata import name
 
 import numpy as np
 
 import jax
 import jax.numpy as jnp
 import jax.scipy as jsp
+from sympy import Matrix
 
 from . import prior
 
@@ -222,12 +224,12 @@ def _print_array_summary(arr: Any) -> str:
         return f"{arr}"
 
 
-def print_graph(graph: Graph, simplify=False) -> None:
+def print_graph(graph: Graph, simplify=False, outputs=None) -> None:
     """
     Pretty-print a computational graph, applying constant folding and pruning if simplify=True
     """
     if simplify:
-        graph = prune_graph(fold_constants(graph))
+        graph = prune_graph(fold_constants(graph), outputs=outputs)
 
     for name, node in graph.items():
         if isinstance(node, ArgLeaf):
@@ -271,6 +273,7 @@ def func(graph: Graph,
 
 # ===== Matrix operations =====
 
+
 def matrix_inv(amat, params={}):
     if amat.ndim == 1:
         return jnp.diag(1.0 / amat), jnp.sum(jnp.log(jnp.abs(amat)))
@@ -279,8 +282,8 @@ def matrix_inv(amat, params={}):
             return jnp.linalg.inv(amat), jnp.linalg.slogdet(amat)[1]
         else:
             return jnp.eye(amat.shape[1]) * (1.0 / amat)[:, None, :], jnp.sum(jnp.log(jnp.abs(amat)), axis=1)
-
 matrix_inv.args, matrix_inv.params = ['amat'], []
+
 
 def matrix_solve(amat, b, params={}):
     if amat.ndim == 1:
@@ -293,7 +296,8 @@ def matrix_solve(amat, b, params={}):
         return jnp.linalg.solve(amat, b), jnp.linalg.slogdet(amat)[1]
 matrix_solve.args, matrix_solve.params = ['amat', 'b'], []
 
-def cholesky_factor(amat, params={}):
+
+def cholesky_solver(amat, params={}):
     cf = jsp.linalg.cho_factor(amat)
 
     def solver(b, params={}):
@@ -307,15 +311,26 @@ def cholesky_factor(amat, params={}):
         logdet = 2.0 * jnp.sum(jnp.log(jnp.abs(cf[0][:,i1,i2])), axis=1)
 
     return solver, logdet
+cholesky_solver.args, cholesky_solver.params = ['amat'], []
+
+
+# do it separately if we want the factor
+
+def cholesky_factor(amat, params={}):
+    cf = jsp.linalg.cho_factor(amat, lower=True)
+
+    if cf[0].ndim == 2:
+        logdet = 2.0 * jnp.sum(jnp.log(jnp.abs(jnp.diag(cf[0]))))
+    else:
+        i1, i2 = jnp.diag_indices(cf[0].shape[1], ndim=2)
+        logdet = 2.0 * jnp.sum(jnp.log(jnp.abs(cf[0][:,i1,i2])), axis=1)
+
+    return cf, logdet
 cholesky_factor.args, cholesky_factor.params = ['amat'], []
 
-def matrix_stack(b, Amat, params={}):
-    return jnp.hstack([b[:,None], Amat])
-matrix_stack.args, matrix_stack.params = ['b', 'Amat'], []
-
-def matrix_unstack(bAmat, params={}):
-    return bAmat[:,0], bAmat[:,1:]
-matrix_unstack.args, matrix_unstack.params = ['bAmat'], []
+def cholesky_solve(cf, b, params={}):
+    return jsp.linalg.cho_solve(cf, b)
+cholesky_solve.args, cholesky_solve.params = ['cf', 'b'], []
 
 
 # ===== Symbolic graph builder =====
@@ -355,9 +370,6 @@ class Sym:
 
     def solve(self, other: "Sym") -> "Sym":
         return self.builder.node(lambda N, Y: matrix_solve(N, Y), [self, other], description=f"solve({self.name}, {other.name})")
-
-    def factor(self) -> "Sym":
-        return self.builder.node(lambda x: cholesky_factor(x), [self], description=f"factor({self.name})")
 
     def inv(self) -> "Sym":
         return self.builder.node(lambda x: matrix_inv(x), [self], description=f"inv({self.name})")
@@ -432,23 +444,34 @@ class GraphBuilder:
 
     # --- Domain-specific ops ---
 
+    def dot(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
+        return self.node(lambda X, Y: jnp.sum(X * Y), [A, B], name=name)
+
     def solve(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
         return self.node(lambda N, Y: matrix_solve(N, Y), [A, B], name=name)
 
-    def factor(self, A: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(cholesky_factor, [A], name=name)
+    def cho_factor(self, A: Sym, name: Optional[str] = None) -> Sym:
+        return self.node(lambda amat: cholesky_factor(amat), [A], name=name)
+
+    def cho_solve(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
+        return self.node(lambda cf, b: cholesky_solve(cf, b), [A, B], name=name)
 
     def inv(self, A: Sym, name: Optional[str] = None) -> Sym:
         return self.node(lambda X: jnp.linalg.inv(X), [A], name=name)
 
-    def stack(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda X, Y: matrix_stack(X, Y), [A, B], name=name)
 
-    def unstack(self, AB: Sym, name1: Optional[str] = None, name2: Optional[str] = None) -> tuple[Sym, Sym]:
-        return self.node(lambda X: X[:,0], [AB], name=name1), self.node(lambda X: X[:,1:], [AB], name=name2)
+    def array(self, args: List[Sym], name: Optional[str] = None) -> Sym:
+        return self.node(lambda *vecs: jnp.array(vecs), args, name=name)
 
-    def dot(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda X, Y: jnp.sum(X * Y), [A, B], name=name)
+    def hstack(self, args: List[Sym], name: Optional[str] = None) -> Sym:
+        return self.node(lambda *vecs: jnp.hstack(vecs), args, name=name)
+
+    def block_diag(self, args: List[Sym], name: Optional[str] = None) -> Sym:
+        return self.node(lambda *mats: jsp.linalg.block_diag(*mats), args, name=name)
+
+
+    def sum_all(self, args: List[Sym], name: Optional[str] = None) -> Sym:
+        return self.node(lambda *fts: sum(fts), args, name=name)
 
     def apply(self, A: Sym, *args: Sym, name: Optional[str] = None) -> Sym:
         return self.node(lambda f, *xs, params={}: f(*xs, params=params), [A, *args], name=name)
@@ -461,6 +484,23 @@ class GraphBuilder:
 
     def split(self, AB: Sym, name1: Optional[str] = None, name2: Optional[str] = None) -> tuple[Sym, Sym]:
         return self.node(lambda x: x[0], [AB], name=name1), self.node(lambda x: x[1], [AB], name=name2)
+
+    def stacksolve(self, Nsolve: Sym, y: Sym, F: Sym, name: Optional[str] = None) -> Sym:
+        "Combine Nsolve(y) and Nsolve(F) calls, stacking y and F"
+
+        def _stacksolve(solver, y_in, F_in, params={}):
+            yF = jnp.hstack([y_in[:, None] if y_in.ndim == 1 else y_in, F_in])
+
+            NmyF, lN = solver(yF, params=params)
+
+            if y_in.ndim == 1:
+                Nmy, NmF = NmyF[:, 0], NmyF[:, 1:]
+            else:
+                Nmy, NmF = NmyF[:, :y_in.shape[1]], NmyF[:, y_in.shape[1]:]
+
+            return ((Nmy, NmF), lN)
+
+        return self.node(_stacksolve, [Nsolve, y, F], name=name, description=f"{Nsolve.name}({y.name}, {F.name})")
 
 
 def graph(factory):

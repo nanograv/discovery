@@ -136,6 +136,9 @@ class PulsarLikelihood:
 
     @functools.cached_property
     def conditional(self):
+        if hasattr(self.N, 'make_conditional'):
+            return ffunc(self.N.make_conditional(self.y))
+
         if self.delay:
             raise NotImplementedError('No PulsarLikelihood.conditional with delays so far.')
         # if there's only one woodbury to do (N + T Phi T)
@@ -179,6 +182,9 @@ class PulsarLikelihood:
 
     @functools.cached_property
     def clogL(self):
+        if hasattr(self.N, 'make_coefficientproduct'):
+            return ffunc(self.N.make_coefficientproduct(self.y))
+
         if self.delay:
             raise NotImplementedError('No PulsarLikelihood.clogL with delays so far.')
         else:
@@ -513,6 +519,43 @@ class ArrayLikelihood:
         self.commongp = commongp
         self.globalgp = globalgp
         self.transform = transform
+
+    @functools.cached_property
+    def conditional(self):
+        # eventually move to constructor
+        if self.commongp is None or self.globalgp is not None:
+            raise ValueError("ArrayLikelihood.conditional currently only works with commongp.")
+
+        if not hasattr(self, 'vsm'):
+            commongp = matrix.VectorCompoundGP(self.commongp)
+            Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+            self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
+            self.vsm.index = getattr(commongp, 'index', None)
+            self.vsm.means = getattr(commongp, 'means', None)
+
+        if hasattr(self.vsm, 'make_conditional'):
+            return ffunc(self.vsm.make_conditional(self.ys))
+        else:
+            raise NotImplementedError('No ArrayLikelihood.conditional with this setup so far.')
+
+    @functools.cached_property
+    def sample_conditional(self):
+        cond = self.conditional
+        index = self.vsm.index
+
+        def sample_cond(key, params):
+            mu, cf = cond(params)
+
+            key, subkey = matrix.jnpsplit(key)
+            c = mu + matrix.jsp.linalg.solve_triangular(jax.numpy.transpose(cf[0], axes=(0,2,1)),
+                                                        matrix.jnpnormal(subkey, mu.shape), lower=False)
+
+            # TODO: handling of indices is not consistent with GlobalLikelihood, returning only pulsars here
+            return key, {psl.name: ci for psl, ci in zip(self.psls, c)}
+
+        sample_cond.params = cond.params
+
+        return sample_cond
 
     @functools.cached_property
     def clogL(self):
