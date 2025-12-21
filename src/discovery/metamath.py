@@ -8,6 +8,7 @@ from . import signals
 from . import metamatrix as mm
 
 
+
 @mm.graph
 def noisesolve(graph, y, N):
     result = N.solve(y)
@@ -24,11 +25,17 @@ def normal(g, y, Nsolve):
     logp = -0.5 * (y.T @ Nmy) - 0.5 * lN
 
 
+# this is actually pretty inefficient on CPU
+stacksolve = False
+
 @mm.graph
 def woodbury(g, y, Nsolve, F, Pinv):
-    # Nmy, lN = Nsolve(y)
-    # NmF, _ = Nsolve(F)
-    (Nmy, NmF), lN = g.stacksolve(Nsolve, y, F)
+    if stacksolve:
+        (Nmy, NmF), lN = g.stacksolve(Nsolve, y, F)
+    else:
+        Nmy, lN = Nsolve(y)
+        NmF, _ = Nsolve(F)
+
     FtNmy = F.T @ Nmy
     FtNmF = F.T @ NmF
 
@@ -71,6 +78,8 @@ def globalwoodbury(g, ys, Nsolves, Fs, Pinv):
         Nmy_lNs = Nsolves(*ys)
         NmF_lNs = Nsolves(*Fs)
 
+        # we can't include Nmy_lNs/NmF_lNs in the zip
+        # since it's a tuple Sym that doesn't know its length
         for i, (y, F) in enumerate(zip(ys, Fs)):
             Nmy, lN = Nmy_lNs[i].split()
             NmF, _  = NmF_lNs[i].split()
@@ -115,7 +124,7 @@ def vectorwoodbury(g, ys, Nsolves, Fs, Pinv):
     logp = -0.5 * (ytNmy - g.dot(FtNmy, mu)) - 0.5 * (lP.sum() + lS.sum())
 
 
-# TO DO - implement in standard vectorwoodbury
+# this is different enough that it's OK to have a separate graph for the solve
 @mm.graph
 def vectorwoodburysolve(g, ys, Nsolves, Fs, Pinv):
     Nmys, NmFs, FtNmys, FtNmFs, lNs = [], [], [], [], []
@@ -128,12 +137,12 @@ def vectorwoodburysolve(g, ys, Nsolves, Fs, Pinv):
         Nmys.append(Nmy); NmFs.append(NmF)
         FtNmys.append(F.T @ Nmy); FtNmFs.append(F.T @ NmF) # F.T @ Nmy: (k,); F.T @ NmF: (k, k)
 
-    FtNmy = g.array(FtNmys) # FtNmy: (np, k)
-    FtNmF = g.array(FtNmFs) # FtNmF: (np, k, k)
+    FtNmy = g.array(FtNmys)            # FtNmy: (np, k)
+    FtNmF = g.array(FtNmFs)            # FtNmF: (np, k, k)
 
     Pm, lP = Pinv                      # Pm: (np, k, k), lP: (np,)
     cf, lS = g.cho_factor(Pm + FtNmF)  # cf: (np, k, k), lS: (np,)
-    mu = g.cho_solve(cf, FtNmy)   # cfFtNmy: (np, k)
+    mu = g.cho_solve(cf, FtNmy)        # cfFtNmy: (np, k)
 
     solves = []
     for i, (Nmy, NmF) in enumerate(zip(Nmys, NmFs)):

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from collections import OrderedDict, deque
 from typing import Callable, Dict, List, Union, Iterable, Any, Optional
+import functools
 import inspect
 from unicodedata import name
 
@@ -222,6 +223,59 @@ def _print_array_summary(arr: Any) -> str:
         return ', '.join([_print_array_summary(a) for a in arr])
     else:
         return f"{arr}"
+
+
+def visualize_graph(graph: Graph, simplify=False, outputs=None, format='svg', rankdir='TB'):
+    """
+    Visualize a computational graph using Graphviz.
+
+    Args:
+        graph: The computational graph to visualize
+        simplify: If True, apply constant folding and pruning
+        outputs: Output nodes to keep when simplifying
+        format: Output format ('svg', 'png', 'pdf', etc.)
+        rankdir: Graph direction ('TB' top-to-bottom, 'LR' left-to-right)
+
+    Returns:
+        graphviz.Digraph object (displays automatically in Jupyter)
+    """
+    try:
+        import graphviz
+    except ImportError:
+        raise ImportError("Please install graphviz: pip install graphviz")
+
+    if simplify:
+        graph = prune_graph(fold_constants(graph), outputs=outputs)
+
+    dot = graphviz.Digraph(comment='Computational Graph', format=format)
+    dot.attr(rankdir=rankdir)
+    dot.attr('node', shape='box', style='rounded,filled', fontname='monospace')
+
+    # Add nodes
+    for name, node in graph.items():
+        if isinstance(node, ArgLeaf):
+            label = f"{name}: arg"
+            dot.node(name, label, fillcolor='lightblue')
+        elif isinstance(node, ConstLeaf):
+            value_str = _print_array_summary(node.value)
+            label = f"{name}: const\\n{value_str}"
+            dot.node(name, label, fillcolor='lightgreen')
+        elif isinstance(node, FuncLeaf):
+            fn_name = getattr(node.fn, '__name__', str(node.fn))
+            label = f"{name}: nfunc\\n{fn_name}"
+            dot.node(name, label, fillcolor='lightyellow')
+        elif isinstance(node, Node):
+            op_name = node.description if node.description else getattr(node.op, '__name__', 'λ')
+            label = f"{name}\\n{op_name}"
+            dot.node(name, label, fillcolor='white')
+
+    # Add edges
+    for name, node in graph.items():
+        if isinstance(node, Node):
+            for inp in node.inputs:
+                dot.edge(inp, name)
+
+    return dot
 
 
 def print_graph(graph: Graph, simplify=False, outputs=None) -> None:
@@ -507,10 +561,14 @@ def graph(factory):
     # skip the first arg (the builder)
     argnames = inspect.getfullargspec(factory).args[1:]
 
+    @functools.wraps(factory)
     def makegraph(*args):
         b = GraphBuilder()
         factory(b, *[b.leaf(arg, name) for arg, name in zip(args, argnames)])
         return b.graph
 
-    return makegraph
+    sig = inspect.signature(factory)
+    params = list(sig.parameters.values())[1:]  # Skip first parameter (graph/g/b)
+    makegraph.__signature__ = sig.replace(parameters=params)
 
+    return makegraph
