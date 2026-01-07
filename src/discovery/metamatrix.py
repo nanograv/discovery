@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from collections import OrderedDict, deque
 from typing import Callable, Dict, List, Union, Iterable, Any, Optional
 import functools
 import inspect
+import ast
 from unicodedata import name
 
 import numpy as np
@@ -15,6 +18,8 @@ from sympy import Matrix
 from . import prior
 
 Array = jax.Array
+
+keepgraph = False
 
 # ===== Graph library =====
 
@@ -32,7 +37,11 @@ class ConstLeaf:
 class FuncLeaf:
     fn: Callable[..., Any]
 
-Leaf = Union[ArgLeaf, ConstLeaf, FuncLeaf]
+@dataclass
+class GraphLeaf:
+    graph: Graph
+
+Leaf = Union[ArgLeaf, ConstLeaf, FuncLeaf, GraphLeaf]
 
 # ---- Internal node type ----
 
@@ -42,50 +51,89 @@ class Node:
     inputs: List[str]                  # names of upstream nodes
     description: Optional[str] = None  # optional description of the node
 
-# Whole graph: name -> Leaf or Node
+# Whole graph: name -> Leaf or Node - TODO: it may need to be its own class
 Graph = Dict[str, Union[Leaf, Node]]
 
+@dataclass
+class Apply:
+    pass
 
 def make_leaf(x, name=None) -> Leaf:
     if x is None:
         return ArgLeaf(name=name)
     elif callable(x):
         return FuncLeaf(fn=x)
+    elif isinstance(x, OrderedDict):
+        return GraphLeaf(graph=x)
     else:
         return ConstLeaf(value=x)
 
 
-def fold_constants(graph: Graph) -> Graph:
+# args takes None and values; the latter will be replaced into ArgLeafs
+def fold_constants(graph: Graph, args=[]) -> Graph:
     """
     Collapse any all-constant subgraphs into ConstLeafs.
     Assumes graph is in topological order.
     """
     new_graph: Graph = OrderedDict()
     cache: Dict[str, Union[Array, Callable[..., Any]]] = {}
+    args_cache = deque(args)
 
     for name, node in graph.items():
         if isinstance(node, ArgLeaf):
-            new_graph[name] = node
+            # replace values for arguments if available
+            if len(args_cache) and (argval := args_cache.popleft()) is not None:
+                cache[name] = argval
+                new_graph[name] = ConstLeaf(value=argval)
+            else:
+                new_graph[name] = node
         elif isinstance(node, ConstLeaf):
             cache[name] = node.value
             new_graph[name] = node
         elif isinstance(node, FuncLeaf):
-            if not getattr(node.fn, 'args', []) and not getattr(node.fn, 'params', []):
-                val = node.fn()
+            # evaluate function if it doesn't take parameters
+            if not getattr(node.fn, 'params', []):
+                val = node.fn(params={})
                 cache[name] = val
                 new_graph[name] = ConstLeaf(val)
             else:
-                cache[name] = node.fn
+                new_graph[name] = node
+        elif isinstance(node, GraphLeaf):
+            # constant-fold graph if it doesn't have any argument
+            if not any(isinstance(subnode, ArgLeaf) for subnode in node.graph.values()):
+                subgraph = fold_constants(node.graph)
+                last = subgraph[next(reversed(subgraph))]
+
+                # if the subgraph simplifies to a constant, make a ConstLeaf
+                if isinstance(last, ConstLeaf):
+                    cache[name] = last.value
+                    new_graph[name] = last
+                else:
+                    new_graph[name] = GraphLeaf(subgraph)
+            else:
                 new_graph[name] = node
         elif isinstance(node, Node):
-            # check if all inputs are constant in the *new* graph
-            all_const = all(
-                isinstance(new_graph[inp], ConstLeaf) or (isinstance(new_graph[inp], FuncLeaf) and not getattr(new_graph[inp].fn, 'params', []))
-                for inp in node.inputs
-            )
-            if all_const:
-                args = [cache[inp] for inp in node.inputs]
-                val = node.op(*args)
+            # we're applying a function or graph to a list of inputs; the op will be "apply", but we don't need it
+            if node.op is Apply:
+                first = new_graph[node.inputs[0]]
+
+                if isinstance(first, GraphLeaf):
+                    subargs = [cache[argname] if isinstance(new_graph[argname], ConstLeaf) else None
+                            for argname in node.inputs[1:]]
+                    subgraph = fold_constants(first.graph, args=subargs)
+                    last = subgraph[next(reversed(subgraph))]
+
+                    if isinstance(last, ConstLeaf):
+                        cache[name] = last.value
+                        new_graph[name] = last
+                    else:
+                        new_graph[node.inputs[0]] = GraphLeaf(subgraph)
+                        new_graph[name] = node
+                else:
+                    raise NotImplementedError(f"Should we be applying {first} to arguments?")
+            # we're applying a function to constant inputs
+            elif all(isinstance(new_graph[input], ConstLeaf) for input in node.inputs):
+                val = node.op(*[cache[input] for input in node.inputs])
                 cache[name] = val
                 new_graph[name] = ConstLeaf(val)
             else:
@@ -93,35 +141,18 @@ def fold_constants(graph: Graph) -> Graph:
         else:
             raise TypeError(f"Unknown node type for {name}: {type(node)}")
 
+    new_graph = prune_graph(new_graph)
+
     return new_graph
 
 
-def build_callable_from_graph(graph: Graph,
-                              outputs: Union[str, Iterable[str], None] = None,
-                              jit=False):
-    """
-    Take a graph (preferably already constant-folded) and produce a function:
-
-        f(*args, params=...) -> env[output_name]
-
-    where args are assigned to the ArgLeafs in the graph (which were originally
-    passed as None to the graph factor), and params is a dict consumed by some
-    of the FuncLeafs. The function will have an attribute `params` based on
-    the union of the FuncLeafs' `params`, and an attribute `args` listing
-    the names of the ArgLeafs in order.
-    """
-
-    # figure out the outputs of this graph
-    if outputs is None:
-        output_names = [next(reversed(graph.keys()))]
-    elif isinstance(outputs, str):
-        output_names = [outputs]
-    else:
-        output_names = list(outputs)
+def build_callable_from_graph(graph: Graph):
+    output_name = next(reversed(graph.keys()))
 
     arg_leaves: List[str] = []
     const_values: Dict[str, Array] = {}
     func_leaves: Dict[str, Callable[[Any], Array]] = {}
+    graph_leaves: Dict[str, Callable[[Any], Array]] = {}
     nodes: OrderedDict[str, Node] = OrderedDict()
 
     for name, node in graph.items():
@@ -131,6 +162,8 @@ def build_callable_from_graph(graph: Graph,
             const_values[name] = node.value
         elif isinstance(node, FuncLeaf):
             func_leaves[name] = node.fn
+        elif isinstance(node, GraphLeaf):
+            graph_leaves[name] = build_callable_from_graph(node.graph)
         elif isinstance(node, Node):
             nodes[name] = node
         else:
@@ -146,52 +179,56 @@ def build_callable_from_graph(graph: Graph,
         # Fill constants
         env.update(const_values)
 
+        # Evaluate functions
         for name, fn in func_leaves.items():
-            env[name] = fn(params=params) if not getattr(fn, 'args', []) else fn
+            env[name] = fn(params=params)
+
+        for name, fn in graph_leaves.items():
+            if not fn.args:
+                env[name] = fn(params=params)
 
         # Evaluate internal nodes in (given) topological order
         for name, node in nodes.items():
-            args = [env[inp] for inp in node.inputs]
+            if node.op is Apply:
+                first = node.inputs[0]
 
-            # if the operation is a function application, we need to decide whether to pass params
-            # we will assume that the first argument is the function to be applied
-            if callable(args[0]) and getattr(args[0], 'params', []):
-                env[name] = node.op(*args, params=params)
+                if isinstance(graph[first], GraphLeaf):
+                    args = [env[input] for input in node.inputs[1:]]
+                    env[name] = graph_leaves[first](*args, params=params)
+                else:
+                    raise NotImplementedError(f"Should we apply {first}?")
             else:
+                args = [env[input] for input in node.inputs]
                 env[name] = node.op(*args)
 
-        if len(output_names) == 1:
-            return env[output_names[0]]
-        else:
-            return tuple(env[name] for name in output_names)
+        return env[output_name]
 
-    # collect params used by functional leaves
     f.args = arg_leaves
-    f.params = sorted(set(sum([getattr(fn, 'params', []) for fn in func_leaves.values()],[])))
+    f.params = sorted(set(sum([getattr(fn, 'params', [])
+                               for fdict in [func_leaves, graph_leaves]
+                               for fn in fdict.values()], [])))
 
-    # Now wrap with jax.jit
-    return jax.jit(f) if jit else f
+    if keepgraph:
+        f.graph = graph
+        f.graph.subgraphs = [graph[subgraphname].graph for subgraphname in graph_leaves]
+
+    return f
 
 
 def prune_graph(graph: Graph,
-                outputs: Union[str, Iterable[str], None] = None) -> Graph:
+                output: str = None) -> Graph:
     """
-    Given a (possibly folded) graph and one or more output node names,
+    Given a (possibly folded) graph and possibly an output node name,
     return a new graph containing only the nodes needed to compute
-    those outputs.
+    the output.
 
     - Keeps all required ConstLeaf / FuncLeaf / Node entries.
     - Preserves original topological order for the kept nodes.
     """
-    if outputs is None:
-        output_names = [next(reversed(graph.keys()))]
-    elif isinstance(outputs, str):
-        output_names = [outputs]
-    else:
-        output_names = list(outputs)
+    output_name = next(reversed(graph.keys())) if output is None else output
 
-    required = set(output_names)
-    q = deque(output_names)
+    required = set([output_name])
+    q = deque([output_name])
 
     while q:
         name = q.popleft()
@@ -215,24 +252,13 @@ def prune_graph(graph: Graph,
     return pruned
 
 
-# helper for print_graph
-def _print_array_summary(arr: Any) -> str:
-    if isinstance(arr, (np.ndarray, jnp.ndarray)):
-        return f"array(shape={arr.shape}, dtype={arr.dtype})"
-    elif isinstance(arr, tuple):
-        return ', '.join([_print_array_summary(a) for a in arr])
-    else:
-        return f"{arr}"
-
-
-def visualize_graph(graph: Graph, simplify=False, outputs=None, format='svg', rankdir='TB'):
+def visualize_graph(graph: Graph, fold=False, format='svg', rankdir='TB'):
     """
     Visualize a computational graph using Graphviz.
 
     Args:
         graph: The computational graph to visualize
-        simplify: If True, apply constant folding and pruning
-        outputs: Output nodes to keep when simplifying
+        fold: If True, apply constant folding and pruning
         format: Output format ('svg', 'png', 'pdf', etc.)
         rankdir: Graph direction ('TB' top-to-bottom, 'LR' left-to-right)
 
@@ -244,26 +270,31 @@ def visualize_graph(graph: Graph, simplify=False, outputs=None, format='svg', ra
     except ImportError:
         raise ImportError("Please install graphviz: pip install graphviz")
 
-    if simplify:
-        graph = prune_graph(fold_constants(graph), outputs=outputs)
+    if fold:
+        graph = fold_constants(graph)
 
     dot = graphviz.Digraph(comment='Computational Graph', format=format)
     dot.attr(rankdir=rankdir)
     dot.attr('node', shape='box', style='rounded,filled', fontname='monospace')
 
-    # Add nodes
+    subgraphs = {}
     for name, node in graph.items():
         if isinstance(node, ArgLeaf):
             label = f"{name}: arg"
             dot.node(name, label, fillcolor='lightblue')
         elif isinstance(node, ConstLeaf):
-            value_str = _print_array_summary(node.value)
+            value_str, _ = _print_array_summary(node.value)
             label = f"{name}: const\\n{value_str}"
             dot.node(name, label, fillcolor='lightgreen')
         elif isinstance(node, FuncLeaf):
             fn_name = getattr(node.fn, '__name__', str(node.fn))
-            label = f"{name}: nfunc\\n{fn_name}"
+            label = f"{name}: func\\n{fn_name}"
             dot.node(name, label, fillcolor='lightyellow')
+        elif isinstance(node, GraphLeaf):
+            num_nodes = len(node.graph)
+            label = f"{name}: subgraph\\n({num_nodes} nodes)"
+            dot.node(name, label, fillcolor='lavender', shape='box3d')
+            subgraphs[name] = node.graph
         elif isinstance(node, Node):
             op_name = node.description if node.description else getattr(node.op, '__name__', 'λ')
             label = f"{name}\\n{op_name}"
@@ -278,24 +309,57 @@ def visualize_graph(graph: Graph, simplify=False, outputs=None, format='svg', ra
     return dot
 
 
-def print_graph(graph: Graph, simplify=False, outputs=None) -> None:
+# helper for print_graph
+def _print_array_summary(arr: Any) -> tuple[str, int]:
+    if isinstance(arr, (np.ndarray, jnp.ndarray)):
+        return (f"array{arr.shape}", arr.size)
+    elif isinstance(arr, tuple):
+        items = [_print_array_summary(a) for a in arr]
+        return (', '.join([item[0] for item in items]), sum([item[1] for item in items]))
+    else:
+        return (f"{arr}", 0)
+
+
+def print_graph(graph: Graph, fold=False, name=None) -> None:
     """
     Pretty-print a computational graph, applying constant folding and pruning if simplify=True
     """
-    if simplify:
-        graph = prune_graph(fold_constants(graph), outputs=outputs)
+    if fold:
+        graph = fold_constants(graph)
 
+    print(f"## {'graph' if name is None else name}")
+
+    subgraphs, size = {}, 0
     for name, node in graph.items():
         if isinstance(node, ArgLeaf):
             print(f"{name}: arg")
         elif isinstance(node, ConstLeaf):
-            print(f"{name}: const = {_print_array_summary(node.value)}")
+            const = _print_array_summary(node.value)
+            print(f"{name}: const = {const[0]}")
+            size = size + const[1]
         elif isinstance(node, FuncLeaf):
-            print(f"{name}: func = {node.fn}")
+            if hasattr(node.fn, 'graph'):
+                uname = f"{name}[{np.random.randint(65536):04x}]"
+                subgraphs[uname] = node.fn.graph
+                print(f"{name}: func = subgraph {uname}")
+            else:
+                print(f"{name}: func = {node.fn}")
+        elif isinstance(node, GraphLeaf):
+            uname = f"{name}[{np.random.randint(65536):04x}]"
+            subgraphs[uname] = node.graph
+            print(f"{name}: graph = subgraph {uname}")
         elif isinstance(node, Node):
             print(f"{name}: node({', '.join(node.inputs)}) = {node.description if node.description else node.op}")
         else:
             print(f"{name}: unknown node type {type(node)}")
+
+    print(f"# total array constants: {size} elements")
+
+    for name, subgraph in subgraphs.items():
+        print('', end='\n')
+        size = size + print_graph(subgraph, name=f"subgraph {name}")
+
+    return size
 
 
 def sample_graph(graph: Graph, *args, display=False) -> Graph:
@@ -307,22 +371,22 @@ def sample_graph(graph: Graph, *args, display=False) -> Graph:
     ret = f(*args, params=prior.sample_uniform(f.params))
 
     if display:
-        print(_print_array_summary(ret))
+        print(_print_array_summary(ret)[0])
     else:
         return ret
 
 
 def func(graph: Graph,
-         outputs: Union[str, Iterable[str], None] = None,
-         jit=False) -> Callable[[Any], Array]:
+         output: str = None) -> Callable[[Any], Array]:
     """
     Given a computational graph, produce a JAX-jittable function
     that computes the graph output. This first folds constant subgraphs,
     then prunes the graph, then builds the callable.
     """
-    folded = fold_constants(graph)
-    pruned = prune_graph(folded, outputs=outputs)
-    return build_callable_from_graph(pruned, outputs=outputs, jit=jit)
+    if output is not None:
+        graph = prune_graph(graph, output)
+
+    return build_callable_from_graph(fold_constants(graph))
 
 
 # ===== Matrix operations =====
@@ -397,7 +461,7 @@ class Sym:
     # Transpose
     @property
     def T(self) -> "Sym":
-        return self.builder.node(lambda x: x.T, [self])
+        return self.builder.node(lambda x: x.T, [self], description=f"{self.name}.T")
 
     # Matrix multiply
     def __matmul__(self, other: "Sym") -> "Sym":
@@ -434,17 +498,17 @@ class Sym:
     def sum(self) -> "Sym":
         return self.builder.node(lambda x: jnp.sum(x), [self], description=f"sum({self.name})")
 
-    # Function application
+    # Function or graph application
     def __call__(self, *args: "Sym") -> "Sym":
-        return self.builder.node(lambda f, *xs, params={}: f(*xs, params=params), [self, *args], description=f"{self.name}({', '.join(arg.name for arg in args)})")
+        return self.builder.node(Apply, [self, *args], description=f"{self.name}({', '.join(arg.name for arg in args)})")
 
     def pair(self, other: "Sym") -> "Sym":
         return self.builder.node(lambda x, y: (x, y), [self, other], description=f"pair({self.name}, {other.name})")
 
     # this may lead to problems if we return a list; split may be better
     def split(self) -> tuple["Sym", "Sym"]:
-        return (self.builder.node(lambda x: x[0], [self], description=f"split({self.name})[0]"),
-                self.builder.node(lambda x: x[1], [self], description=f"split({self.name})[1]"))
+        return (self.builder.node(lambda x: x[0], [self], description=f"{self.name}[0]"),
+                self.builder.node(lambda x: x[1], [self], description=f"{self.name}[1]"))
 
     def __getitem__(self, idx: Union[int, slice]) -> "Sym":
         return self.builder.node(lambda x: x[idx], [self], description=f"{self.name}[{idx}]")
@@ -499,19 +563,19 @@ class GraphBuilder:
     # --- Domain-specific ops ---
 
     def dot(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda X, Y: jnp.sum(X * Y), [A, B], name=name)
+        return self.node(lambda X, Y: X.T @ Y, [A, B], name=name, description=f"{A.name}.T @ {B.name}") # was jnp.sum(X * Y)
 
     def solve(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda N, Y: matrix_solve(N, Y), [A, B], name=name)
+        return self.node(lambda N, Y: matrix_solve(N, Y), [A, B], name=name, description=f"solve({N.name}, {Y.name})")
 
     def cho_factor(self, A: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda amat: cholesky_factor(amat), [A], name=name)
+        return self.node(lambda amat: cholesky_factor(amat), [A], name=name, description=f'cho_factor({A.name})')
 
     def cho_solve(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda cf, b: cholesky_solve(cf, b), [A, B], name=name)
+        return self.node(lambda cf, b: cholesky_solve(cf, b), [A, B], name=name, description=f'cho_solve({A.name}, {B.name})')
 
     def inv(self, A: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda X: jnp.linalg.inv(X), [A], name=name)
+        return self.node(lambda X: jnp.linalg.inv(X), [A], name=name, description=f'inv({A.name})')
 
 
     def array(self, args: List[Sym], name: Optional[str] = None) -> Sym:
@@ -525,16 +589,16 @@ class GraphBuilder:
 
 
     def sum_all(self, args: List[Sym], name: Optional[str] = None) -> Sym:
-        return self.node(lambda *fts: sum(fts), args, name=name)
+        return self.node(lambda *fts: sum(fts), args, name=name, description=f'sum({",".join(arg.name for arg in args)})')
 
     def apply(self, A: Sym, *args: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda f, *xs, params={}: f(*xs, params=params), [A, *args], name=name)
+        return self.node(Apply, [A, *args], name=name, description=f'{A.name}({", ".join(arg.name for arg in args)})')
 
     def pair(self, A: Sym, B: Sym, name: Optional[str] = None) -> Sym:
-        return self.node(lambda x, y: (x, y), [A, B], name=name)
+        return self.node(lambda x, y: (x, y), [A, B], name=name, description=f'pair({A.name}, {B.name})')
 
     def ntuple(self, args: List[Sym], name: Optional[str] = None) -> Sym:
-        return self.node(lambda *xs: tuple(xs), args, name=name)
+        return self.node(lambda *xs: tuple(xs), args, name=name, description=f'tuple({", ".join(arg.name for arg in args)})')
 
     def split(self, AB: Sym, name1: Optional[str] = None, name2: Optional[str] = None) -> tuple[Sym, Sym]:
         return self.node(lambda x: x[0], [AB], name=name1), self.node(lambda x: x[1], [AB], name=name2)
@@ -555,6 +619,14 @@ class GraphBuilder:
             return ((Nmy, NmF), lN)
 
         return self.node(_stacksolve, [Nsolve, y, F], name=name, description=f"{Nsolve.name}({y.name}, {F.name})")
+
+    def eval(self, expr: str, args: List[Sym], name: Optional[str] = None) -> Sym:
+        raise NotImplementedError("Not ready for prime time...")
+
+        vars = {node.id: None for node in ast.walk(ast.parse(expr, mode='eval')) if isinstance(node, ast.Name)}
+        syms = {name: arg.name for name, arg in zip(vars, args)}
+
+        return self.node(eval(f'lambda {", ".join(vars)}: {expr}'), args, description=f'{expr}')
 
 
 def graph(factory):

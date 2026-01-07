@@ -6,6 +6,7 @@ import jax
 
 from . import matrix
 from . import signals
+from . import metamatrix
 from . import metamath
 
 # import jax
@@ -36,10 +37,15 @@ from . import metamath
 #                                              common=['crn_log10_A', 'crn_gamma']),
 #                            concat=True)
 
-def ffunc(func):
+def ffunc(graph):
+    func = metamatrix.func(graph)
+
     def outfunc(params):
         return func(params=params)
     outfunc.params = func.params
+
+    if hasattr(func, 'graph'):
+        outfunc.graph = func.graph
 
     return outfunc
 
@@ -597,6 +603,7 @@ class ArrayLikelihood:
                 def loglike(params):
                     return sum(logl(params) for logl in logls)
                 loglike.params = sorted(set.union(*[set(logl.params) for logl in logls]))
+                loglike.graphs = [logl.graph for logl in logls if hasattr(logl, 'graph')]
 
                 return loglike
             else:

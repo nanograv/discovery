@@ -15,6 +15,11 @@ def noisesolve(graph, y, N):
 
 
 @mm.graph
+def noiseinvfunc(graph, P):
+    result = P
+
+
+@mm.graph
 def noiseinv(graph, P):
     result = P.inv()
 
@@ -36,17 +41,22 @@ def woodbury(g, y, Nsolve, F, Pinv):
         Nmy, lN = Nsolve(y)
         NmF, _ = Nsolve(F)
 
-    FtNmy = F.T @ Nmy
-    FtNmF = F.T @ NmF
+    FtNmy = g.dot(NmF, y) # FtNmy = g.dot(F, Nmy)
+    FtNmF = g.dot(F, NmF)
 
-    Pm, lP = Pinv
+    Pm, lP = Pinv # should be a call even without parameters
     cf, lS = g.cho_factor(Pm + FtNmF)
     mu = g.cho_solve(cf, FtNmy)
-    ld = lN + lP + lS
+    ld = g.node(lambda lN, lP, lS: lN + lP + lS, [lN, lP, lS], description=f'{lN.name} + {lP.name} + {lS.name}')
 
     cond = g.pair(mu, cf, name='cond')
     solve = g.pair(Nmy - NmF @ mu, ld, name='solve')
-    logp = -0.5 * (y.T @ Nmy - FtNmy.T @ mu) - 0.5 * ld
+
+    logp = -0.5 * (g.dot(y, Nmy) - g.dot(FtNmy, mu)) - 0.5 * ld
+
+    # more readable, but doing this keeps y.T @ Nmy from being cached
+    # logp = g.node(lambda y, Nmy, FtNmy, mu, ld: -0.5 * (y.T @ Nmy - FtNmy.T @ mu) - 0.5 * ld,
+    #               [y, Nmy, FtNmy, mu, ld], description=f'-0.5 * (y.T @ Nmy - FtNmy.T @ mu) - 0.5 * ld')
 
 
 @mm.graph
@@ -70,9 +80,9 @@ def globalwoodbury(g, ys, Nsolves, Fs, Pinv):
             Nmy, lN = Nsolve(y)
             NmF, _ = Nsolve(F)
 
-            ytNmys.append(y.T @ Nmy + lN)
-            FtNmys.append(F.T @ Nmy)
-            FtNmFs.append(F.T @ NmF)
+            ytNmys.append(g.dot(y, Nmy) + lN)
+            FtNmys.append(g.dot(F, Nmy))
+            FtNmFs.append(g.dot(F, NmF))
     else:
         # ingest output from vectorwoodburysolve
         Nmy_lNs = Nsolves(*ys)
@@ -84,9 +94,9 @@ def globalwoodbury(g, ys, Nsolves, Fs, Pinv):
             Nmy, lN = Nmy_lNs[i].split()
             NmF, _  = NmF_lNs[i].split()
 
-            ytNmys.append(y.T @ Nmy + lN)
-            FtNmys.append(F.T @ Nmy)
-            FtNmFs.append(F.T @ NmF)
+            ytNmys.append(g.dot(y, Nmy) + lN)
+            FtNmys.append(g.dot(F, Nmy))
+            FtNmFs.append(g.dot(F, NmF))
 
     ytNmy = g.sum_all(ytNmys)
     FtNmy = g.hstack(FtNmys)
@@ -134,8 +144,10 @@ def vectorwoodburysolve(g, ys, Nsolves, Fs, Pinv):
         NmF, _ = Nsolve(F)  # NmF: (n_i, k)
 
         lNs.append(lN)
-        Nmys.append(Nmy); NmFs.append(NmF)
-        FtNmys.append(F.T @ Nmy); FtNmFs.append(F.T @ NmF) # F.T @ Nmy: (k,); F.T @ NmF: (k, k)
+        Nmys.append(Nmy)
+        NmFs.append(NmF)
+        FtNmys.append(g.dot(F, Nmy))
+        FtNmFs.append(g.dot(F, NmF)) # F.T @ Nmy: (k,); F.T @ NmF: (k, k)
 
     FtNmy = g.array(FtNmys)            # FtNmy: (np, k)
     FtNmF = g.array(FtNmFs)            # FtNmF: (np, k, k)
@@ -171,17 +183,18 @@ class NoiseMatrix(matrix.Kernel):
 
     @property
     def make_solve(self):
-        return mm.func(noisesolve(None, self.N))
+        return noisesolve(None, self.N)
 
     @property
     def make_inv(self):
         if getattr(self, 'inv', None):
-            return self.inv # shortcut for GPs with custom make_inv
+            # shortcut for GPs with custom make_inv
+            return noiseinvfunc(self.inv)
         else:
-            return mm.func(noiseinv(self.N))
+            return noiseinv(self.N)
 
     def make_kernelproduct(self, y):
-        return mm.func(normal(y, self.make_solve))
+        return normal(y, self.make_solve)
 
 
 class WoodburyKernel(matrix.Kernel):
@@ -190,21 +203,21 @@ class WoodburyKernel(matrix.Kernel):
 
     @property
     def make_solve(self):
-        return mm.func(woodbury(None, self.N.make_solve, self.F, self.P.make_inv), outputs='solve')
+        return mm.prune_graph(woodbury(None, self.N.make_solve, self.F, self.P.make_inv), output='solve')
 
     def make_kernelproduct(self, y):
-        return mm.func(woodbury(y, self.N.make_solve, self.F, self.P.make_inv))
+        return woodbury(y, self.N.make_solve, self.F, self.P.make_inv)
 
     def make_conditional(self, y):
-        return mm.func(woodbury(y, self.N.make_solve, self.F, self.P.make_inv), outputs='cond')
+        return mm.prune_graph(woodbury(y, self.N.make_solve, self.F, self.P.make_inv), output='cond')
 
     def make_coefficientproduct(self, y):
         cvars = list(self.index.keys())
         def getc(params):
             return jnp.concatenate([params[cvar] for cvar in cvars])
-        getc.args, getc.params = [], cvars
+        getc.params = cvars
 
-        return mm.func(woodburylatent(y, self.N.make_solve, self.F, self.P.make_solve, getc))
+        return woodburylatent(y, self.N.make_solve, self.F, self.P.make_solve, getc)
 
 
 class GlobalWoodburyKernel(matrix.Kernel):
@@ -230,7 +243,7 @@ class VectorWoodburyKernel(matrix.Kernel):
         return mm.func(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv))
 
     def make_conditional(self, ys):
-        return mm.func(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv), outputs='cond')
+        return mm.func(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv), output='cond')
 
 
 class CompoundGP:
@@ -248,7 +261,7 @@ class CompoundGP:
             self.index = {k: v for d in gplist for k, v in d.index.items()}
 
     def _concat(self, vecmats):
-        return functools.reduce(lambda x, y: mm.func(concat(x, y)), vecmats)
+        return functools.reduce(lambda x, y: concat(x, y), vecmats)
 
     @property
     def F(self):
@@ -257,6 +270,7 @@ class CompoundGP:
             return tuple(self._concat(Fs) for Fs in zip(*(gp.F for gp in self.gplist)))
         else:
             return self._concat([gp.F for gp in self.gplist])
+
     @property
     def Phi(self):
         # TO DO: won't work for 2D priors
@@ -268,3 +282,28 @@ def CompoundDelay(residuals, delays):
     return functools.reduce(lambda x, y: mm.func(delay(x, y)), [residuals, *delays])
 
 
+### experimental
+
+@mm.graph
+def woodburyfast(g, y, allsolve, F, Pinv):
+    ytNmy, FtNmy, FtNmF, lN = allsolve(y, F)
+
+    Pm, lP = Pinv
+    cf, lS = g.cho_factor(Pm + FtNmF)
+    mu = g.cho_solve(cf, FtNmy)
+    ld = lP + lS + lN
+
+    # cond = g.pair(mu, cf, name='cond')
+    # solve = g.pair(Nmy - NmF @ mu, ld, name='solve')
+
+    logp = -0.5 * (ytNmy - g.dot(FtNmy, mu)) - 0.5 * ld
+
+# yt Km y = yt Nm y - yt Nm F (Pinv + FtNmF)^-1 Ft Nm y
+# Tt Km y = Tt Nm y - Tt Nm F (Pinv + FtNmF)^-1 Ft Nm y
+# Tt Km T = Tt Nm T - Tt Nm F (Pinv + FtNmF)^-1 Ft Nm T
+# quindi mi mancano TtNmy, TtNmF, TtNmT;
+# il primo e l'ultimo si possono ottenere da allsolve(y, T), ma TtNmF?
+
+@mm.graph
+def noiseallsolve(graph, y, F, N):
+    result = N.allsolve(y, F)
