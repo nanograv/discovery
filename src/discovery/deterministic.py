@@ -278,3 +278,45 @@ def makefourier_binary(pulsarterm=True):
         fourier_binary = functools.partial(fourier_binary, phi_psr=jnp.nan)
 
     return fourier_binary
+
+
+def chromatic_exponential(psr, fref=1400.0):
+    """Chromatic exponential delay model."""
+    toas, fnorm = matrix.jnparray(psr.toas / const.day), matrix.jnparray(fref / psr.freqs)
+
+    def delay(t0, log10_Amp, log10_tau, sign_param, alpha):
+        return jnp.sign(sign_param) * 10**log10_Amp * jnp.exp(- (toas - t0) / 10**log10_tau) * fnorm**alpha * jnp.heaviside(toas - t0, 1.0)
+
+    return delay
+
+
+def chromatic_annual(psr, fref=1400.0):
+    """Chromatic annual delay model."""
+    toas, fnorm = matrix.jnparray(psr.toas), matrix.jnparray(fref / psr.freqs)
+
+    def delay(log10_Amp, phase, alpha):
+        return 10**log10_Amp * jnp.sin(2*jnp.pi * const.fyr * toas + phase) * fnorm**alpha
+
+    return delay
+
+
+def chromatic_gaussian(psr, fref=1400.0):
+    """Chromatic Gaussian delay model."""
+    toas, fnorm = matrix.jnparray(psr.toas / const.day), matrix.jnparray(fref / psr.freqs)
+
+    def delay(t0, log10_Amp, log10_sigma, sign_param, alpha):
+        return jnp.sign(sign_param) * 10**log10_Amp * jnp.exp(-(toas - t0)**2 / (2 * (10**log10_sigma)**2)) * fnorm**alpha
+
+    return delay
+
+
+def orthometric_shapiro(psr, binphase):
+    """Orthometric Shapiro delay model from Freire & Wex (2010)."""
+    toas, binphase = matrix.jnparray(psr.toas / const.day), matrix.jnparray(binphase)
+    if not np.shape(binphase) == np.shape(toas):
+        raise ValueError("Input binphase must have the same shape as toas")
+
+    def delay(h3, stig):
+        return -(2.0 * h3 / stig**3) * jnp.log(1 + stig**2 - 2 * stig * jnp.sin(binphase))
+
+    return delay
