@@ -6,12 +6,7 @@ Discovery uses lightweight ``Pulsar`` objects saved as Arrow Feather files for e
 Data Format
 -----------
 
-Pulsar data is stored in the `Apache Arrow Feather format <https://arrow.apache.org/docs/python/feather.html>`_, which provides:
-
-- Fast read/write performance
-- Efficient columnar storage
-- Cross-language compatibility
-- Minimal memory overhead
+Pulsar data is stored in the `Apache Arrow Feather format <https://arrow.apache.org/docs/python/feather.html>`_.
 
 Each Feather file contains:
 

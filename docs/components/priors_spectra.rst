@@ -57,7 +57,7 @@ Implements:
 
 .. math::
 
-   S(f) = \\frac{10^{2 \log_{10}(A)}}{12\pi^2} f^{-\gamma} T_{\mathrm{yr}}^{\gamma-3} \, \Delta f
+   S(f) = \frac{10^{2 \log_{10}(A)}}{12\pi^2} \frac{f}{f_{yr}}^{-\gamma} f_{yr}^{-3}
 
 where :math:`\log_{10}(A)` = ``log10_A`` is the log-amplitude, :math:`\gamma` = ``gamma`` is the
 spectral index, and :math:`T_{\mathrm{yr}} = 365.25 \times 86400` s converts to per-year normalization.
@@ -167,7 +167,7 @@ way to estimate the dense (non-diagonal) covariance matrix from the power spectr
 - ``order``: Interpolation order (0=nearest, 1=linear)
 - ``oversample``: FFT oversampling factor (default=3)
 - ``fmax_factor``: Maximum frequency factor (default=1)
-- ``cutoff``: Eigenvalue cutoff for dimensionality reduction
+- ``cutoff``: low frequency cutoff so that power law does not diverge
 
 The FFTCov approach computes the time-domain covariance function from the PSD via inverse FFT,
 then uses time-interpolated basis functions to construct the GP efficiently.
