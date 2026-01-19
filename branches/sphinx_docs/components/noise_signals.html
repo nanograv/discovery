@@ -1,0 +1,841 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Noise and Signal Components &mdash; Discovery 0.5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=db78e746"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="GP Priors and Spectra" href="priors_spectra.html" />
+    <link rel="prev" title="Optimal Statistic" href="../tutorials/optimal_statistic.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Discovery
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/overview.html#what-is-discovery">What is Discovery?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/overview.html#philosophy">Philosophy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/overview.html#key-features">Key Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/overview.html#requirements">Requirements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guide/overview.html#optional-dependencies">Optional Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/overview.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/data_model.html">Data Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/data_model.html#kernel-objects">Kernel Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guide/data_model.html#example-kernel-usage">Example Kernel Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/data_model.html#gp-objects">GP Objects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guide/data_model.html#before-marginalization">Before Marginalization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guide/data_model.html#after-marginalization">After Marginalization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guide/data_model.html#example-gp-usage">Example GP Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/data_model.html#woodburykernel">WoodburyKernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/data_model.html#model-building">Model Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/data_model.html#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/pulsar_data.html">Pulsar Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/pulsar_data.html#data-format">Data Format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/pulsar_data.html#converting-from-enterprise">Converting from Enterprise</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/pulsar_data.html#loading-pulsar-data">Loading Pulsar Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/pulsar_data.html#pulsar-object-attributes">Pulsar Object Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/pulsar_data.html#example-datasets">Example Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/pulsar_data.html#working-with-pulsar-data">Working with Pulsar Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/pulsar_data.html#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#documentation-dependencies">Documentation Dependencies</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#api-documentation">API Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/basic_likelihood.html">Basic Likelihood</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/basic_likelihood.html#single-pulsar-likelihood">Single Pulsar Likelihood</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#loading-data">Loading Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#building-the-likelihood">Building the Likelihood</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#understanding-parameters">Understanding Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#evaluating-the-likelihood">Evaluating the Likelihood</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#computing-gradients">Computing Gradients</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/basic_likelihood.html#multi-pulsar-analysis-globallikelihood">Multi-Pulsar Analysis: GlobalLikelihood</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#loading-multiple-pulsars">Loading Multiple Pulsars</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#building-individual-likelihoods">Building Individual Likelihoods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#adding-a-correlated-process">Adding a Correlated Process</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/basic_likelihood.html#multi-pulsar-analysis-arraylikelihood">Multi-Pulsar Analysis: ArrayLikelihood</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#common-red-noise-model">Common Red Noise Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basic_likelihood.html#gw-background-with-arraylikelihood">GW Background with ArrayLikelihood</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/basic_likelihood.html#adding-a-prior">Adding a Prior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/basic_likelihood.html#complete-example">Complete Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/basic_likelihood.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/simulations.html">Simulations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/simulations.html#single-pulsar-simulation">Single Pulsar Simulation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/simulations.html#basic-setup">Basic Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/simulations.html#generate-residuals">Generate Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/simulations.html#update-pulsar-object">Update Pulsar Object</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/simulations.html#pulsar-array-simulation">Pulsar Array Simulation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/simulations.html#setup-array-model">Setup Array Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/simulations.html#generate-array-data">Generate Array Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/simulations.html#update-multiple-pulsars">Update Multiple Pulsars</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/simulations.html#jit-compiling-samplers">JIT-Compiling Samplers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/simulations.html#vectorized-simulations">Vectorized Simulations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/simulations.html#conditional-simulations">Conditional Simulations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/simulations.html#complete-example">Complete Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/simulations.html#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/optimal_statistic.html">Optimal Statistic</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/optimal_statistic.html#creating-an-os-object">Creating an OS Object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/optimal_statistic.html#computing-the-optimal-statistic">Computing the Optimal Statistic</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/optimal_statistic.html#basic-computation">Basic Computation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/optimal_statistic.html#overlap-reduction-functions">Overlap Reduction Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/optimal_statistic.html#jit-compilation">JIT Compilation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/optimal_statistic.html#vectorization">Vectorization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/optimal_statistic.html#scrambling-analysis">Scrambling Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/optimal_statistic.html#vectorized-scrambling">Vectorized Scrambling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/optimal_statistic.html#phase-shifting">Phase Shifting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/optimal_statistic.html#vectorized-phase-shifting">Vectorized Phase Shifting</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/optimal_statistic.html#cdf-computation">CDF Computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/optimal_statistic.html#complete-example">Complete Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/optimal_statistic.html#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Component Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Noise and Signal Components</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#measurement-noise">Measurement Noise</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#white-noise-efac-equad">White Noise (EFAC/EQUAD)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ecorr">ECORR</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#stochastic-signals-gps">Stochastic Signals (GPs)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fourier-basis-gps">Fourier Basis GPs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#global-gps">Global GPs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#common-gps-batched">Common GPs (Batched)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#timing-model">Timing Model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#fourier-basis-functions">Fourier Basis Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#standard-fourier-basis">Standard Fourier Basis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dm-fourier-basis">DM Fourier Basis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chromatic-noise-basis">Chromatic Noise Basis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#utility-functions">Utility Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#timespan">Timespan</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="priors_spectra.html">GP Priors and Spectra</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="priors_spectra.html#fourier-based-prior-function-interface">Fourier-Based Prior Function Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="priors_spectra.html#standard-priors">Standard Priors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="priors_spectra.html#power-law">Power Law</a></li>
+<li class="toctree-l3"><a class="reference internal" href="priors_spectra.html#free-spectrum">Free Spectrum</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="priors_spectra.html#combined-priors">Combined Priors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="priors_spectra.html#power-law-common-process">Power Law + Common Process</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="priors_spectra.html#time-domain-covariance-fftcov">Time-Domain Covariance (FFTCov)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="priors_spectra.html#custom-priors">Custom Priors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="priors_spectra.html#parameter-priors">Parameter Priors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="priors_spectra.html#examples">Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="priors_spectra.html#standard-red-noise-crn">Standard Red Noise + CRN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="priors_spectra.html#dm-variations">DM Variations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="priors_spectra.html#id1">Free Spectrum</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="priors_spectra.html#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="delays.html">Deterministic Delays</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="delays.html#creating-delay-functions">Creating Delay Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#the-makedelay-function">The <code class="docutils literal notranslate"><span class="pre">makedelay</span></code> Function</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="delays.html#solar-wind-dm-delay">Solar Wind DM Delay</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#r2-solar-wind-model">1/r² Solar Wind Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#solar-wind-gp">Solar Wind GP</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="delays.html#chromatic-delays">Chromatic Delays</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#exponential-dip-model">Exponential Dip Model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="delays.html#binary-black-hole-signals">Binary Black Hole Signals</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#continuous-wave-from-bbh">Continuous Wave from BBH</a></li>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#fourier-domain-bbh">Fourier-Domain BBH</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="delays.html#custom-delay-functions">Custom Delay Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="delays.html#examples">Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#single-pulsar-with-solar-wind">Single Pulsar with Solar Wind</a></li>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#multiple-chromatic-events">Multiple Chromatic Events</a></li>
+<li class="toctree-l3"><a class="reference internal" href="delays.html#common-solar-wind-pta">Common Solar Wind (PTA)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="delays.html#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/conditional_sampling.html">Conditional Sampling of GP Coefficients</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/conditional_sampling.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/conditional_sampling.html#conditional-distribution">Conditional Distribution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/conditional_sampling.html#single-pulsar">Single Pulsar</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/conditional_sampling.html#the-conditional-method">The <code class="docutils literal notranslate"><span class="pre">conditional</span></code> Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/conditional_sampling.html#sampling-from-the-conditional">Sampling from the Conditional</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/conditional_sampling.html#multiple-pulsars-globallikelihood">Multiple Pulsars (GlobalLikelihood)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/conditional_sampling.html#multiple-samples">Multiple Samples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/conditional_sampling.html#use-cases">Use Cases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/conditional_sampling.html#limitations">Limitations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/conditional_sampling.html#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/signals.html">signals</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.residuals"><code class="docutils literal notranslate"><span class="pre">residuals()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makenoise_measurement_simple"><code class="docutils literal notranslate"><span class="pre">makenoise_measurement_simple()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.selection_backend_flags"><code class="docutils literal notranslate"><span class="pre">selection_backend_flags()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makenoise_measurement"><code class="docutils literal notranslate"><span class="pre">makenoise_measurement()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.quantize"><code class="docutils literal notranslate"><span class="pre">quantize()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_ecorr_simple"><code class="docutils literal notranslate"><span class="pre">makegp_ecorr_simple()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_ecorr"><code class="docutils literal notranslate"><span class="pre">makegp_ecorr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_improper"><code class="docutils literal notranslate"><span class="pre">makegp_improper()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_timing"><code class="docutils literal notranslate"><span class="pre">makegp_timing()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.getspan"><code class="docutils literal notranslate"><span class="pre">getspan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.getstart"><code class="docutils literal notranslate"><span class="pre">getstart()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis"><code class="docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.dmfourierbasis"><code class="docutils literal notranslate"><span class="pre">dmfourierbasis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.dmfourierbasis_alpha"><code class="docutils literal notranslate"><span class="pre">dmfourierbasis_alpha()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.dmfourierbasis_solar"><code class="docutils literal notranslate"><span class="pre">dmfourierbasis_solar()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.make_dmfourierbasis"><code class="docutils literal notranslate"><span class="pre">make_dmfourierbasis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier"><code class="docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makecommongp_fourier"><code class="docutils literal notranslate"><span class="pre">makecommongp_fourier()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier_delay"><code class="docutils literal notranslate"><span class="pre">makegp_fourier_delay()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier_variance"><code class="docutils literal notranslate"><span class="pre">makegp_fourier_variance()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier_allpsr"><code class="docutils literal notranslate"><span class="pre">makegp_fourier_allpsr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makeglobalgp_fourier"><code class="docutils literal notranslate"><span class="pre">makeglobalgp_fourier()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier_global"><code class="docutils literal notranslate"><span class="pre">makegp_fourier_global()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.epochavgbasis"><code class="docutils literal notranslate"><span class="pre">epochavgbasis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.cov2cov"><code class="docutils literal notranslate"><span class="pre">cov2cov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_avgcov"><code class="docutils literal notranslate"><span class="pre">makegp_avgcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makecommongp_avgcov"><code class="docutils literal notranslate"><span class="pre">makecommongp_avgcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makeglobalgp_avgcov"><code class="docutils literal notranslate"><span class="pre">makeglobalgp_avgcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.timeinterpbasis"><code class="docutils literal notranslate"><span class="pre">timeinterpbasis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.make_timeinterpbasis"><code class="docutils literal notranslate"><span class="pre">make_timeinterpbasis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.make_dmtimeinterpbasis"><code class="docutils literal notranslate"><span class="pre">make_dmtimeinterpbasis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.psd2cov"><code class="docutils literal notranslate"><span class="pre">psd2cov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fftcov"><code class="docutils literal notranslate"><span class="pre">makegp_fftcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makecommongp_fftcov"><code class="docutils literal notranslate"><span class="pre">makecommongp_fftcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makeglobalgp_fftcov"><code class="docutils literal notranslate"><span class="pre">makeglobalgp_fftcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_intcov"><code class="docutils literal notranslate"><span class="pre">makegp_intcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makecommongp_intcov"><code class="docutils literal notranslate"><span class="pre">makecommongp_intcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makeglobalgp_intcov"><code class="docutils literal notranslate"><span class="pre">makeglobalgp_intcov()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.powerlaw"><code class="docutils literal notranslate"><span class="pre">powerlaw()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.brokenpowerlaw"><code class="docutils literal notranslate"><span class="pre">brokenpowerlaw()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.freespectrum"><code class="docutils literal notranslate"><span class="pre">freespectrum()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makepowerlaw_crn"><code class="docutils literal notranslate"><span class="pre">makepowerlaw_crn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.powerlaw_brokencrn"><code class="docutils literal notranslate"><span class="pre">powerlaw_brokencrn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.brokenpowerlaw_brokencrn"><code class="docutils literal notranslate"><span class="pre">brokenpowerlaw_brokencrn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makefreespectrum_crn"><code class="docutils literal notranslate"><span class="pre">makefreespectrum_crn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.uncorrelated_orf"><code class="docutils literal notranslate"><span class="pre">uncorrelated_orf()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.hd_orf"><code class="docutils literal notranslate"><span class="pre">hd_orf()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.monopole_orf"><code class="docutils literal notranslate"><span class="pre">monopole_orf()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.dipole_orf"><code class="docutils literal notranslate"><span class="pre">dipole_orf()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.makedelay"><code class="docutils literal notranslate"><span class="pre">makedelay()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/signals.html#discovery.signals.getresiduals"><code class="docutils literal notranslate"><span class="pre">getresiduals()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/matrix.html">matrix</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.config"><code class="docutils literal notranslate"><span class="pre">config()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.rngkey"><code class="docutils literal notranslate"><span class="pre">rngkey()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.ConstantMatrix"><code class="docutils literal notranslate"><span class="pre">ConstantMatrix</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VariableMatrix"><code class="docutils literal notranslate"><span class="pre">VariableMatrix</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.Kernel"><code class="docutils literal notranslate"><span class="pre">Kernel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.ConstantKernel"><code class="docutils literal notranslate"><span class="pre">ConstantKernel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VariableKernel"><code class="docutils literal notranslate"><span class="pre">VariableKernel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.GP"><code class="docutils literal notranslate"><span class="pre">GP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.ConstantGP"><code class="docutils literal notranslate"><span class="pre">ConstantGP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VariableGP"><code class="docutils literal notranslate"><span class="pre">VariableGP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.GlobalVariableGP"><code class="docutils literal notranslate"><span class="pre">GlobalVariableGP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.CompoundGlobalGP"><code class="docutils literal notranslate"><span class="pre">CompoundGlobalGP()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorCompoundGP"><code class="docutils literal notranslate"><span class="pre">VectorCompoundGP()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.CompoundGP"><code class="docutils literal notranslate"><span class="pre">CompoundGP()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.CompoundDelay"><code class="docutils literal notranslate"><span class="pre">CompoundDelay()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix12D_var"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix12D_var()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_kernelproduct()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.inv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.make_sqrt"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_sqrt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.solve_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_solve_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.make_sample"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_sample()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.SM_1d_fused"><code class="docutils literal notranslate"><span class="pre">SM_1d_fused()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.SM_2d_fused"><code class="docutils literal notranslate"><span class="pre">SM_2d_fused()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.make_uind"><code class="docutils literal notranslate"><span class="pre">make_uind()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.smup_ind"><code class="docutils literal notranslate"><span class="pre">smup_ind()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.smdp_ind"><code class="docutils literal notranslate"><span class="pre">smdp_ind()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.vsmup_ind"><code class="docutils literal notranslate"><span class="pre">vsmup_ind()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.vsmdp_ind"><code class="docutils literal notranslate"><span class="pre">vsmdp_ind()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.smup_ind_correct"><code class="docutils literal notranslate"><span class="pre">smup_ind_correct()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.vsmup_ind_correct"><code class="docutils literal notranslate"><span class="pre">vsmup_ind_correct()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.SM_1d_indexed"><code class="docutils literal notranslate"><span class="pre">SM_1d_indexed()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.SM_2d_indexed"><code class="docutils literal notranslate"><span class="pre">SM_2d_indexed()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.SM_12d_indexed"><code class="docutils literal notranslate"><span class="pre">SM_12d_indexed()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_novar"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_novar.solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar.solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_novar.solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar.solve_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_novar.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_novar.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar.make_solve_2d()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_var"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_var</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_var.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_var.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_var.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_var.make_solve_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrixSM_var.make_solve_12d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_var.make_solve_12d()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_kernelproduct()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.inv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.make_inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_inv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.make_sqrt"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_sqrt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.make_sample"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_sample()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.solve_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix1D_var.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_solve_2d()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix2D_novar"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_novar</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix2D_novar.inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_novar.inv()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix2D_var"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_var</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix2D_var.make_inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_var.make_inv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix2D_var.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_var.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.NoiseMatrix2D_var.make_sample"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_var.make_sample()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorNoiseMatrix12D_var"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix12D_var()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorNoiseMatrix1D_var"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix1D_var</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorNoiseMatrix1D_var.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix1D_var.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorNoiseMatrix1D_var.make_inv"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix1D_var.make_inv()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorNoiseMatrix2D_var"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix2D_var</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorNoiseMatrix2D_var.make_inv"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix2D_var.make_inv()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_sample()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_kernelproduct()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_kernelterms()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_kernelsolve()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar.solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar.solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.solve_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_novar.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_solve_2d()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varFP"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varFP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varFP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varFP.make_kernelproduct_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varFP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varFP.make_kernelproduct()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_gpcomponent"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct_gpcomponent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelsolve()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_kernelsolve_simple"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelsolve_simple()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_solve_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelterms()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_sample()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_solve_1d_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_solve_1d_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_solve_2d_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_solve_2d_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelsolve_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelsolve_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelsolve()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelproduct_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelproduct()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelproduct_gpcomponent"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelproduct_gpcomponent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelterms_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelterms_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelterms()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varN"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_sample()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelproduct()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelterms()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelsolve()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_solve_1d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_solve_2d()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorWoodburyKernel_varP"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelproduct_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_varN"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelproduct_varN()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelproduct()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorWoodburyKernel_varP.make_kernelterms_vary"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelterms_vary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/matrix.html#discovery.matrix.VectorWoodburyKernel_varP.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelterms()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.zero_out_negative_eigenvalues"><code class="docutils literal notranslate"><span class="pre">zero_out_negative_eigenvalues()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.intarray"><code class="docutils literal notranslate"><span class="pre">intarray()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.jnparray"><code class="docutils literal notranslate"><span class="pre">jnparray()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.jnpkey"><code class="docutils literal notranslate"><span class="pre">jnpkey()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/matrix.html#discovery.matrix.jnpzeros"><code class="docutils literal notranslate"><span class="pre">jnpzeros()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/pulsar.html">pulsar</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.read_chain"><code class="docutils literal notranslate"><span class="pre">read_chain()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.save_chain"><code class="docutils literal notranslate"><span class="pre">save_chain()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.Pulsar"><code class="docutils literal notranslate"><span class="pre">Pulsar</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.Pulsar.columns"><code class="docutils literal notranslate"><span class="pre">Pulsar.columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.Pulsar.vector_columns"><code class="docutils literal notranslate"><span class="pre">Pulsar.vector_columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.Pulsar.tensor_columns"><code class="docutils literal notranslate"><span class="pre">Pulsar.tensor_columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.Pulsar.metadata"><code class="docutils literal notranslate"><span class="pre">Pulsar.metadata</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.Pulsar.read_feather"><code class="docutils literal notranslate"><span class="pre">Pulsar.read_feather()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.Pulsar.to_list"><code class="docutils literal notranslate"><span class="pre">Pulsar.to_list()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/pulsar.html#discovery.pulsar.Pulsar.save_feather"><code class="docutils literal notranslate"><span class="pre">Pulsar.save_feather()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/solar.html">solar</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/solar.html#discovery.solar.make_solardmfourierbasis"><code class="docutils literal notranslate"><span class="pre">make_solardmfourierbasis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/solar.html#discovery.solar.theta_impact"><code class="docutils literal notranslate"><span class="pre">theta_impact()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/solar.html#discovery.solar.make_solardm"><code class="docutils literal notranslate"><span class="pre">make_solardm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/solar.html#discovery.solar.chromaticdelay"><code class="docutils literal notranslate"><span class="pre">chromaticdelay()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/solar.html#discovery.solar.make_chromaticdelay"><code class="docutils literal notranslate"><span class="pre">make_chromaticdelay()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/deterministic.html">deterministic</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.fpc_fast"><code class="docutils literal notranslate"><span class="pre">fpc_fast()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.makedelay_binary"><code class="docutils literal notranslate"><span class="pre">makedelay_binary()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.makedelay_binary_phases"><code class="docutils literal notranslate"><span class="pre">makedelay_binary_phases()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.makedelay_binary_coefficients"><code class="docutils literal notranslate"><span class="pre">makedelay_binary_coefficients()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.cos2comp"><code class="docutils literal notranslate"><span class="pre">cos2comp()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.makefourier_binary"><code class="docutils literal notranslate"><span class="pre">makefourier_binary()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/likelihood.html">likelihood</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.PulsarLikelihood"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.PulsarLikelihood.sample_conditional"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.sample_conditional</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.PulsarLikelihood.conditional"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.conditional</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.PulsarLikelihood.clogL"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.clogL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.PulsarLikelihood.logL"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.logL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.PulsarLikelihood.sample"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.sample</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.GlobalLikelihood"><code class="docutils literal notranslate"><span class="pre">GlobalLikelihood</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.GlobalLikelihood.sample"><code class="docutils literal notranslate"><span class="pre">GlobalLikelihood.sample</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.GlobalLikelihood.logL"><code class="docutils literal notranslate"><span class="pre">GlobalLikelihood.logL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.GlobalLikelihood.plogL"><code class="docutils literal notranslate"><span class="pre">GlobalLikelihood.plogL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.GlobalLikelihood.sample_conditional"><code class="docutils literal notranslate"><span class="pre">GlobalLikelihood.sample_conditional</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.GlobalLikelihood.conditional"><code class="docutils literal notranslate"><span class="pre">GlobalLikelihood.conditional</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.ArrayLikelihood"><code class="docutils literal notranslate"><span class="pre">ArrayLikelihood</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.ArrayLikelihood.clogL"><code class="docutils literal notranslate"><span class="pre">ArrayLikelihood.clogL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.ArrayLikelihood.logL"><code class="docutils literal notranslate"><span class="pre">ArrayLikelihood.logL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/likelihood.html#discovery.likelihood.ArrayLikelihood.cglogL"><code class="docutils literal notranslate"><span class="pre">ArrayLikelihood.cglogL()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/prior.html">prior</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api/prior.html#discovery.prior.uniform"><code class="docutils literal notranslate"><span class="pre">uniform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/prior.html#discovery.prior.getprior_uniform"><code class="docutils literal notranslate"><span class="pre">getprior_uniform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/prior.html#discovery.prior.makelogprior_uniform"><code class="docutils literal notranslate"><span class="pre">makelogprior_uniform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/prior.html#discovery.prior.makelogtransform_uniform"><code class="docutils literal notranslate"><span class="pre">makelogtransform_uniform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/prior.html#discovery.prior.makelogtransform_classic"><code class="docutils literal notranslate"><span class="pre">makelogtransform_classic()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/prior.html#discovery.prior.sample_uniform"><code class="docutils literal notranslate"><span class="pre">sample_uniform()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api/const.html">const</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Discovery</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Noise and Signal Components</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/components/noise_signals.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="noise-and-signal-components">
+<h1>Noise and Signal Components<a class="headerlink" href="#noise-and-signal-components" title="Link to this heading"></a></h1>
+<p>Discovery provides modular noise and signal components that can be combined to build likelihoods.</p>
+<section id="measurement-noise">
+<h2>Measurement Noise<a class="headerlink" href="#measurement-noise" title="Link to this heading"></a></h2>
+<section id="white-noise-efac-equad">
+<h3>White Noise (EFAC/EQUAD)<a class="headerlink" href="#white-noise-efac-equad" title="Link to this heading"></a></h3>
+<p>Create measurement noise kernels with EFAC and EQUAD parameters:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Backend-multiplexed (Enterprise style)</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">)</span>
+
+<span class="c1"># Simple (no backend multiplexing)</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement_simple</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">)</span>
+
+<span class="c1"># With kernel ECORR (faster, less memory)</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">,</span> <span class="n">ecorr</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Parameters are multiplexed to pulsar and backend (e.g., <code class="docutils literal notranslate"><span class="pre">B1855+09_430_ASP_efac</span></code>).</p>
+<p><strong>Important:</strong> If any single parameter needed for the model is not in <code class="docutils literal notranslate"><span class="pre">noisedict</span></code>,
+then <strong>all</strong> parameters become free (unfrozen). Otherwise, parameters in <code class="docutils literal notranslate"><span class="pre">noisedict</span></code>
+are frozen to their specified values.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.makenoise_measurement" title="discovery.signals.makenoise_measurement"><code class="xref py py-func docutils literal notranslate"><span class="pre">makenoise_measurement()</span></code></a> and
+<a class="reference internal" href="../api/signals.html#discovery.signals.makenoise_measurement_simple" title="discovery.signals.makenoise_measurement_simple"><code class="xref py py-func docutils literal notranslate"><span class="pre">makenoise_measurement_simple()</span></code></a>.</p>
+</section>
+<section id="ecorr">
+<h3>ECORR<a class="headerlink" href="#ecorr" title="Link to this heading"></a></h3>
+<p>Epoch-averaged correlated noise can be added in two ways:</p>
+<p><strong>Kernel ECORR (recommended):</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Include ECORR in the noise kernel</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">,</span> <span class="n">ecorr</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Kernel ECORR is faster and uses less memory by incorporating ECORR directly
+into the noise matrix.</p>
+<p><strong>GP ECORR:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Backend-multiplexed</span>
+<span class="n">ecorr_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">)</span>
+
+<span class="c1"># Simple (no backend multiplexing)</span>
+<span class="n">ecorr_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr_simple</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>GP ECORR can be useful when you need a diagonal noise matrix, for example in
+outlier analysis (see <a class="reference external" href="https://arxiv.org/abs/2112.05698">Wang and Taylor 2021</a>).</p>
+<p>ECORR uses quantization to define epochs and models correlated noise within epochs.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_ecorr" title="discovery.signals.makegp_ecorr"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_ecorr()</span></code></a> and
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_ecorr_simple" title="discovery.signals.makegp_ecorr_simple"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_ecorr_simple()</span></code></a>.</p>
+</section>
+</section>
+<section id="stochastic-signals-gps">
+<h2>Stochastic Signals (GPs)<a class="headerlink" href="#stochastic-signals-gps" title="Link to this heading"></a></h2>
+<section id="fourier-basis-gps">
+<h3>Fourier Basis GPs<a class="headerlink" href="#fourier-basis-gps" title="Link to this heading"></a></h3>
+<p>Create GPs with Fourier basis (for red noise, DM variations, etc.):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Red noise</span>
+<span class="n">rn_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+
+<span class="c1"># DM variations</span>
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dmgp&#39;</span><span class="p">)</span>
+
+<span class="c1"># Common process (shared parameters)</span>
+<span class="n">crn_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
+                           <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;crn_log10_A&#39;</span><span class="p">,</span> <span class="s1">&#39;crn_gamma&#39;</span><span class="p">],</span>
+                           <span class="n">name</span><span class="o">=</span><span class="s1">&#39;crn&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The Fourier basis has shape <code class="docutils literal notranslate"><span class="pre">ntoas</span> <span class="pre">×</span> <span class="pre">2*components</span></code> (interleaved sines and cosines).</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prior</span></code>: JAX function with signature <code class="docutils literal notranslate"><span class="pre">prior(f,</span> <span class="pre">df,</span> <span class="pre">arg1,</span> <span class="pre">...)</span></code>, returning the power spectral density (PSD) at each frequency <code class="docutils literal notranslate"><span class="pre">f</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">components</span></code>: Number of Fourier modes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code>: Timespan (defaults to pulsar span)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fourierbasis</span></code>: Basis function (defaults to <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis" title="discovery.signals.fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">common</span></code>: List of parameters shared across pulsars</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: Parameter name prefix</p></li>
+</ul>
+<p><strong>Example prior function:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">powerlaw</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Power-law spectrum.</span>
+
+<span class="sd">    Returns PSD at frequencies f.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">log10_A</span><span class="p">)</span> <span class="o">*</span> <span class="n">f</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">365.25</span><span class="o">*</span><span class="mi">86400</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">gamma</span><span class="o">+</span><span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">12</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">df</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a> and <a class="reference internal" href="priors_spectra.html"><span class="doc">GP Priors and Spectra</span></a> for available priors.</p>
+</section>
+<section id="global-gps">
+<h3>Global GPs<a class="headerlink" href="#global-gps" title="Link to this heading"></a></h3>
+<p>Create correlated GPs for multiple pulsars:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Hellings-Downs correlated GW background</span>
+<span class="n">gw_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span>
+                                  <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
+                                  <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span><span class="p">)</span>
+
+<span class="c1"># Monopole correlation</span>
+<span class="n">mono_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">monopole_orf</span><span class="p">,</span>
+                                    <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
+                                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;mono&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">orf</span></code> parameter specifies the overlap reduction function (see <span class="xref std std-doc">orf</span>).</p>
+<p>For composite processes (e.g., HD + monopole):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span>
+    <span class="n">psrs</span><span class="p">,</span>
+    <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">],</span>  <span class="c1"># List of priors</span>
+    <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">monopole_orf</span><span class="p">],</span> <span class="c1"># List of ORFs</span>
+    <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Parameters are named <code class="docutils literal notranslate"><span class="pre">{name}_{orf_name}_{argX}</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">gw_hd_orf_log10_A</span></code>).</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier_global" title="discovery.signals.makegp_fourier_global"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier_global()</span></code></a>.</p>
+</section>
+<section id="common-gps-batched">
+<h3>Common GPs (Batched)<a class="headerlink" href="#common-gps-batched" title="Link to this heading"></a></h3>
+<p>For <code class="docutils literal notranslate"><span class="pre">ArrayLikelihood</span></code>, create vectorized GPs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">commongp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makecommongp_fourier</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span>
+                                   <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
+                                   <span class="n">name</span><span class="o">=</span><span class="s1">&#39;red_noise&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is similar to <code class="docutils literal notranslate"><span class="pre">makegp_fourier</span></code> but operates on a list of pulsars and
+enables batched operations for GPU acceleration.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.makecommongp_fourier" title="discovery.signals.makecommongp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makecommongp_fourier()</span></code></a>.</p>
+</section>
+<section id="timing-model">
+<h3>Timing Model<a class="headerlink" href="#timing-model" title="Link to this heading"></a></h3>
+<p>Add timing model GP:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># With SVD (recommended for stability)</span>
+<span class="n">timing_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># With column normalization</span>
+<span class="n">timing_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># With physical prior variance</span>
+<span class="n">timing_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">svd=True</span></code>, uses singular value decomposition for numerical stability.
+When <code class="docutils literal notranslate"><span class="pre">svd=False</span></code>, uses column normalization of the design matrix.
+The <code class="docutils literal notranslate"><span class="pre">variance</span></code> parameter sets a proper Gaussian prior variance (in s²) instead
+of an improper prior.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_timing" title="discovery.signals.makegp_timing"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_timing()</span></code></a>.</p>
+</section>
+</section>
+<section id="fourier-basis-functions">
+<h2>Fourier Basis Functions<a class="headerlink" href="#fourier-basis-functions" title="Link to this heading"></a></h2>
+<section id="standard-fourier-basis">
+<h3>Standard Fourier Basis<a class="headerlink" href="#standard-fourier-basis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">F</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Returns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">f</span></code>: Frequencies (Hz)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">df</span></code>: Frequency bin widths</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">F</span></code>: Basis matrix (ntoas × 2*components)</p></li>
+</ul>
+<p>The basis consists of interleaved sines and cosines at frequencies <code class="docutils literal notranslate"><span class="pre">k/T</span></code>
+for <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">...,</span> <span class="pre">components</span></code>.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis" title="discovery.signals.fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a>.</p>
+</section>
+<section id="dm-fourier-basis">
+<h3>DM Fourier Basis<a class="headerlink" href="#dm-fourier-basis" title="Link to this heading"></a></h3>
+<p>For dispersion measure variations (chromatic index <span class="math notranslate nohighlight">\(\\alpha = 2\)</span>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">F</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mi">1400</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Rescales the basis by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**2</span></code> for DM scaling.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.dmfourierbasis" title="discovery.signals.dmfourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">dmfourierbasis()</span></code></a>.</p>
+</section>
+<section id="chromatic-noise-basis">
+<h3>Chromatic Noise Basis<a class="headerlink" href="#chromatic-noise-basis" title="Link to this heading"></a></h3>
+<p>For general chromatic noise with arbitrary spectral index:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis_alpha</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mi">1400</span><span class="p">)</span>
+
+<span class="c1"># fmat_func is a closure that takes the chromatic index</span>
+<span class="n">F</span> <span class="o">=</span> <span class="n">fmat_func</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>  <span class="c1"># Returns basis scaled by (fref / psr.freqs)**alpha</span>
+</pre></div>
+</div>
+<p>The function returns a closure <code class="docutils literal notranslate"><span class="pre">fmat_func(alpha)</span></code> that generates the basis matrix
+scaled by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**alpha</span></code> for any chromatic index <span class="math notranslate nohighlight">\(\\alpha\)</span>.
+This allows the chromatic index to be a free parameter in the model.</p>
+<p><strong>Example usage:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create GP with variable chromatic index</span>
+<span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis_alpha</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">chromatic_prior</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+    <span class="c1"># alpha is a free parameter here</span>
+    <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma</span><span class="p">)</span>
+
+<span class="c1"># In the model, the basis will be evaluated at the sampled alpha value</span>
+<span class="n">chrom_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">chromatic_prior</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                             <span class="n">fourierbasis</span><span class="o">=</span><span class="k">lambda</span> <span class="n">psr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span><span class="p">),</span>
+                             <span class="n">name</span><span class="o">=</span><span class="s1">&#39;chromatic&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.dmfourierbasis_alpha" title="discovery.signals.dmfourierbasis_alpha"><code class="xref py py-func docutils literal notranslate"><span class="pre">dmfourierbasis_alpha()</span></code></a>.</p>
+</section>
+</section>
+<section id="utility-functions">
+<h2>Utility Functions<a class="headerlink" href="#utility-functions" title="Link to this heading"></a></h2>
+<section id="timespan">
+<h3>Timespan<a class="headerlink" href="#timespan" title="Link to this heading"></a></h3>
+<p>Get the observing span:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Single pulsar</span>
+<span class="n">Tspan</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
+
+<span class="c1"># Multiple pulsars</span>
+<span class="n">Tspan</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psrs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.getspan" title="discovery.signals.getspan"><code class="xref py py-func docutils literal notranslate"><span class="pre">getspan()</span></code></a>.</p>
+</section>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="priors_spectra.html"><span class="doc">GP Priors and Spectra</span></a> - GP prior functions</p></li>
+<li><p><a class="reference internal" href="delays.html"><span class="doc">Deterministic Delays</span></a> - Deterministic delay models</p></li>
+<li><p><a class="reference internal" href="../tutorials/basic_likelihood.html"><span class="doc">Basic Likelihood</span></a> - Building likelihoods</p></li>
+<li><p><a class="reference internal" href="../api/signals.html"><span class="doc">signals</span></a> - Full API reference</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../tutorials/optimal_statistic.html" class="btn btn-neutral float-left" title="Optimal Statistic" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="priors_spectra.html" class="btn btn-neutral float-right" title="GP Priors and Spectra" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michele Vallisneri.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
