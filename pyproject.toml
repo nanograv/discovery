@@ -67,6 +67,13 @@ flow = [
     "equinox"
 ]
 
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=2.0",
+    "sphinx-autodoc-typehints>=1.25",
+    "numpydoc>=1.6",
+]
+
 [project.urls]
 # Documentation = "https://github.com/microsoft/python-package-template/tree/main#readme"
 Source = "https://github.com/vallis/discovery"
