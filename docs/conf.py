@@ -86,3 +86,6 @@ html_theme_options = {
 
 # If you want to add a custom logo, uncomment and specify:
 # html_logo = '_static/discovery.png'
+
+# Copy .nojekyll to output for GitHub Pages
+html_extra_path = ['.nojekyll']
