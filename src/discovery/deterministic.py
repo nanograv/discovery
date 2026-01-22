@@ -281,42 +281,241 @@ def makefourier_binary(pulsarterm=True):
 
 
 def chromatic_exponential(psr, fref=1400.0):
-    """Chromatic exponential delay model."""
+    r"""
+    Factory function for chromatic exponential delay model.
+
+    Creates a delay function that models chromatic exponential events (e.g., glitches,
+    state changes) with frequency-dependent amplitude scaling.
+
+    Parameters
+    ----------
+    psr : Pulsar
+        Pulsar object containing toas and freqs attributes
+    fref : float, optional
+        Reference frequency in MHz for normalization (default: 1400.0)
+
+    Returns
+    -------
+    delay : callable
+        Function with signature (t0, log10_Amp, log10_tau, sign_param, alpha) -> ndarray
+        Computes chromatic exponential delay:
+
+        .. math::
+
+            \Delta(t) = \pm A_0 \exp\left(-\frac{t - t_0}{\tau}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha H(t - t_0)
+
+        where :math:`H(t - t_0)` is the Heaviside step function.
+    """
     toas, fnorm = matrix.jnparray(psr.toas / const.day), matrix.jnparray(fref / psr.freqs)
 
     def delay(t0, log10_Amp, log10_tau, sign_param, alpha):
+        r"""
+        Compute chromatic exponential delay.
+
+        .. math::
+
+            \Delta(t) = \pm A_0 \exp\left(-\frac{t - t_0}{\tau}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha H(t - t_0)
+
+        Parameters
+        ----------
+        t0 : float
+            Event epoch :math:`t_0` in days (MJD)
+        log10_Amp : float
+            Log10 of amplitude :math:`A_0` in seconds
+        log10_tau : float
+            Log10 of exponential decay timescale :math:`\tau` in days
+        sign_param : float
+            Sign of the delay (positive or negative)
+        alpha : float
+            Chromatic index :math:`\alpha` (spectral index for frequency dependence)
+
+        Returns
+        -------
+        delay : ndarray
+            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas
+        """
         return jnp.sign(sign_param) * 10**log10_Amp * jnp.exp(- (toas - t0) / 10**log10_tau) * fnorm**alpha * jnp.heaviside(toas - t0, 1.0)
 
+    delay.__name__ = "chromatic_exponential_delay"
     return delay
 
 
 def chromatic_annual(psr, fref=1400.0):
-    """Chromatic annual delay model."""
+    r"""
+    Factory function for chromatic annual delay model.
+
+    Creates a delay function that models chromatic annual sinusoidal variations
+    (e.g., annual DM variations) with frequency-dependent amplitude scaling.
+
+    Parameters
+    ----------
+    psr : Pulsar
+        Pulsar object containing toas and freqs attributes
+    fref : float, optional
+        Reference frequency in MHz for normalization (default: 1400.0)
+
+    Returns
+    -------
+    delay : callable
+        Function with signature (log10_Amp, phase, alpha) -> ndarray
+        Computes chromatic annual delay:
+
+        .. math::
+
+            \Delta(t) = A_0 \sin(2\pi f_{\text{yr}} t + \phi) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha
+
+        where :math:`f_{\text{yr}}` is the annual frequency (1/year).
+    """
     toas, fnorm = matrix.jnparray(psr.toas), matrix.jnparray(fref / psr.freqs)
 
     def delay(log10_Amp, phase, alpha):
+        r"""
+        Compute chromatic annual delay.
+
+        .. math::
+
+            \Delta(t) = A_0 \sin(2\pi f_{\text{yr}} t + \phi) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha
+
+        Parameters
+        ----------
+        log10_Amp : float
+            Log10 of amplitude :math:`A_0` in seconds
+        phase : float
+            Phase offset :math:`\phi` in radians
+        alpha : float
+            Chromatic index :math:`\alpha` (spectral index for frequency dependence)
+
+        Returns
+        -------
+        delay : ndarray
+            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas
+        """
         return 10**log10_Amp * jnp.sin(2*jnp.pi * const.fyr * toas + phase) * fnorm**alpha
 
+    delay.__name__ = "chromatic_annual_delay"
     return delay
 
 
 def chromatic_gaussian(psr, fref=1400.0):
-    """Chromatic Gaussian delay model."""
+    r"""
+    Factory function for chromatic Gaussian delay model.
+
+    Creates a delay function that models chromatic Gaussian events (e.g., transient
+    DM variations, localized events) with frequency-dependent amplitude scaling.
+
+    Parameters
+    ----------
+    psr : Pulsar
+        Pulsar object containing toas and freqs attributes
+    fref : float, optional
+        Reference frequency in MHz for normalization (default: 1400.0)
+
+    Returns
+    -------
+    delay : callable
+        Function with signature (t0, log10_Amp, log10_sigma, sign_param, alpha) -> ndarray
+        Computes chromatic Gaussian delay:
+
+        .. math::
+
+            \Delta(t) = \pm A_0 \exp\left(-\frac{(t - t_0)^2}{2\sigma^2}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha
+    """
     toas, fnorm = matrix.jnparray(psr.toas / const.day), matrix.jnparray(fref / psr.freqs)
 
     def delay(t0, log10_Amp, log10_sigma, sign_param, alpha):
+        r"""
+        Compute chromatic Gaussian delay.
+
+        .. math::
+
+            \Delta(t) = \pm A_0 \exp\left(-\frac{(t - t_0)^2}{2\sigma^2}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha
+
+        Parameters
+        ----------
+        t0 : float
+            Event epoch :math:`t_0` in days (MJD)
+        log10_Amp : float
+            Log10 of amplitude :math:`A_0` in seconds
+        log10_sigma : float
+            Log10 of Gaussian width :math:`\sigma` in days
+        sign_param : float
+            Sign of the delay (positive or negative)
+        alpha : float
+            Chromatic index :math:`\alpha` (spectral index for frequency dependence)
+
+        Returns
+        -------
+        delay : ndarray
+            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas
+        """
         return jnp.sign(sign_param) * 10**log10_Amp * jnp.exp(-(toas - t0)**2 / (2 * (10**log10_sigma)**2)) * fnorm**alpha
 
+    delay.__name__ = "chromatic_gaussian_delay"
     return delay
 
 
 def orthometric_shapiro(psr, binphase):
-    """Orthometric Shapiro delay model from Freire & Wex (2010)."""
+    r"""
+    Factory function for orthometric Shapiro delay model.
+
+    Creates a delay function that models Shapiro delay in binary pulsars using
+    the orthometric parameterization from Freire & Wex (2010).
+
+    Parameters
+    ----------
+    psr : Pulsar
+        Pulsar object containing toas attribute
+    binphase : array-like
+        Binary orbital phase :math:`\Phi` at each TOA (same shape as psr.toas)
+
+    Returns
+    -------
+    delay : callable
+        Function with signature (h3, stig) -> ndarray
+        Computes orthometric Shapiro delay (Equation 29 in Freire & Wex 2010):
+
+        .. math::
+
+            \Delta_s = -\frac{2 h_3}{\zeta^3} \log(1 + \zeta^2 - 2 \zeta \sin\Phi)
+
+    Raises
+    ------
+    ValueError
+        If binphase shape does not match psr.toas shape
+
+    References
+    ----------
+    Freire, P. C. C., & Wex, N. (2010). The orthometric parametrization of the
+    Shapiro delay and an improved test of general relativity with binary pulsars.
+    MNRAS, 409(1), 199-212.
+    """
     toas, binphase = matrix.jnparray(psr.toas / const.day), matrix.jnparray(binphase)
     if not np.shape(binphase) == np.shape(toas):
         raise ValueError("Input binphase must have the same shape as toas")
 
     def delay(h3, stig):
+        r"""
+        Compute orthometric Shapiro delay.
+
+        Implements Equation (29) from Freire & Wex (2010):
+
+        .. math::
+
+            \Delta_s = -\frac{2 h_3}{\zeta^3} \log(1 + \zeta^2 - 2 \zeta \sin\Phi)
+
+        Parameters
+        ----------
+        h3 : float
+            Orthometric amplitude parameter :math:`h_3` (related to companion mass and inclination)
+        stig : float
+            Orthometric shape parameter :math:`\zeta` (related to orbital inclination)
+
+        Returns
+        -------
+        delay : ndarray
+            Shapiro timing delay :math:`\Delta_s` in seconds with shape matching psr.toas
+        """
         return -(2.0 * h3 / stig**3) * jnp.log(1 + stig**2 - 2 * stig * jnp.sin(binphase))
 
+    delay.__name__ = "orthometric_shapiro_delay"
     return delay

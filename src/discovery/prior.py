@@ -48,7 +48,7 @@ priordict_standard = {
     "cw_log10_f0": [-9.0, -7.0],
     "cw_log10_h0": [-18.0, -11.0],
     "cw_phi_earth": [0., 2*np.pi],
-    "(.*_)?cw_phi_psr": [0., 2*np.pi]
+    "(.*_)?cw_phi_psr": [0., 2*np.pi],
     "(.*_)?chrom_exp_t0": [50000, 65000],
     "(.*_)?chrom_exp_log10_Amp": [-10, -4],
     "(.*_)?chrom_exp_log10_tau": [0, 4],
