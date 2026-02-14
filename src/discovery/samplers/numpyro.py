@@ -16,11 +16,23 @@ def makemodel_transformed(mylogl, transform=prior.makelogtransform_uniform, prio
 
     def numpyro_model():
         pars = numpyro.sample('pars', dist.Normal(0, 10).expand([parlen]))
-        logl = logx(pars)
+        base_logl = logx(pars)
 
+        jac = logx.logprior(pars)
+        logl = base_logl
+
+        # keep track of the original log-likelihood
+        # this is useful for diagnostics and reweighting
+        numpyro.deterministic('logl_original', logl - jac)
         numpyro.factor('logl', logl)
-    numpyro_model.to_df = lambda chain: logx.to_df(chain['pars'])
 
+    def to_df(chain_samples):
+        df = logx.to_df(chain_samples['pars'])
+        logl_arr = chain_samples['logl_original']
+        df['logl'] = logl_arr.reshape(-1)
+        return df
+
+    numpyro_model.to_df = to_df
     return numpyro_model
 
 
@@ -29,8 +41,16 @@ def makemodel(mylogl, priordict={}):
         logl = mylogl({par: numpyro.sample(par, dist.Uniform(*prior.getprior_uniform(par, priordict)))
                        for par in mylogl.params})
 
+        numpyro.deterministic('logl_det', logl)
         numpyro.factor('logl', logl)
-    numpyro_model.to_df = lambda chain: pd.DataFrame(chain)
+
+    def to_df(chain_samples):
+        df = pd.DataFrame(chain_samples)
+        logl_arr = chain_samples['logl_det']
+        df['logl'] = logl_arr.reshape(-1)
+        return df
+
+    numpyro_model.to_df = to_df
 
     return numpyro_model
 
