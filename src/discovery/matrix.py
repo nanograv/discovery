@@ -1520,6 +1520,33 @@ class WoodburyKernel_varP(VariableKernel):
 
         return kernelsolve
 
+    def make_kernelsolve_simple(self, y):
+        # for when there is only one
+        # GP, and it hasn't been marginalized over
+        P_var = self.P_var
+        Nvar = self.N
+        F = jnparray(self.F)
+        y = jnparray(y)
+        P_var_inv = P_var.make_inv()
+        NmF, ldN = self.N.solve_2d(self.F)
+        FtNm = NmF.T
+        FtNmy = FtNm @ y
+        FtNmF = F.T @ NmF
+
+        Nvar_solve_2d = Nvar.make_solve_2d()
+        def kernelsolve(params):
+            Pinv, ldP = P_var_inv(params)
+            Sigma = Pinv + FtNmF
+            ch = matrix_factor(Sigma)
+            b_mean = matrix_solve(ch, FtNmy)
+
+            return b_mean, Sigma
+
+        kernelsolve.params = sorted(self.N.params + P_var.params)
+        return kernelsolve
+
+
+
     def make_kernelproduct_vary(self, y):
         NmF, ldN = self.N.solve_2d(self.F)
         FtNmF = self.F.T @ NmF
@@ -2094,6 +2121,8 @@ class VectorWoodburyKernel_varP(VariableKernel):
         FtNmF, NmFty = jnparray(FtNmFs), jnparray(NmFtys)
         ytNmy, ldN = float(sum(ytNmys)), float(sum(ldNs))
 
+        n_psr = len(FtNmFs)
+
         if isinstance(self.index, list):
             cvarsall = self.index
         else:
@@ -2115,18 +2144,23 @@ class VectorWoodburyKernel_varP(VariableKernel):
 
             def kernelproduct(params):
                 c = fold(params)
-
+                ldL = 0.0
                 if transform is not None:
-                    c, ldL = transform(params, c)
+                    c, tmp_ldL = transform(params, c)
+                    ldL += tmp_ldL
                     params = {**params, **unfold(c)}
                 else:
-                    ldL = 0.0
+                    ldL += 0.0
+
 
                 logpr = P_var_prior(params)
 
                 ret = (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
-                       -0.5 * ldN - logpr + ldL)
-                return (ret, c) if transform is not None else ret
+                       -0.5 * ldN + logpr + ldL)
+                if transform:
+                    return (ret, c)
+                else:
+                    return ret
 
             kernelproduct.params = sorted(set(P_var_prior.params +
                                               sum([list(cvars) for cvars in cvarsall], []) +
