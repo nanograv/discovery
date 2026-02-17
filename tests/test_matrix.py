@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Tests for discovery matrix operations"""
 
+import glob
+from pathlib import Path
+
 import pytest
 import numpy as np
 
@@ -10,6 +13,8 @@ import jax.numpy as jnp
 
 import discovery as ds
 from discovery import matrix
+
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
 class TestWoodburyKernel:
@@ -135,3 +140,194 @@ class TestWoodburyKernel:
             "JIT and non-JIT varNP should give identical results"
         assert np.isclose(logL_varP, logL_varP_jit, rtol=1e-10, atol=1e-10), \
             "JIT and non-JIT varP should give identical results"
+
+
+class TestPulsarLikelihoodWithDelay:
+    """Tests for PulsarLikelihood with deterministic delay signals (solar DM)
+    and varying/fixed white noise configurations.
+
+    While the name is `TestPulsarLikelihoodWithDelay` we are really testing different
+    routes through matrix.py here, hence why it is in `test_matrix.py`.
+    """
+
+    @pytest.fixture(scope="class")
+    def pulsar(self):
+        psrf = sorted(glob.glob(str(DATA_DIR / "*-B1855+09.feather")))[0]
+        return ds.Pulsar.read_feather(psrf)
+
+    def test_vary_wn_with_delay_no_rn(self, pulsar):
+        """Test PulsarLikelihood with varying white noise, deterministic delay,
+        and no red noise evaluates to a finite log-likelihood."""
+        psr = pulsar
+        signals = [
+            psr.residuals,
+            ds.makenoise_measurement_simple(psr),
+            ds.makegp_timing(psr),
+            ds.makedelay(psr, ds.make_solardm(psr), name="solar"),
+        ]
+        psl = ds.PulsarLikelihood(signals)
+
+        assert len(psl.logL.params) > 0
+
+        newdict = ds.priordict_standard.copy()
+        newdict['(.*)?_solar_n_earth'] = [0.0, 10.0]
+        p0 = ds.sample_uniform(psl.logL.params, priordict=newdict)
+        logL_val = psl.logL(p0)
+
+        assert np.isfinite(logL_val), f"Log-likelihood should be finite, got {logL_val}"
+
+    def test_vary_wn_with_delay_and_rednoise(self, pulsar):
+        """Test PulsarLikelihood with varying white noise, deterministic delay,
+        and red noise Fourier GP evaluates to a finite log-likelihood."""
+        psr = pulsar
+        signals = [
+            psr.residuals,
+            ds.makenoise_measurement_simple(psr),
+            ds.makegp_timing(psr),
+            ds.makegp_fourier(psr, ds.powerlaw, 30, name="rednoise"),
+            ds.makedelay(psr, ds.make_solardm(psr), name="solar"),
+        ]
+        psl = ds.PulsarLikelihood(signals)
+
+        assert len(psl.logL.params) > 0
+
+        newdict = ds.priordict_standard.copy()
+        newdict['(.*)?_solar_n_earth'] = [0.0, 10.0]
+        p0 = ds.sample_uniform(psl.logL.params, priordict=newdict)
+        p0['B1855+09_rednoise_log10_A'] = -30.0
+        logL_val = psl.logL(p0)
+
+        assert np.isfinite(logL_val), f"Log-likelihood should be finite, got {logL_val}"
+
+    def test_delay_likelihoods_agree_when_rednoise_suppressed(self, pulsar):
+        """Test that likelihoods with and without red noise agree when red noise
+        amplitude is negligible, both using deterministic delay and varying white noise."""
+        psr = pulsar
+
+        signals_no_rn = [
+            psr.residuals,
+            ds.makenoise_measurement_simple(psr),
+            ds.makegp_timing(psr),
+            ds.makedelay(psr, ds.make_solardm(psr), name="solar"),
+        ]
+        psl_no_rn = ds.PulsarLikelihood(signals_no_rn)
+
+        signals_rn = [
+            psr.residuals,
+            ds.makenoise_measurement_simple(psr),
+            ds.makegp_timing(psr),
+            ds.makegp_fourier(psr, ds.powerlaw, 30, name="rednoise"),
+            ds.makedelay(psr, ds.make_solardm(psr), name="solar"),
+        ]
+        psl_rn = ds.PulsarLikelihood(signals_rn)
+
+        newdict = ds.priordict_standard.copy()
+        newdict['(.*)?_solar_n_earth'] = [0.0, 10.0]
+        p0 = ds.sample_uniform(psl_rn.logL.params, priordict=newdict)
+        p0['B1855+09_rednoise_log10_A'] = -30.0
+
+        logL_no_rn = psl_no_rn.logL(p0)
+        logL_rn = psl_rn.logL(p0)
+
+        assert np.isfinite(logL_no_rn)
+        assert np.isfinite(logL_rn)
+        assert np.isclose(logL_no_rn, logL_rn, rtol=1e-4), \
+            f"Likelihoods should agree when red noise is suppressed. " \
+            f"Got no_rn={logL_no_rn}, rn={logL_rn}, diff={abs(logL_no_rn - logL_rn)}"
+
+    def test_varN_kernelterms_agree_when_rednoise_suppressed(self, pulsar):
+        """Test that WoodburyKernel_varN.make_kernelterms returns matching (a, b, c)
+        for models with and without red noise, when red noise is suppressed."""
+        psr = pulsar
+
+        signals_no_rn = [
+            psr.residuals,
+            ds.makenoise_measurement_simple(psr),
+            ds.makegp_timing(psr),
+            ds.makedelay(psr, ds.make_solardm(psr), name="solar"),
+        ]
+        psl_no_rn = ds.PulsarLikelihood(signals_no_rn)
+
+        signals_rn = [
+            psr.residuals,
+            ds.makenoise_measurement_simple(psr),
+            ds.makegp_timing(psr),
+            ds.makegp_fourier(psr, ds.powerlaw, 30, name="rednoise"),
+            ds.makedelay(psr, ds.make_solardm(psr), name="solar"),
+        ]
+        psl_rn = ds.PulsarLikelihood(signals_rn)
+
+        newdict = ds.priordict_standard.copy()
+        newdict['(.*)?_solar_n_earth'] = [0.0, 10.0]
+        p0 = ds.sample_uniform(psl_rn.logL.params, priordict=newdict)
+        p0['B1855+09_rednoise_log10_A'] = -30.0
+
+        # no-rn: psl.N is WoodburyKernel_varN directly
+        kernel_no_rn = psl_no_rn.N
+        assert isinstance(kernel_no_rn, matrix.WoodburyKernel_varN)
+
+        # with-rn: psl.N is WoodburyKernel_varNP, inner N_var is WoodburyKernel_varN
+        kernel_rn = psl_rn.N # .N_var
+        assert isinstance(kernel_rn, matrix.WoodburyKernel_varNP)
+
+        T = kernel_no_rn.F # doesn't really matter what this is...
+
+        kterms_no_rn = kernel_no_rn.make_kernelterms(psl_no_rn.y, T)
+        kterms_rn = kernel_rn.N_var.make_kernelterms(psl_rn.y, T)
+
+        a_no_rn, b_no_rn, c_no_rn = kterms_no_rn(p0)
+        a_rn, b_rn, c_rn = kterms_rn(p0)
+        assert np.isclose(a_no_rn, a_rn, rtol=1e-12), \
+            f"kernelterms 'a' should agree. Got no_rn={a_no_rn}, rn={a_rn}, diff={abs(a_no_rn - a_rn)}"
+        assert np.allclose(b_no_rn, b_rn, rtol=1e-12), \
+            f"kernelterms 'b' should agree. Max diff={np.max(np.abs(b_no_rn - b_rn))}"
+        assert np.allclose(c_no_rn, c_rn, rtol=1e-12), \
+            f"kernelterms 'c' should agree. Max diff={np.max(np.abs(c_no_rn - c_rn))}"
+
+    def test_varN_kernelsolve_agree_when_rednoise_suppressed(self, pulsar):
+        """Test that WoodburyKernel_varN.make_kernelsolve returns matching (TtSy, TtST)
+        for models with and without red noise, when red noise is suppressed."""
+        psr = pulsar
+
+        signals_no_rn = [
+            psr.residuals,
+            ds.makenoise_measurement_simple(psr),
+            ds.makegp_timing(psr),
+            ds.makedelay(psr, ds.make_solardm(psr), name="solar"),
+        ]
+        psl_no_rn = ds.PulsarLikelihood(signals_no_rn)
+
+        signals_rn = [
+            psr.residuals,
+            ds.makenoise_measurement_simple(psr),
+            ds.makegp_timing(psr),
+            ds.makegp_fourier(psr, ds.powerlaw, 30, name="rednoise"),
+            ds.makedelay(psr, ds.make_solardm(psr), name="solar"),
+        ]
+        psl_rn = ds.PulsarLikelihood(signals_rn)
+
+        newdict = ds.priordict_standard.copy()
+        newdict['(.*)?_solar_n_earth'] = [0.0, 10.0]
+        p0 = ds.sample_uniform(psl_rn.logL.params, priordict=newdict)
+        p0['B1855+09_rednoise_log10_A'] = -30.0
+
+        # no-rn: psl.N is WoodburyKernel_varN directly
+        kernel_no_rn = psl_no_rn.N
+        assert isinstance(kernel_no_rn, matrix.WoodburyKernel_varN)
+
+        # with-rn: psl.N is WoodburyKernel_varNP, inner N_var is WoodburyKernel_varN
+        kernel_rn = psl_rn.N.N_var
+        assert isinstance(kernel_rn, matrix.WoodburyKernel_varN)
+
+        T = kernel_no_rn.F
+
+        ksolve_no_rn = kernel_no_rn.make_kernelsolve(psl_no_rn.y, T)
+        ksolve_rn = kernel_rn.make_kernelsolve(psl_rn.y, T)
+
+        TtSy_no_rn, TtST_no_rn = ksolve_no_rn(p0)
+        TtSy_rn, TtST_rn = ksolve_rn(p0)
+
+        assert np.allclose(TtSy_no_rn, TtSy_rn, rtol=1e-12), \
+            f"kernelsolve TtSy should agree. Max diff={np.max(np.abs(TtSy_no_rn - TtSy_rn))}"
+        assert np.allclose(TtST_no_rn, TtST_rn, rtol=1e-12), \
+            f"kernelsolve TtST should agree. Max diff={np.max(np.abs(TtST_no_rn - TtST_rn))}"
