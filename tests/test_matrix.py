@@ -277,15 +277,11 @@ class TestPulsarLikelihoodWithDelay:
 
         a_no_rn, b_no_rn, c_no_rn = kterms_no_rn(p0)
         a_rn, b_rn, c_rn = kterms_rn(p0)
-        print('='*40)
-        print(a_rn, a_no_rn)
-        print(b_rn[:3], b_no_rn[:3])
-        # print(c_rn:)
-        assert np.isclose(a_no_rn, a_rn, rtol=1e-10), \
+        assert np.isclose(a_no_rn, a_rn, rtol=1e-12), \
             f"kernelterms 'a' should agree. Got no_rn={a_no_rn}, rn={a_rn}, diff={abs(a_no_rn - a_rn)}"
-        assert np.allclose(b_no_rn, b_rn, rtol=1e-10), \
+        assert np.allclose(b_no_rn, b_rn, rtol=1e-12), \
             f"kernelterms 'b' should agree. Max diff={np.max(np.abs(b_no_rn - b_rn))}"
-        assert np.allclose(c_no_rn, c_rn, rtol=1e-10), \
+        assert np.allclose(c_no_rn, c_rn, rtol=1e-12), \
             f"kernelterms 'c' should agree. Max diff={np.max(np.abs(c_no_rn - c_rn))}"
 
     def test_varN_kernelsolve_agree_when_rednoise_suppressed(self, pulsar):
@@ -331,7 +327,7 @@ class TestPulsarLikelihoodWithDelay:
         TtSy_no_rn, TtST_no_rn = ksolve_no_rn(p0)
         TtSy_rn, TtST_rn = ksolve_rn(p0)
 
-        assert np.allclose(TtSy_no_rn, TtSy_rn, rtol=1e-10), \
+        assert np.allclose(TtSy_no_rn, TtSy_rn, rtol=1e-12), \
             f"kernelsolve TtSy should agree. Max diff={np.max(np.abs(TtSy_no_rn - TtSy_rn))}"
-        assert np.allclose(TtST_no_rn, TtST_rn, rtol=1e-10), \
+        assert np.allclose(TtST_no_rn, TtST_rn, rtol=1e-12), \
             f"kernelsolve TtST should agree. Max diff={np.max(np.abs(TtST_no_rn - TtST_rn))}"
