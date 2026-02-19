@@ -81,7 +81,8 @@ def globalwoodbury(g, ys, Nsolves, Fs, Pinv):
             NmF, _ = Nsolve(F)
 
             ytNmys.append(g.dot(y, Nmy) + lN)
-            FtNmys.append(g.dot(F, Nmy))
+            FtNmys.append(g.dot(NmF, y))
+            # FtNmys.append(g.dot(F, Nmy))
             FtNmFs.append(g.dot(F, NmF))
     else:
         # ingest output from vectorwoodburysolve
@@ -131,10 +132,9 @@ def vectorwoodbury(g, ys, Nsolves, Fs, Pinv):
     mu = g.cho_solve(cf, FtNmy)
 
     cond = g.pair(mu, cf, name='cond')
-    logp = -0.5 * (ytNmy - g.dot(FtNmy, mu)) - 0.5 * (lP.sum() + lS.sum())
+    logp = -0.5 * (ytNmy - g.sum(FtNmy * mu)) - 0.5 * (lP.sum() + lS.sum())
 
 
-# this is different enough that it's OK to have a separate graph for the solve
 @mm.graph
 def vectorwoodburysolve(g, ys, Nsolves, Fs, Pinv):
     Nmys, NmFs, FtNmys, FtNmFs, lNs = [], [], [], [], []
@@ -226,9 +226,9 @@ class GlobalWoodburyKernel(matrix.Kernel):
 
     def make_kernelproduct(self, ys):
         if isinstance(self.Ns, (tuple, list)):
-            return mm.func(globalwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv))
+            return globalwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv)
         else:
-            return mm.func(globalwoodbury(ys, self.Ns.make_solve, self.Fs, self.P.make_inv))
+            return globalwoodbury(ys, self.Ns.make_solve, self.Fs, self.P.make_inv)
 
 
 class VectorWoodburyKernel(matrix.Kernel):
@@ -237,13 +237,15 @@ class VectorWoodburyKernel(matrix.Kernel):
 
     @property
     def make_solve(self):
-        return mm.func(vectorwoodburysolve([None] * len(self.Ns), [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv))
+        return vectorwoodburysolve([None] * len(self.Ns),
+                                   [N.make_solve for N in self.Ns],
+                                   self.Fs, self.P.make_inv)
 
     def make_kernelproduct(self, ys):
-        return mm.func(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv))
+        return vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv)
 
     def make_conditional(self, ys):
-        return mm.func(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv), output='cond')
+        return mm.prune_graph(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv), output='cond')
 
 
 class CompoundGP:

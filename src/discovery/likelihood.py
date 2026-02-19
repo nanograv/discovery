@@ -38,6 +38,9 @@ from . import metamath
 #                            concat=True)
 
 def ffunc(graph):
+    if callable(graph):
+        return graph
+
     func = metamatrix.func(graph)
 
     def outfunc(params):
@@ -598,7 +601,7 @@ class ArrayLikelihood:
     def logL(self):
         if self.commongp is None:
             if self.globalgp is None:
-                logls = [ffunc(psl.logL) for psl in self.psls]
+                logls = [psl.logL for psl in self.psls]
 
                 def loglike(params):
                     return sum(logl(params) for logl in logls)

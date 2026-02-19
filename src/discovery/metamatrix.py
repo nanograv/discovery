@@ -79,6 +79,9 @@ def fold_constants(graph: Graph, args=[]) -> Graph:
     cache: Dict[str, Union[Array, Callable[..., Any]]] = {}
     args_cache = deque(args)
 
+    if len(args_cache) > sum(isinstance(node, ArgLeaf) for node in graph.values()):
+        raise ValueError("More args provided than ArgLeafs in the graph")
+
     for name, node in graph.items():
         if isinstance(node, ArgLeaf):
             # replace values for arguments if available
@@ -127,8 +130,17 @@ def fold_constants(graph: Graph, args=[]) -> Graph:
                         cache[name] = last.value
                         new_graph[name] = last
                     else:
-                        new_graph[node.inputs[0]] = GraphLeaf(subgraph)
-                        new_graph[name] = node
+                        # since the same subgraph may be used in multiple places, it needs to be duplicated when folded
+                        folded_subgraph = node.inputs[0] + '_' + name
+                        new_inputs = [input for input, arg in zip(node.inputs[1:], subargs) if arg is None]
+
+                        # have we fully filled args in the graph?
+                        if new_inputs:
+                            new_graph[folded_subgraph] = GraphLeaf(subgraph)
+                            new_graph[name] = Node(op = Apply, inputs=[folded_subgraph] + new_inputs, description=node.description) # do revise description?
+                        else:
+                            # if all inputs were constant, we can just inline the folded subgraph without needing to apply it
+                            new_graph[name] = GraphLeaf(subgraph)
                 else:
                     raise NotImplementedError(f"Should we be applying {first} to arguments?")
             # we're applying a function to constant inputs
@@ -467,6 +479,10 @@ class Sym:
     def __matmul__(self, other: "Sym") -> "Sym":
         return self.builder.node(lambda a, b: a @ b, [self, other], description=f"{self.name} @ {other.name}")
 
+    # array multiply
+    def __mul__(self, other: "Sym") -> "Sym":
+        return self.builder.node(lambda a, b: a * b, [self, other], description=f"{self.name} * {other.name}")
+
     # Addition
     def __add__(self, other: "Sym") -> "Sym":
         return self.builder.node(lambda a, b: a + b, [self, other], description=f"{self.name} + {other.name}")
@@ -587,6 +603,9 @@ class GraphBuilder:
     def block_diag(self, args: List[Sym], name: Optional[str] = None) -> Sym:
         return self.node(lambda *mats: jsp.linalg.block_diag(*mats), args, name=name)
 
+
+    def sum(self, A: Sym, name: Optional[str] = None) -> Sym:
+        return self.node(lambda x: jnp.sum(x), [A], name=name, description=f'sum({A.name})')
 
     def sum_all(self, args: List[Sym], name: Optional[str] = None) -> Sym:
         return self.node(lambda *fts: sum(fts), args, name=name, description=f'sum({",".join(arg.name for arg in args)})')
