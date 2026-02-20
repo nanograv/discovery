@@ -612,8 +612,11 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
         priorfunc.type = jax.Array
 
         invprior, factors = None, None
-
-    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix12D_var(priorfunc), fmats)
+    # hack for metamath to properly
+    # set phiinv
+    nm =matrix.NoiseMatrix12D_var(priorfunc)
+    nm.inv =invprior
+    gp = matrix.GlobalVariableGP(nm, fmats)
     gp.Phi_inv, gp.factors = invprior, factors
 
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})':
