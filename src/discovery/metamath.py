@@ -110,6 +110,73 @@ def globalwoodbury(g, ys, Nsolves, Fs, Pinv):
 
     logp = -0.5 * (ytNmy - g.dot(FtNmy, g.cho_solve(cf, FtNmy))) - 0.5 * (lP + lS)
 
+@mm.graph
+def globalwoodbury_fused(g, projected, Pinv):
+    ytNmy_proj, ld, FtNmy_proj, FtNmF_proj = (projected[0], projected[1],
+                                                projected[2], projected[3])
+    ytNmy = g.sum(ytNmy_proj)
+    total_ld = g.sum(ld)
+    FtNmy = g.node(lambda x: x.reshape(-1), [FtNmy_proj])         # (67*28,)
+    FtNmF = g.node(lambda x: jsp.linalg.block_diag(*x), [FtNmF_proj])  # (1876, 1876)
+    Pm, lP = Pinv
+    cf, lS = g.cho_factor(Pm + FtNmF)
+    logp = -0.5 * (ytNmy - g.dot(FtNmy, g.cho_solve(cf, FtNmy))) - 0.5 * (lP.sum() + total_ld + lS)
+
+
+@mm.graph
+def vectorwoodburyjointsolve(g, ys, Fs_outer, Nsolves, Fs_inner, Pinv):
+    """Jointly solve — provides both TOA-space and projected outputs."""
+    Nmys, NmFs_out, NmFs_in = [], [], []
+    FtNmys_in, FtNmFs_in = [], []
+    lNs = []
+
+    for y, F_out, F_in, Nsolve in zip(ys, Fs_outer, Fs_inner, Nsolves):
+        Nmy, lN = Nsolve(y)
+        NmF_out, _ = Nsolve(F_out)
+        NmF_in, _ = Nsolve(F_in)
+        lNs.append(lN)
+        Nmys.append(Nmy)
+        NmFs_out.append(NmF_out)
+        NmFs_in.append(NmF_in)
+        FtNmys_in.append(g.dot(F_in, Nmy))
+        FtNmFs_in.append(g.dot(F_in, NmF_in))
+
+    FtNmy_in = g.array(FtNmys_in)
+    FtNmF_in = g.array(FtNmFs_in)
+
+    Pm, lP = Pinv
+    cf, lS = g.cho_factor(Pm + FtNmF_in)
+    mu_y = g.cho_solve(cf, FtNmy_in)
+
+    FtNmFs_cross = [g.dot(F_in, NmF_out) for F_in, NmF_out in zip(Fs_inner, NmFs_out)]
+    FtNmF_cross = g.array(FtNmFs_cross)
+    mu_F = g.cho_solve(cf, FtNmF_cross)
+
+    # --- TOA-space output (for make_solve etc.) ---
+    solves = []
+    for i in range(len(ys)):
+        ld = lNs[i] + lP[i] + lS[i]
+        y_corr = Nmys[i] - NmFs_in[i] @ mu_y[i, :]
+        F_corr = NmFs_out[i] - NmFs_in[i] @ mu_F[i, :, :]
+        solves.append(g.pair(g.pair(y_corr, ld), g.pair(F_corr, ld)))
+    # if you just want the results normally you can prune to here
+    g.named(g.ntuple(solves), 'result')
+
+    # --- Projected output (for globalwoodbury_fused) ---
+    ytNmy_consts = g.array([g.dot(ys[i], Nmys[i]) for i in range(len(ys))])          # (67,)
+    FtNmy_out = g.array([g.dot(Fs_outer[i], Nmys[i]) for i in range(len(ys))])       # (67, 28)
+    FtNmF_cross_out = g.array([g.dot(Fs_outer[i], NmFs_in[i]) for i in range(len(ys))])  # (67, 28, 60)
+    FtNmF_out = g.array([g.dot(Fs_outer[i], NmFs_out[i]) for i in range(len(ys))])   # (67, 28, 28)
+    ld = g.array(lNs) + lP + lS                                                       # (67,)
+
+    # Batched runtime: ~5 nodes instead of ~2000
+    ytNmy_proj = ytNmy_consts - g.node(lambda a, b: jnp.einsum('ij,ij->i', a, b),
+                                        [FtNmy_in, mu_y])                              # (67,)
+    FtNmy_proj = FtNmy_out - g.node(lambda A, x: jnp.einsum('ijk,ik->ij', A, x),
+                                     [FtNmF_cross_out, mu_y])                          # (67, 28)
+    FtNmF_proj = FtNmF_out - FtNmF_cross_out @ mu_F                                   # (67, 28, 60) @ (67, 60, 28) = (67, 28, 28)
+
+    g.named(g.ntuple([ytNmy_proj, ld, FtNmy_proj, FtNmF_proj]), 'projected')
 
 @mm.graph
 def vectorwoodbury(g, ys, Nsolves, Fs, Pinv):
@@ -226,8 +293,17 @@ class GlobalWoodburyKernel(matrix.Kernel):
 
     def make_kernelproduct(self, ys):
         if isinstance(self.Ns, (tuple, list)):
+            # old path: list of per-pulsar noise kernels
             return globalwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv)
+        elif hasattr(self.Ns, 'Ns'):
+            # compound kernel: vectorized path
+            joint_graph = vectorwoodburyjointsolve(
+                ys, self.Fs, [N.make_solve for N in self.Ns.Ns],
+                self.Ns.Fs, self.Ns.P.make_inv)
+            proj_graph = mm.prune_graph(joint_graph, output='projected')
+            return globalwoodbury_fused(proj_graph, self.P.make_inv)
         else:
+            # single noise matrix
             return globalwoodbury(ys, self.Ns.make_solve, self.Fs, self.P.make_inv)
 
 
@@ -247,6 +323,15 @@ class VectorWoodburyKernel(matrix.Kernel):
     def make_conditional(self, ys):
         return mm.prune_graph(vectorwoodbury(ys, [N.make_solve for N in self.Ns], self.Fs, self.P.make_inv), output='cond')
 
+    def make_joint_solve(self, Fs_outer):
+        return vectorwoodburyjointsolve(
+            [None] * len(self.Ns),   # ys are args
+            Fs_outer,                 # global GP bases, constants
+            [N.make_solve for N in self.Ns],
+            self.Fs,
+            self.P.make_inv
+        )
+
 
 class CompoundGP:
     def __new__(cls, x):
@@ -255,16 +340,12 @@ class CompoundGP:
             return x
         else:
             return super().__new__(cls)
-
     def __init__(self, gplist):
         self.gplist = gplist
-
         if all(hasattr(gp, 'index') for gp in gplist):
             self.index = {k: v for d in gplist for k, v in d.index.items()}
-
     def _concat(self, vecmats):
         return functools.reduce(lambda x, y: concat(x, y), vecmats)
-
     @property
     def F(self):
         # for VectorWoodburyKernel
@@ -275,10 +356,28 @@ class CompoundGP:
 
     @property
     def Phi(self):
-        # TO DO: won't work for 2D priors
         N = self._concat([gp.Phi.N for gp in self.gplist])
-        return NoiseMatrix(N)
+        nm = NoiseMatrix(N)
 
+        if any(hasattr(gp, 'Phi_inv') for gp in self.gplist):
+            print('hi')
+            phi_invs = [gp.Phi_inv for gp in self.gplist]
+
+            def combined_inv(params):
+                results = [f(params) for f in phi_invs]
+                precisions = [r[0] for r in results]
+                logdets = [r[1] for r in results]
+                return (jax.scipy.linalg.block_diag(*precisions), sum(logdets))
+
+            combined_inv.args = list(dict.fromkeys(
+                arg for f in phi_invs for arg in getattr(f, 'args', [])
+            ))
+            combined_inv.params = list(dict.fromkeys(
+                p for f in phi_invs for p in getattr(f, 'params', [])
+            ))
+            nm.inv = combined_inv
+
+        return nm
 
 def CompoundDelay(residuals, delays):
     return functools.reduce(lambda x, y: mm.func(delay(x, y)), [residuals, *delays])
