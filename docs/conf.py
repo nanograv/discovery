@@ -27,6 +27,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx_autodoc_typehints',
     'numpydoc',
+    'myst_nb',
 ]
 
 # Napoleon settings for numpy-style docstrings
@@ -49,6 +50,9 @@ napoleon_attr_annotations = True
 numpydoc_show_class_members = False
 numpydoc_class_members_toctree = False
 
+# MyST-NB settings
+nb_execution_mode = 'off'
+
 # Autodoc settings
 autodoc_typehints = 'description'
 autodoc_member_order = 'bysource'
@@ -68,20 +72,17 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 
 # Theme options
 html_theme_options = {
-    'logo_only': False,
-    'display_version': True,
-    'prev_next_buttons_location': 'bottom',
-    'style_external_links': False,
-    'collapse_navigation': False,
-    'sticky_navigation': True,
     'navigation_depth': 4,
-    'includehidden': True,
-    'titles_only': False
+}
+
+# Remove empty left sidebar from all pages
+html_sidebars = {
+    '**': [],
 }
 
 # If you want to add a custom logo, uncomment and specify:
