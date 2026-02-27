@@ -586,7 +586,6 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
                 # |S_ij Gamma_ab| = prod_i (|S_i Gamma_ab|) = prod_i (S_i^npsr |Gamma_ab|)
                 # log |S_ij Gamma_ab| = log (prod_i S_i^npsr) + log prod_i |Gamma_ab|
                 #                     = npsr * sum_i log S_i + nfreqs |Gamma_ab|
-
                 return (jnp.block([[jnp.make2d(val * invphi) for val in row] for row in invorf]),
                         phi.shape[0] * orflogdet + orfmat.shape[0] * logdetphi)
                         # was -orfmat.shape[0] * jnp.sum(jnp.log(invphidiag)))
@@ -830,7 +829,7 @@ def freespectrum(f, df, log10_rho: typing.Sequence):
     return jnp.repeat(10.0**(2.0 * log10_rho), 2)
 
 
-def make_combined_crn(components, irn_psd, crn_psd, crn_prefix='crn_'):
+def make_combined_crn(components, irn_psd, crn_psd, crn_prefix: typing.Optional[str] = 'crn_'):
     """
     Combine an intrinsic red noise PSD and a common red noise PSD into a
     single PSD function that shares the same Fourier basis.
@@ -873,6 +872,17 @@ def make_combined_crn(components, irn_psd, crn_psd, crn_prefix='crn_'):
         with ``makegp_fourier``: argument names are inspectable via
         ``getfullargspec``, and ``typing.Sequence`` annotations are
         preserved for parameter expansion.
+    crn_params : list of str
+        The parameter names (as they appear in ``combined``'s signature)
+        that belong to the CRN PSD. Pass these directly as the ``common``
+        argument to ``makegp_fourier`` or ``makecommongp_fourier`` so that
+        the CRN parameters are shared across pulsars rather than given
+        per-pulsar names.
+
+        Example::
+
+            combined, crn_params = make_combined_crn(14, ds.powerlaw, ds.powerlaw)
+            gp = makegp_fourier(psr, combined, components=30, common=crn_params)
     """
     from discovery import matrix
     irn_spec = inspect.getfullargspec(irn_psd)
@@ -938,7 +948,11 @@ def make_combined_crn(components, irn_psd, crn_psd, crn_prefix='crn_'):
     exec(func_code, ns)
     combined = ns['combined']
     combined.__annotations__ = annotations
-    return combined
+
+    # Deduplicated list of CRN param names as they appear in the combined signature
+    crn_params = list(dict.fromkeys(crn_rename[k] for k in crn_names))
+
+    return combined, crn_params
 
 
 

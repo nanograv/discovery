@@ -32,30 +32,35 @@ class TestMakeCombinedCrnSignature:
 
     def test_same_function_default_prefix(self):
         """Overlapping params get crn_ prefix when same function is passed twice."""
-        combined = make_combined_crn(14, ds.powerlaw, ds.powerlaw)
+        combined, crn_params = make_combined_crn(14, ds.powerlaw, ds.powerlaw)
         args = inspect.getfullargspec(combined).args
         assert args == ['f', 'df', 'log10_A', 'gamma', 'crn_log10_A', 'crn_gamma'], \
             f"Got args: {args}"
+        assert crn_params == ['crn_log10_A', 'crn_gamma'], \
+            f"Got crn_params: {crn_params}"
 
     def test_same_function_no_prefix_ties_params(self):
         """crn_prefix=None with same function: params are tied, no duplication."""
-        combined = make_combined_crn(14, ds.powerlaw, ds.powerlaw, crn_prefix=None)
+        combined, crn_params = make_combined_crn(14, ds.powerlaw, ds.powerlaw, crn_prefix=None)
         args = inspect.getfullargspec(combined).args
         assert args == ['f', 'df', 'log10_A', 'gamma'], f"Got args: {args}"
+        assert crn_params == ['log10_A', 'gamma'], f"Got crn_params: {crn_params}"
 
     def test_no_overlap_no_rename(self):
         """Non-overlapping param names require no renaming."""
-        combined = make_combined_crn(14, ds.powerlaw, _alt_psd)
+        combined, crn_params = make_combined_crn(14, ds.powerlaw, _alt_psd)
         args = inspect.getfullargspec(combined).args
         assert args == ['f', 'df', 'log10_A', 'gamma', 'alpha', 'log10_ref'], \
             f"Got args: {args}"
+        assert crn_params == ['alpha', 'log10_ref'], f"Got crn_params: {crn_params}"
 
     def test_custom_prefix(self):
         """Custom prefix is applied to overlapping CRN param names."""
-        combined = make_combined_crn(14, ds.powerlaw, ds.powerlaw, crn_prefix='gw_')
+        combined, crn_params = make_combined_crn(14, ds.powerlaw, ds.powerlaw, crn_prefix='gw_')
         args = inspect.getfullargspec(combined).args
         assert args == ['f', 'df', 'log10_A', 'gamma', 'gw_log10_A', 'gw_gamma'], \
             f"Got args: {args}"
+        assert crn_params == ['gw_log10_A', 'gw_gamma'], f"Got crn_params: {crn_params}"
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +72,7 @@ class TestMakeCombinedCrnValues:
     def test_same_function_separate_params(self):
         """phi = irn(A1,g1) + crn(A2,g2) on CRN bins; irn(A1,g1) elsewhere."""
         n_crn = 14
-        combined = make_combined_crn(n_crn, ds.powerlaw, ds.powerlaw)
+        combined, _ = make_combined_crn(n_crn, ds.powerlaw, ds.powerlaw)
         f, df = _make_freqs()
 
         log10_A, gamma = -14.5, 4.3
@@ -83,7 +88,7 @@ class TestMakeCombinedCrnValues:
     def test_same_function_tied_params(self):
         """crn_prefix=None + same function: CRN bins = 2 * irn; rest unchanged."""
         n_crn = 14
-        combined = make_combined_crn(n_crn, ds.powerlaw, ds.powerlaw, crn_prefix=None)
+        combined, _ = make_combined_crn(n_crn, ds.powerlaw, ds.powerlaw, crn_prefix=None)
         f, df = _make_freqs()
 
         log10_A, gamma = -14.5, 4.3
@@ -97,7 +102,7 @@ class TestMakeCombinedCrnValues:
     def test_no_overlap_values(self):
         """Non-overlapping PSDs: CRN bins = irn + alt_psd; rest = irn only."""
         n_crn = 14
-        combined = make_combined_crn(n_crn, ds.powerlaw, _alt_psd)
+        combined, _ = make_combined_crn(n_crn, ds.powerlaw, _alt_psd)
         f, df = _make_freqs()
 
         log10_A, gamma = -14.5, 4.3
@@ -113,7 +118,7 @@ class TestMakeCombinedCrnValues:
     def test_n_crn_boundary(self):
         """CRN only affects exactly the first 2*n_crn bins."""
         n_crn = 5
-        combined = make_combined_crn(n_crn, ds.powerlaw, ds.powerlaw)
+        combined, _ = make_combined_crn(n_crn, ds.powerlaw, ds.powerlaw)
         f, df = _make_freqs()
 
         log10_A, gamma = -14.5, 4.3
