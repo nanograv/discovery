@@ -306,7 +306,7 @@ def CompoundGP(gplist):
             multigp = ConstantGP(NoiseMatrix1D_novar(PhiN), F)
         elif all(isinstance(gp.Phi, (NoiseMatrix1D_novar, NoiseMatrix2D_novar)) for gp in gplist):
             F = np.hstack([gp.F for gp in gplist])
-            PhiN = jsp.linalg.block_diag(*[np.diag(gp.Phi.N) if isinstance(gp.Phi, NoiseMatrix1D_novar)
+            PhiN = sp.linalg.block_diag(*[np.diag(gp.Phi.N) if isinstance(gp.Phi, NoiseMatrix1D_novar)
                                                              else gp.Phi.N
                                           for gp in gplist])
 
@@ -396,7 +396,7 @@ class NoiseMatrix1D_novar(NoiseMatrix, ConstantKernel):
         return kernelproduct
 
     def inv(self):
-        return jnp.diag(1.0 / self.N), self.ld
+        return np.diag(1.0 / self.N), self.ld
 
     def make_sqrt(self):
         sN = jnp.sqrt(self.N)
