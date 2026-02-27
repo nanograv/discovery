@@ -325,8 +325,8 @@ def fourierbasis(psr, components, T=None):
 
     fmat = np.zeros((psr.toas.shape[0], 2*components), dtype=np.float64)
     for i in range(components):
-        fmat[:, 2*i  ] = np.sin(2.0 * jnp.pi * f[i] * psr.toas)
-        fmat[:, 2*i+1] = np.cos(2.0 * jnp.pi * f[i] * psr.toas)
+        fmat[:, 2*i  ] = np.sin(2.0 * np.pi * f[i] * psr.toas)
+        fmat[:, 2*i+1] = np.cos(2.0 * np.pi * f[i] * psr.toas)
 
     return np.repeat(f, 2), np.repeat(df, 2), fmat
 
@@ -377,7 +377,7 @@ def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fouri
 
     f, df, fmat = fourierbasis(psr, components, T)
 
-    f, df = matrix.jnparray(f), matrix.jnparray(df)
+    # f, df = matrix.jnparray(f), matrix.jnparray(df)
     def priorfunc(params):
         return prior(f, df, *[params[arg] for arg in argmap])
     priorfunc.params = argmap
