@@ -1,6 +1,8 @@
 # Discovery
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17711453.svg)](https://doi.org/10.5281/zenodo.17711453)
 
+[Sphinx Documentation is here](https://nanograv.github.io/discovery/). The old README user guide is below as well.
+
 <img src="discovery.png" alt="Logo" width="300" align="left" style="margin-right: 20px;"/>
 
 _Discovery_ is a next-generation pulsar-timing-array data-analysis package, _built for speed_ on a [JAX](https://jax.readthedocs.io/en/latest/) backend that supports GPU execution and autodifferentiation.
