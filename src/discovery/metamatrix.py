@@ -70,21 +70,53 @@ def make_leaf(x, name=None) -> Leaf:
 
 
 # args takes None and values; the latter will be replaced into ArgLeafs
-def fold_constants(graph: Graph, args=[]) -> Graph:
+
+
+
+def fold_constants(graph, args=[]):
     """
     Collapse any all-constant subgraphs into ConstLeafs.
     Assumes graph is in topological order.
+
+    All constant evaluation runs on CPU to avoid GPU memory pressure
+    during model construction. Arrays move to GPU only at JIT runtime.
     """
-    new_graph: Graph = OrderedDict()
-    cache: Dict[str, Union[Array, Callable[..., Any]]] = {}
+    new_graph = OrderedDict()
+    cache = {}
     args_cache = deque(args)
+
+    cpu_device = jax.devices('cpu')[0]
 
     if len(args_cache) > sum(isinstance(node, ArgLeaf) for node in graph.values()):
         raise ValueError("More args provided than ArgLeafs in the graph")
 
+    # Count downstream references for each node
+    # Count downstream references for each node
+    refcounts = {}
+    for name, node in graph.items():
+        if isinstance(node, Node):
+            for inp in node.inputs:
+                refcounts[inp] = refcounts.get(inp, 0) + 1
+
+    _needed_at_runtime = set()
+
+    def _maybe_evict(inputs, consumer_was_folded):
+        """Decrement refcounts and evict fully-consumed values."""
+        for inp in inputs:
+            if inp in refcounts:
+                refcounts[inp] -= 1
+                if not consumer_was_folded:
+                    _needed_at_runtime.add(inp)
+                if refcounts[inp] == 0:
+                    if inp in cache:
+                        del cache[inp]
+                    if (inp in new_graph
+                            and isinstance(new_graph[inp], ConstLeaf)
+                            and inp not in _needed_at_runtime):
+                        new_graph[inp] = ConstLeaf(value=None)
+
     for name, node in graph.items():
         if isinstance(node, ArgLeaf):
-            # replace values for arguments if available
             if len(args_cache) and (argval := args_cache.popleft()) is not None:
                 cache[name] = argval
                 new_graph[name] = ConstLeaf(value=argval)
@@ -94,20 +126,18 @@ def fold_constants(graph: Graph, args=[]) -> Graph:
             cache[name] = node.value
             new_graph[name] = node
         elif isinstance(node, FuncLeaf):
-            # evaluate function if it doesn't take parameters
             if not getattr(node.fn, 'params', []):
-                val = node.fn(params={})
+                with jax.default_device(cpu_device):
+                    val = node.fn(params={})
                 cache[name] = val
                 new_graph[name] = ConstLeaf(val)
             else:
                 new_graph[name] = node
         elif isinstance(node, GraphLeaf):
-            # constant-fold graph if it doesn't have any argument
             if not any(isinstance(subnode, ArgLeaf) for subnode in node.graph.values()):
                 subgraph = fold_constants(node.graph)
                 last = subgraph[next(reversed(subgraph))]
 
-                # if the subgraph simplifies to a constant, make a ConstLeaf
                 if isinstance(last, ConstLeaf):
                     cache[name] = last.value
                     new_graph[name] = last
@@ -115,8 +145,8 @@ def fold_constants(graph: Graph, args=[]) -> Graph:
                     new_graph[name] = GraphLeaf(subgraph)
             else:
                 new_graph[name] = node
+
         elif isinstance(node, Node):
-            # we're applying a function or graph to a list of inputs; the op will be "apply", but we don't need it
             if node.op is Apply:
                 first = new_graph[node.inputs[0]]
 
@@ -130,33 +160,72 @@ def fold_constants(graph: Graph, args=[]) -> Graph:
                         cache[name] = last.value
                         new_graph[name] = last
                     else:
-                        # since the same subgraph may be used in multiple places, it needs to be duplicated when folded
                         folded_subgraph = node.inputs[0] + '_' + name
                         new_inputs = [input for input, arg in zip(node.inputs[1:], subargs) if arg is None]
 
-                        # have we fully filled args in the graph?
                         if new_inputs:
                             new_graph[folded_subgraph] = GraphLeaf(subgraph)
-                            new_graph[name] = Node(op = Apply, inputs=[folded_subgraph] + new_inputs, description=node.description) # do revise description?
+                            new_graph[name] = Node(op=Apply, inputs=[folded_subgraph] + new_inputs, description=node.description)
                         else:
-                            # if all inputs were constant, we can just inline the folded subgraph without needing to apply it
                             new_graph[name] = GraphLeaf(subgraph)
                 else:
                     raise NotImplementedError(f"Should we be applying {first} to arguments?")
-            # we're applying a function to constant inputs
-            elif all(isinstance(new_graph[input], ConstLeaf) for input in node.inputs):
-                val = node.op(*[cache[input] for input in node.inputs])
+
+                was_folded = isinstance(new_graph[name], ConstLeaf)
+                _maybe_evict(node.inputs, was_folded)
+
+            elif all(isinstance(new_graph.get(input), ConstLeaf) for input in node.inputs):
+                with jax.default_device(cpu_device):
+                    val = node.op(*[cache[input] for input in node.inputs])
                 cache[name] = val
                 new_graph[name] = ConstLeaf(val)
+                _maybe_evict(node.inputs, True)
+
             else:
                 new_graph[name] = node
+                _maybe_evict(node.inputs, False)
+        # elif isinstance(node, Node):
+        #     if node.op is Apply:
+        #         first = new_graph[node.inputs[0]]
+
+        #         if isinstance(first, GraphLeaf):
+        #             subargs = [cache[argname] if isinstance(new_graph[argname], ConstLeaf) else None
+        #                     for argname in node.inputs[1:]]
+        #             subgraph = fold_constants(first.graph, args=subargs)
+        #             last = subgraph[next(reversed(subgraph))]
+
+        #             if isinstance(last, ConstLeaf):
+        #                 cache[name] = last.value
+        #                 new_graph[name] = last
+        #             else:
+        #                 folded_subgraph = node.inputs[0] + '_' + name
+        #                 new_inputs = [input for input, arg in zip(node.inputs[1:], subargs) if arg is None]
+
+        #                 if new_inputs:
+        #                     new_graph[folded_subgraph] = GraphLeaf(subgraph)
+        #                     new_graph[name] = Node(op=Apply, inputs=[folded_subgraph] + new_inputs, description=node.description)
+        #                 else:
+        #                     new_graph[name] = GraphLeaf(subgraph)
+        #         else:
+        #             raise NotImplementedError(f"Should we be applying {first} to arguments?")
+
+        #     elif all(isinstance(new_graph.get(input), ConstLeaf) for input in node.inputs):
+        #         with jax.default_device(cpu_device):
+        #             val = node.op(*[cache[input] for input in node.inputs])
+        #         cache[name] = val
+        #         new_graph[name] = ConstLeaf(val)
+        #     else:
+        #         new_graph[name] = node
+
+        #     # Evict consumed inputs
+        #     _maybe_evict(node.inputs)
+
         else:
             raise TypeError(f"Unknown node type for {name}: {type(node)}")
 
     new_graph = prune_graph(new_graph)
 
     return new_graph
-
 
 def build_callable_from_graph(graph: Graph):
     output_name = next(reversed(graph.keys()))
