@@ -30,7 +30,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
   <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -1853,6 +1853,24 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N_var</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">P_var</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_var</span> <span class="o">=</span> <span class="n">N_var</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">P_var</span>
 
+<div class="viewcode-block" id="WoodburyKernel_varNP.make_sample">
+<a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_sample">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">N_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_sample</span><span class="p">()</span>
+        <span class="n">P_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">make_sample</span><span class="p">()</span>
+        <span class="n">F</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+            <span class="n">key</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">N_sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+            <span class="n">key</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">P_sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">key</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+        
+        <span class="n">sample</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span>  <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">N_sample</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_sample</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">sample</span></div>
+
+
 <div class="viewcode-block" id="WoodburyKernel_varNP.make_kernelproduct_vary">
 <a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_vary">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelproduct_vary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
@@ -2517,7 +2535,7 @@
 
 <div class="viewcode-block" id="WoodburyKernel_varN.make_sample">
 <a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_sample">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">make_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">N_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_sample</span><span class="p">()</span>
         <span class="n">P_sample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="o">.</span><span class="n">make_sample</span><span class="p">()</span>
         <span class="n">F</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
@@ -2533,9 +2551,53 @@
         <span class="k">return</span> <span class="n">sample</span></div>
 
 
+
+<div class="viewcode-block" id="WoodburyKernel_varN.make_kernelproduct_vary">
+<a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelproduct_vary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelproduct_vary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">y_var</span> <span class="o">=</span> <span class="n">y</span>
+
+        <span class="n">N_solve_1d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_1d</span><span class="p">()</span>
+        <span class="n">N_solve_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_2d</span><span class="p">()</span>
+
+        <span class="c1"># avoid a separate WoodburyKernel_varNFP</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">):</span>
+            <span class="n">Ffunc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Fmat</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
+            <span class="n">Ffunc</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">Fmat</span>
+            <span class="n">Ffunc</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># P_var_inv = self.P_var.make_inv()</span>
+        <span class="n">Pinv</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Pinv</span><span class="p">)</span>
+        <span class="n">ldP</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ldP</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">kernelproduct</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">yp</span> <span class="o">=</span> <span class="n">y_var</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">Fmat</span> <span class="o">=</span> <span class="n">Ffunc</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+            <span class="n">Nmy</span><span class="p">,</span> <span class="n">ldN</span> <span class="o">=</span> <span class="n">N_solve_1d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">yp</span><span class="p">)</span>
+            <span class="n">ytNmy</span> <span class="o">=</span> <span class="n">yp</span> <span class="o">@</span> <span class="n">Nmy</span>
+
+            <span class="n">NmF</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">N_solve_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Fmat</span><span class="p">)</span>
+            <span class="n">FtNmF</span> <span class="o">=</span> <span class="n">Fmat</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span>
+            <span class="n">NmFty</span> <span class="o">=</span> <span class="n">NmF</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">yp</span>
+
+            <span class="c1"># Pinv, ldP = P_var_inv(params)</span>
+            <span class="n">cf</span> <span class="o">=</span> <span class="n">matrix_factor</span><span class="p">(</span><span class="n">Pinv</span> <span class="o">+</span> <span class="n">FtNmF</span><span class="p">)</span>
+            <span class="n">ytXy</span> <span class="o">=</span> <span class="n">NmFty</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">NmFty</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ytNmy</span> <span class="o">-</span> <span class="n">ytXy</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">Ffunc</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">kernelproduct</span></div>
+
+
 <div class="viewcode-block" id="WoodburyKernel_varN.make_kernelproduct">
 <a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelproduct">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelproduct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_kernelproduct_vary</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
         <span class="n">N_solve_1d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_1d</span><span class="p">()</span>
         <span class="n">N_solve_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_2d</span><span class="p">()</span>
 
@@ -2556,9 +2618,57 @@
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
 
+<div class="viewcode-block" id="WoodburyKernel_varN.make_kernelterms_vary">
+<a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelterms_vary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelterms_vary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="n">y_var</span> <span class="o">=</span> <span class="n">y</span>
+
+        <span class="n">N_solve_1d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_1d</span><span class="p">()</span>
+        <span class="n">N_solve_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_2d</span><span class="p">()</span>
+
+        <span class="n">T</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="n">F</span><span class="p">,</span> <span class="n">Pinv</span><span class="p">,</span> <span class="n">ldP</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">),</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Pinv</span><span class="p">),</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ldP</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">kernelterms</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">yp</span> <span class="o">=</span> <span class="n">y_var</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+            <span class="n">Nmy</span><span class="p">,</span> <span class="n">ldN</span> <span class="o">=</span> <span class="n">N_solve_1d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">yp</span><span class="p">)</span>
+            <span class="n">ytNmy</span> <span class="o">=</span> <span class="n">yp</span> <span class="o">@</span> <span class="n">Nmy</span>
+            <span class="n">FtNmy</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Nmy</span>
+            <span class="n">TtNmy</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Nmy</span>
+
+            <span class="n">NmF</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">N_solve_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">F</span><span class="p">)</span>
+            <span class="n">NmT</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">N_solve_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+
+            <span class="n">FtNmF</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span>
+            <span class="n">TtNmF</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span>
+
+            <span class="n">FtNmT</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmT</span>
+            <span class="n">TtNmT</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmT</span>
+
+            <span class="n">cf</span> <span class="o">=</span> <span class="n">matrix_factor</span><span class="p">(</span><span class="n">Pinv</span> <span class="o">+</span> <span class="n">FtNmF</span><span class="p">)</span>
+
+            <span class="n">sol</span> <span class="o">=</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmy</span><span class="p">)</span>
+            <span class="n">sol2</span> <span class="o">=</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmT</span><span class="p">)</span>
+
+            <span class="n">ld</span> <span class="o">=</span> <span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+            <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ytNmy</span> <span class="o">-</span> <span class="n">FtNmy</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">sol</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">ld</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">TtNmy</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">sol</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">TtNmT</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">sol2</span>
+
+            <span class="k">return</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span>
+        <span class="n">kernelterms</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">kernelterms</span></div>
+
+
 <div class="viewcode-block" id="WoodburyKernel_varN.make_kernelterms">
 <a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelterms">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_kernelterms_vary</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+
         <span class="n">N_solve_1d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_1d</span><span class="p">()</span>
         <span class="n">N_solve_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_2d</span><span class="p">()</span>
 
@@ -2597,9 +2707,77 @@
         <span class="k">return</span> <span class="n">kernelterms</span></div>
 
 
+<div class="viewcode-block" id="WoodburyKernel_varN.make_kernelsolve_vary">
+<a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelsolve_vary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelsolve_vary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="n">y_var</span> <span class="o">=</span> <span class="n">y</span>
+
+        <span class="n">N_solve_1d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_1d</span><span class="p">()</span>
+        <span class="n">N_solve_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_2d</span><span class="p">()</span>
+
+        <span class="n">F</span><span class="p">,</span> <span class="n">Pinv</span><span class="p">,</span> <span class="n">ldP</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">),</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Pinv</span><span class="p">),</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ldP</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">kernelsolve</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                <span class="n">yp</span> <span class="o">=</span> <span class="n">y_var</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+                <span class="n">Nmy</span><span class="p">,</span> <span class="n">ldN</span> <span class="o">=</span> <span class="n">N_solve_1d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">yp</span><span class="p">)</span>
+                <span class="n">FtNmy</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Nmy</span>
+
+                <span class="n">NmF</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">N_solve_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">F</span><span class="p">)</span>
+                <span class="n">FtNmF</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span>
+
+                <span class="n">Tmat</span> <span class="o">=</span> <span class="n">T</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+                <span class="n">TtNmy</span>  <span class="o">=</span> <span class="n">Tmat</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Nmy</span>
+                <span class="n">TtNmF</span>  <span class="o">=</span> <span class="n">Tmat</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span>
+
+                <span class="n">NmT</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">N_solve_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Tmat</span><span class="p">)</span>
+                <span class="n">FtNmT</span>  <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmT</span>
+                <span class="n">TtNmT</span>  <span class="o">=</span> <span class="n">Tmat</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmT</span>
+
+                <span class="n">cf</span> <span class="o">=</span> <span class="n">matrix_factor</span><span class="p">(</span><span class="n">Pinv</span> <span class="o">+</span> <span class="n">FtNmF</span><span class="p">)</span>
+
+                <span class="n">TtSy</span> <span class="o">=</span> <span class="n">TtNmy</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmy</span><span class="p">)</span>
+                <span class="n">TtST</span> <span class="o">=</span> <span class="n">TtNmT</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmT</span><span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">TtSy</span><span class="p">,</span> <span class="n">TtST</span>
+            <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">T</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Tmat</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">kernelsolve</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                <span class="n">yp</span> <span class="o">=</span> <span class="n">y_var</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+                <span class="n">Nmy</span><span class="p">,</span> <span class="n">ldN</span> <span class="o">=</span> <span class="n">N_solve_1d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">yp</span><span class="p">)</span>
+                <span class="n">FtNmy</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Nmy</span>
+
+                <span class="n">NmF</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">N_solve_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">F</span><span class="p">)</span>
+                <span class="n">FtNmF</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span>
+
+                <span class="n">TtNmy</span>  <span class="o">=</span> <span class="n">Tmat</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Nmy</span>
+                <span class="n">TtNmF</span>  <span class="o">=</span> <span class="n">Tmat</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span>
+
+                <span class="n">NmT</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">N_solve_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+                <span class="n">FtNmT</span>  <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmT</span>
+                <span class="n">TtNmT</span>  <span class="o">=</span> <span class="n">Tmat</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmT</span>
+
+                <span class="n">cf</span> <span class="o">=</span> <span class="n">matrix_factor</span><span class="p">(</span><span class="n">Pinv</span> <span class="o">+</span> <span class="n">FtNmF</span><span class="p">)</span>
+
+                <span class="n">TtSy</span> <span class="o">=</span> <span class="n">TtNmy</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmy</span><span class="p">)</span>
+                <span class="n">TtST</span> <span class="o">=</span> <span class="n">TtNmT</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmT</span><span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">TtSy</span><span class="p">,</span> <span class="n">TtST</span>
+            <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">kernelsolve</span></div>
+
+
 <div class="viewcode-block" id="WoodburyKernel_varN.make_kernelsolve">
 <a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varN.make_kernelsolve">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelsolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_kernelsolve_vary</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+
         <span class="n">N_solve_1d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_1d</span><span class="p">()</span>
         <span class="n">N_solve_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">make_solve_2d</span><span class="p">()</span>
 

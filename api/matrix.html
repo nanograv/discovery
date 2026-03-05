@@ -31,7 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -933,6 +933,11 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">WoodburyKernel_varNP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#discovery.matrix.VariableKernel" title="discovery.matrix.VariableKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></a></p>
 <dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_sample">
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_vary">
 <span class="sig-name descname"><span class="pre">make_kernelproduct_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_kernelproduct_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_vary" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -1036,7 +1041,12 @@
 <dd><p>Bases: <a class="reference internal" href="#discovery.matrix.VariableKernel" title="discovery.matrix.VariableKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_sample">
-<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_sample" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelproduct_vary">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelproduct_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelproduct_vary" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1045,8 +1055,18 @@
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelterms_vary">
+<span class="sig-name descname"><span class="pre">make_kernelterms_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelterms_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelterms_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelterms">
 <span class="sig-name descname"><span class="pre">make_kernelterms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelterms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelterms" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelsolve_vary">
+<span class="sig-name descname"><span class="pre">make_kernelsolve_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelsolve_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelsolve_vary" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1279,6 +1299,7 @@
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_sample()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct_vary()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_gpcomponent"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct_gpcomponent()</span></code></a></li>
@@ -1304,8 +1325,11 @@
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_sample()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelproduct_vary()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelproduct()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelterms_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelterms_vary()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelterms()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelsolve_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelsolve_vary()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelsolve()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_solve_1d()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_solve_2d()</span></code></a></li>
