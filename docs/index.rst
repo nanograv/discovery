@@ -3,28 +3,27 @@
 Welcome to Discovery's documentation!
 ======================================
 
-Discovery is a next-generation pulsar-timing-array data analysis package built on JAX.
+Discovery is a next-generation PTA data analysis package built on JAX.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: User Guide
 
+   tutorials/curn_example
    guide/overview
-   guide/data_model
-   guide/pulsar_data
    installation
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Tutorials
 
    quickstart
    tutorials/basic_likelihood
-   tutorials/simulations
    tutorials/optimal_statistic
+   tutorials/simulations
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Component Reference
 
    components/noise_signals
@@ -32,13 +31,20 @@ Discovery is a next-generation pulsar-timing-array data analysis package built o
    components/delays
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: Other Useful Information
+
+   guide/data_model
+   guide/pulsar_data
+
+.. toctree::
+   :maxdepth: 1
    :caption: Advanced Topics
 
    advanced/conditional_sampling
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: API Reference
 
    api/index

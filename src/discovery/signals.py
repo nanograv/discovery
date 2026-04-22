@@ -586,7 +586,6 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
                 # |S_ij Gamma_ab| = prod_i (|S_i Gamma_ab|) = prod_i (S_i^npsr |Gamma_ab|)
                 # log |S_ij Gamma_ab| = log (prod_i S_i^npsr) + log prod_i |Gamma_ab|
                 #                     = npsr * sum_i log S_i + nfreqs |Gamma_ab|
-
                 return (jnp.block([[jnp.make2d(val * invphi) for val in row] for row in invorf]),
                         phi.shape[0] * orflogdet + orfmat.shape[0] * logdetphi)
                         # was -orfmat.shape[0] * jnp.sum(jnp.log(invphidiag)))
@@ -828,6 +827,133 @@ def brokenpowerlaw(f, df, log10_A, gamma, log10_fb):
 
 def freespectrum(f, df, log10_rho: typing.Sequence):
     return jnp.repeat(10.0**(2.0 * log10_rho), 2)
+
+
+def make_combined_crn(components, irn_psd, crn_psd, crn_prefix: typing.Optional[str] = 'crn_'):
+    """
+    Combine an intrinsic red noise PSD and a common red noise PSD into a
+    single PSD function that shares the same Fourier basis.
+
+    The intrinsic red noise PSD is evaluated over the full frequency basis,
+    while the common red noise PSD is added only to the first
+    ``2 * components`` frequency bins (sine and cosine for each component).
+
+    Parameters
+    ----------
+    components : int
+        Number of shared Fourier frequency components used by the CRN model.
+        This determines how many low-frequency bins of the intrinsic basis
+        receive the CRN contribution (specifically, the first
+        ``2 * components`` entries, corresponding to sine/cosine pairs).
+        This is *not* the same as the ``components`` argument passed to
+        ``makegp_fourier`` — that controls the total number of Fourier
+        components in the basis for the GP (and may be larger, since the
+        intrinsic noise can extend to higher frequencies than the CRN).
+    irn_psd : callable
+        PSD function for the intrinsic red noise. Must accept ``(f, df, ...)``
+        and return a PSD array over the full basis.
+    crn_psd : callable
+        PSD function for the common red noise. Must accept ``(f, df, ...)``
+        and return a PSD array. Will only be called on the first
+        ``2 * components`` frequency bins.
+    crn_prefix : str or None
+        Prefix applied to CRN parameter names that overlap with IRN names.
+        For example, if both PSDs have ``log10_A`` and ``crn_prefix='crn_'``,
+        the combined function will have ``log10_A`` (IRN) and
+        ``crn_log10_A`` (CRN) as separate parameters.
+        If None, overlapping names are shared (both PSDs receive the same
+        value), which is valid when you intentionally want tied parameters.
+
+    Returns
+    -------
+    combined : callable
+        A PSD function whose signature is the union of ``irn_psd`` and
+        ``crn_psd`` signatures (with CRN overlaps prefixed). Compatible
+        with ``makegp_fourier``: argument names are inspectable via
+        ``getfullargspec``, and ``typing.Sequence`` annotations are
+        preserved for parameter expansion.
+    crn_params : list of str
+        The parameter names (as they appear in ``combined``'s signature)
+        that belong to the CRN PSD. Pass these directly as the ``common``
+        argument to ``makegp_fourier`` or ``makecommongp_fourier`` so that
+        the CRN parameters are shared across pulsars rather than given
+        per-pulsar names.
+
+        Example::
+
+            combined, crn_params = make_combined_crn(14, ds.powerlaw, ds.powerlaw)
+            gp = makegp_fourier(psr, combined, components=30, common=crn_params)
+    """
+    from discovery import matrix
+    irn_spec = inspect.getfullargspec(irn_psd)
+    crn_spec = inspect.getfullargspec(crn_psd)
+
+    shared = {'f', 'df'}
+    irn_names = [a for a in irn_spec.args if a not in shared]
+    crn_names = [a for a in crn_spec.args if a not in shared]
+
+    # Rename overlapping CRN params
+    irn_set = set(irn_names)
+    crn_rename = {}  # original_name -> merged_name
+    for a in crn_names:
+        if a in irn_set and crn_prefix is not None:
+            crn_rename[a] = crn_prefix + a
+        else:
+            crn_rename[a] = a
+
+    # Build merged argument list: f, df, irn params, then (renamed) crn params
+    merged_args = ['f', 'df']
+    seen = set(shared)
+    for arg in irn_names:
+        if arg not in seen:
+            merged_args.append(arg)
+            seen.add(arg)
+    for arg in crn_names:
+        renamed = crn_rename[arg]
+        if renamed not in seen:
+            merged_args.append(renamed)
+            seen.add(renamed)
+
+    # Merge annotations (applying rename to CRN annotations)
+    annotations = {}
+    if irn_spec.annotations:
+        annotations.update({k: v for k, v in irn_spec.annotations.items()
+                            if k not in shared})
+    if crn_spec.annotations:
+        for k, v in crn_spec.annotations.items():
+            if k not in shared:
+                annotations[crn_rename.get(k, k)] = v
+
+    def _impl(f, df, kw):
+        irn_kw = {k: kw[k] for k in irn_names}
+        crn_kw = {k: kw[crn_rename[k]] for k in crn_names}
+        if matrix.jnp == jnp:
+            phi = irn_psd(f, df, **irn_kw)
+            phi = phi.at[:2 * components].add(
+                crn_psd(f[:2 * components], df[:2 * components], **crn_kw)
+            )
+        else:
+            phi = irn_psd(f, df, **irn_kw)
+            phi[:2 * components] += crn_psd(
+                f[:2 * components], df[:2 * components], **crn_kw
+            )
+        return phi
+
+    # Dynamically build a function with the correct inspectable signature
+    param_args = merged_args[2:]
+    args_str = ', '.join(merged_args)
+    kwargs_dict = '{' + ', '.join(f"'{a}': {a}" for a in param_args) + '}'
+    func_code = f"def combined({args_str}): return _impl(f, df, {kwargs_dict})"
+    ns = {'_impl': _impl}
+    exec(func_code, ns)
+    combined = ns['combined']
+    combined.__annotations__ = annotations
+
+    # Deduplicated list of CRN param names as they appear in the combined signature
+    crn_params = list(dict.fromkeys(crn_rename[k] for k in crn_names))
+
+    return combined, crn_params
+
 
 
 # combined red_noise + crn
