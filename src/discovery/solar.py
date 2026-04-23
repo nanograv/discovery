@@ -1,8 +1,12 @@
 import numpy as np
 import functools
+import inspect
+import jax.numpy as jnp
 
 from . import const
 from . import matrix
+from . import fourierbasis
+from . import quantize
 
 AU_light_sec = const.AU / const.c  # 1 AU in light seconds
 AU_pc = const.AU / const.pc        # 1 AU in parsecs (for DM normalization)
@@ -47,6 +51,47 @@ def make_solardm(psr):
 
     return solardm
 
+def fourierbasis_solar_dm(psr,
+                        components,
+                        T=None):
+    """
+    From enterprise_extions: construct DM-Solar Model Fourier design matrix.
+
+    :param psr: Pulsar object
+    :param components: Number of Fourier components in the model
+    :param T: Total timespan of the data
+
+    :return: F: SW DM-variation fourier design matrix
+    :return: f: Sampling frequencies
+    """
+
+    # get base Fourier design matrix and frequencies
+    f, df, fmat = fourierbasis(psr, components, T)
+
+    dt_DM = make_solardm(psr)
+
+    return f, df, fmat * dt_DM[:, None]
+
+def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, common=[], name='timedomain_sw_gp'):
+     argspec = inspect.getfullargspec(covariance)
+     argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
+               for arg in argspec.args if arg not in ['tau']]
+
+     dt_DM = make_solardm(psr)
+ 
+     bins = quantize(psr.toas, dt)
+     Umat = np.vstack([bins == i for i in range(bins.max() + 1)]).T.astype('d')
+     Umat = Umat * dt_DM[:, None] 
+     toas = psr.toas @ Umat / Umat.sum(axis=0)
+ 
+     get_tmat = covariance
+     tau = jnp.abs(toas[:, jnp.newaxis] - toas[jnp.newaxis, :])
+ 
+     def getphi(params):
+         return get_tmat(tau, *[params[arg] for arg in argmap])
+     getphi.params = argmap
+ 
+     return matrix.VariableGP(matrix.NoiseMatrix2D_var(getphi), Umat)
 
 def chromaticdelay(toas, freqs, t0, log10_Amp, log10_tau, idx):
     toadays, invnormfreqs = toas / const.day, 1400.0 / freqs
