@@ -2042,10 +2042,10 @@
             <span class="n">FtNmF</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span>
             <span class="n">Pinv</span><span class="p">,</span> <span class="n">ldP</span> <span class="o">=</span> <span class="n">P_var_inv</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
             <span class="n">Sigma</span> <span class="o">=</span> <span class="n">Pinv</span> <span class="o">+</span> <span class="n">FtNmF</span>
-            <span class="n">ch</span> <span class="o">=</span> <span class="n">matrix_factor</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span>
-            <span class="n">b_mean</span> <span class="o">=</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">FtNmy</span><span class="p">)</span>
+            <span class="n">ch</span> <span class="o">=</span> <span class="n">jsp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cho_factor</span><span class="p">(</span><span class="n">Sigma</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">b_mean</span> <span class="o">=</span> <span class="n">jsp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cho_solve</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">FtNmy</span><span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">b_mean</span><span class="p">,</span> <span class="n">Sigma</span>
+            <span class="k">return</span> <span class="n">b_mean</span><span class="p">,</span> <span class="n">ch</span>
 
         <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">kernelsolve</span></div>
