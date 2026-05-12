@@ -828,6 +828,9 @@ def brokenpowerlaw(f, df, log10_A, gamma, log10_fb):
 def freespectrum(f, df, log10_rho: typing.Sequence):
     return jnp.repeat(10.0**(2.0 * log10_rho), 2)
 
+def flat_tail_powerlaw(f, df, log10_A, gamma, log10k):
+    k2 = 10.0**(2.0 * log10k) 
+    return jnp.maximum(powerlaw(f, df, log10_A, gamma), k2)
 
 def make_combined_crn(components, irn_psd, crn_psd, crn_prefix: typing.Optional[str] = 'crn_'):
     """
