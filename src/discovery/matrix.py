@@ -1288,10 +1288,10 @@ class WoodburyKernel_varNP(VariableKernel):
             FtNmF = F.T @ NmF
             Pinv, ldP = P_var_inv(params)
             Sigma = Pinv + FtNmF
-            ch = matrix_factor(Sigma)
-            b_mean = matrix_solve(ch, FtNmy)
+            ch = jsp.linalg.cho_factor(Sigma, lower=True)
+            b_mean = jsp.linalg.cho_solve(ch, FtNmy)
 
-            return b_mean, Sigma
+            return b_mean, ch
 
         kernelsolve.params = sorted(self.N_var.params + P_var.params)
         return kernelsolve
