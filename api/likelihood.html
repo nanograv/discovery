@@ -175,6 +175,13 @@
                 <ul id="pst-nav-more-links" class="dropdown-menu">
                     
 <li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../tutorials/optimal_statistic.html">
     Optimal Statistic
   </a>
@@ -357,6 +364,13 @@
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../tutorials/basic_likelihood.html">
     Basic Likelihood
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/params_example.html">
+    Fast likelihood evaluation with Params
   </a>
 </li>
 
@@ -545,6 +559,13 @@
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><a class="headerlink" href="#discovery.likelihood.PulsarLikelihood.sample" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="discovery.likelihood.PulsarLikelihood.white_noise_matrix">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">white_noise_matrix</span></span><a class="headerlink" href="#discovery.likelihood.PulsarLikelihood.white_noise_matrix" title="Link to this definition">#</a></dt>
+<dd><p>Return the diagonal white noise matrix for this pulsar.
+It will be scaled by EFAC and ECORR, but will NOT include EQUAD.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -654,6 +675,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.likelihood.PulsarLikelihood.clogL"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.clogL</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.likelihood.PulsarLikelihood.logL"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.logL</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.likelihood.PulsarLikelihood.sample"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.sample</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.likelihood.PulsarLikelihood.white_noise_matrix"><code class="docutils literal notranslate"><span class="pre">PulsarLikelihood.white_noise_matrix</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.likelihood.GlobalLikelihood"><code class="docutils literal notranslate"><span class="pre">GlobalLikelihood</span></code></a><ul class="nav section-nav flex-column">
