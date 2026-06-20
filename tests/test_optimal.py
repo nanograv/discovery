@@ -117,25 +117,66 @@ def test_imhof_u0_limit():
                                    rtol=1e-12, atol=0)
 
 
-def test_schur_cholesky_psd_no_ridge():
-    """schur_cholesky reproduces S = TTt - FTt.T (diag(1/P)+FFt)^-1 FTt as a
-    manifest Gram (A @ A.T), PSD by construction, matching the explicit
-    difference in float64 -- including a deliberately ill-conditioned case
-    (GW basis inside the red-noise span) where the old form needed a ridge."""
+def test_ridge_cholesky_indefinite():
+    """ridge_cholesky must return a finite Cholesky factor even when S is
+    genuinely numerically indefinite (negative eigenvalues), which is the real
+    situation for high-precision pulsars. A plain Cholesky-Schur would NaN here.
+    The raw S it returns matches the explicit difference."""
     import jax.numpy as jnp
     rng = np.random.default_rng(1)
     mF, mG = 88, 28
-    # GW design as a strict subset of the red-noise design -> S near-singular
+    # GW design as a strict subset of the red-noise design + a near-degenerate
+    # column -> S with a small *negative* eigenvalue after cancellation
     Fbig = rng.normal(size=(2000, mF))
-    Tt = jnp.asarray(Fbig[:, :mG] @ rng.normal(size=(mG, mG)))
+    M = rng.normal(size=(mG, mG)); M[:, -1] = M[:, 0] + 1e-9 * M[:, -1]
+    Tt = jnp.asarray(Fbig[:, :mG] @ M)
     Ft = jnp.asarray(Fbig)
     P = jnp.asarray(10.0 ** rng.uniform(-18, -14, size=mF))   # red-noise priors
     FFt, FTt, TTt = Ft.T @ Ft, Ft.T @ Tt, Tt.T @ Tt
 
-    A = optimal.schur_cholesky(1.0 / P, FFt, FTt, TTt)
-    S_new = np.asarray(A @ A.T)
+    A, S = optimal.ridge_cholesky(1.0 / P, FFt, FTt, TTt)
+    assert np.all(np.isfinite(np.asarray(A)))                       # no NaN from the factor
+    assert np.all(np.isfinite(np.asarray(S)))
     c = jax.scipy.linalg.cho_factor(jnp.diag(1.0 / P) + FFt)
-    S_old = np.asarray(TTt - FTt.T @ jax.scipy.linalg.cho_solve(c, FTt))
+    S_ref = np.asarray(TTt - FTt.T @ jax.scipy.linalg.cho_solve(c, FTt))
+    np.testing.assert_allclose(np.asarray(S), S_ref, rtol=0, atol=1e-9 * np.linalg.norm(S_ref))
 
-    assert np.linalg.eigvalsh(0.5 * (S_new + S_new.T)).min() > 0.0   # strictly PSD, no ridge
-    np.testing.assert_allclose(S_new, S_old, rtol=0, atol=1e-9 * np.linalg.norm(S_old))
+
+# a high-precision pulsar whose S is genuinely indefinite (min eig < 0) --
+# guards against regressions that NaN out the factorization on real data
+HARD_PSR_FILES = PSR_FILES + ["v1p1_de440_pint_bipm2019-J0437-4715.feather"]
+
+
+@pytest.fixture(scope="module")
+def os_obj_hard():
+    psrs = [ds.Pulsar.read_feather(DATA_DIR / f) for f in HARD_PSR_FILES]
+    T = ds.getspan(psrs)
+    gbl = ds.GlobalLikelihood([
+        ds.PulsarLikelihood([
+            psr.residuals,
+            ds.makenoise_measurement(psr, psr.noisedict),
+            ds.makegp_ecorr(psr, psr.noisedict),
+            ds.makegp_timing(psr, svd=True),
+            ds.makegp_fourier(psr, ds.powerlaw, 30, T=T, name='rednoise'),
+            ds.makegp_fourier(psr, ds.powerlaw, 14, T=T,
+                              common=['gw_log10_A', 'gw_gamma'], name='gw'),
+        ]) for psr in psrs])
+    return ds.OS(gbl)
+
+
+def test_Q_and_gx2cdf_finite_on_hard_pulsar(os_obj_hard):
+    """With J0437-4715 in the array (genuinely indefinite S), Q must stay
+    finite and gx2cdf must be a valid CDF (finite, monotone, in [0,1]). This
+    is the case that the NaN-prone Cholesky-Schur factorization broke."""
+    params = dict(PARAMS)
+    params['J0437-4715_rednoise_gamma'] = 3.2
+    params['J0437-4715_rednoise_log10_A'] = -14.5
+
+    Qmat = np.asarray(os_obj_hard.Q(params))
+    assert np.all(np.isfinite(Qmat)), "Q has non-finite entries (S factorization failed)"
+
+    xs = np.linspace(-2.0, 8.0, 50)
+    cdf = np.asarray(os_obj_hard.gx2cdf(params, xs, limit=1000, cutoff=1e-10, epsabs=1e-8))
+    assert np.all(np.isfinite(cdf))
+    assert cdf.min() >= -1e-8 and cdf.max() <= 1.0 + 1e-8
+    assert np.all(np.diff(cdf) >= -1e-8), "gx2cdf not monotone non-decreasing"

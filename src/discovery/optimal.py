@@ -26,30 +26,41 @@ def make2d(array):
     return matrix.jnp.diag(array) if array.ndim == 1 else array
 
 
-def schur_cholesky(Pinv, FFt, FTt, TTt):
-    """Cholesky factor ``A`` (with ``S = A @ A.T``) of the GW-space Schur complement
+def ridge_cholesky(Pinv, FFt, FTt, TTt):
+    """Cholesky factor ``A`` (``S = A @ A.T``) and the raw matrix ``S`` of the
+    GW-space matrix
 
         S = TTt - FTt.T @ (diag(Pinv) + FFt)^-1 @ FTt
           = G̃.T @ (I + F̃ B F̃.T)^-1 @ G̃          (B = diag(1/Pinv))
 
-    computed as the trailing block of the Cholesky of the joint matrix
+    The GW Fourier basis lies inside the red-noise span (its frequencies are a
+    subset of the red-noise frequencies on the same baseline), so ``S`` is the
+    difference of two large, nearly equal PSD matrices. For high-precision
+    pulsars its condition number runs past float64 and several eigenvalues come
+    out genuinely negative (e.g. J0437-4715: min eig ~ -19, cond ~ 1e15). An
+    adaptive ridge -- lift the smallest eigenvalue just past zero -- is required
+    before the Cholesky.
 
-        J = [[diag(Pinv) + FFt, FTt],
-             [FTt.T,            TTt]]
+    NB: a plain Cholesky-Schur factorization is *not* sufficient here. We tried
+    reading ``A`` off the Cholesky of the joint matrix [[diag(Pinv)+FFt, FTt],
+    [FTt.T, TTt]] to avoid forming the difference; that is exact in real
+    arithmetic but ``jnp.linalg.cholesky`` returns NaN (no exception) on the
+    numerically indefinite blocks, silently poisoning Q / gx2cdf for ~half the
+    NANOGrav-15 pulsars. See dev_architectures/os_memory_improvements/.
 
-    rather than by forming the difference ``TTt - (...)`` explicitly. The GW
-    Fourier basis lies inside the red-noise span (its frequencies are a subset
-    of the red-noise frequencies on the same baseline), so that difference is
-    between two large, nearly equal PSD matrices and cancels catastrophically,
-    losing positive-definiteness -- which is what the old ``1e-10 tr(S)/n``
-    ridge was patching. The Schur complement read off a Cholesky factor is PSD
-    by construction (it equals ``L22 @ L22.T``), so no ridge is needed and the
-    factor ``A = L22`` is obtained directly.
+    The raw (unridged) ``S`` is returned for the pairwise normalization ``bs``.
     """
-    mF = FFt.shape[0]
-    J = matrix.jnp.block([[matrix.jnp.diag(Pinv) + FFt, FTt],
-                          [FTt.T,                        TTt]])
-    return matrix.jnp.linalg.cholesky(J)[mF:, mF:]
+    c = matrix.jsp.linalg.cho_factor(matrix.jnp.diag(Pinv) + FFt)
+    S = TTt - FTt.T @ matrix.jsp.linalg.cho_solve(c, FTt)
+    S = 0.5 * (S + S.T)  # enforce symmetry
+
+    # add only what is needed to make the smallest eigenvalue positive
+    eigs = matrix.jnp.linalg.eigvalsh(S)
+    ridge = (matrix.jnp.maximum(0.0, -matrix.jnp.min(eigs))
+             + 1e-12 * matrix.jnp.maximum(matrix.jnp.max(matrix.jnp.abs(eigs)), 1.0))
+
+    A = matrix.jnp.linalg.cholesky(S + ridge * matrix.jnp.eye(S.shape[0]))
+    return A, S
 
 class OS:
     def __init__(self, gbl):
@@ -93,11 +104,11 @@ class OS:
         def get_Q(params, orf=hd_orfa):
             sPhi = matrix.jnp.sqrt(Phivar(params))
 
-            # S = G̃.T (I + F̃ B F̃.T)^-1 G̃ via the Schur complement of the joint
-            # Cholesky -> manifestly PSD, no ridge needed (see schur_cholesky)
-            As = [schur_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
-                  for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)]
-            Ss = [A @ A.T for A in As]
+            # S = G̃.T (I + F̃ B F̃.T)^-1 G̃; genuinely indefinite for
+            # high-precision pulsars, factored with an adaptive ridge (see
+            # ridge_cholesky). bs uses the raw (unridged) S.
+            As, Ss = zip(*[ridge_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
+                           for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)])
 
             Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
             # Ds are symmetric, so tr(Ds[i] @ Ds[j]) == sum(Ds[i] * Ds[j]) (O(m^2), no m x m temporary)
@@ -144,9 +155,8 @@ class OS:
         def get_opQ(params, orf=hd_orfa):
             sPhi = matrix.jnp.sqrt(Phivar(params))
 
-            As = [schur_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
-                  for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)]
-            Ss = [A @ A.T for A in As]
+            As, Ss = zip(*[ridge_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
+                           for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)])
 
             Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
             bs = [matrix.jnp.sum(Ds[i] * Ds[j]) for (i,j) in self.pairs]  # Ds symmetric: tr(A@B)==sum(A*B)
@@ -195,9 +205,8 @@ class OS:
         def get_sample(key, params, orf=hd_orfa):
             sPhi = matrix.jnp.sqrt(Phivar(params))
 
-            As = [schur_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
-                  for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)]
-            Ss = [A @ A.T for A in As]
+            As, Ss = zip(*[ridge_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
+                           for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)])
 
             Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
             bs = [matrix.jnp.sum(Ds[i] * Ds[j]) for (i,j) in self.pairs]  # Ds symmetric: tr(A@B)==sum(A*B)
@@ -232,11 +241,10 @@ class OS:
         Fts = [LNm[:,None] * Fmat for LNm, Fmat in zip(LNms, Fmats)]
         Tts = [LNm[:,None] * Tmat for LNm, Tmat in zip(LNms, Tmats)] # this is GW-only
 
-        # S = G̃.T (I + F̃ B F̃.T)^-1 G̃ via the Schur complement of the joint
-        # Cholesky -> manifestly PSD, no ridge needed (see schur_cholesky)
-        As = [schur_cholesky(1.0 / Pmat, Ft.T @ Ft, Ft.T @ Tt, Tt.T @ Tt)
-              for Pmat, Ft, Tt in zip(Pmats, Fts, Tts)]
-        Ss = [A @ A.T for A in As]
+        # S = G̃.T (I + F̃ B F̃.T)^-1 G̃; genuinely indefinite for high-precision
+        # pulsars, factored with an adaptive ridge (see ridge_cholesky)
+        As, Ss = zip(*[ridge_cholesky(1.0 / Pmat, Ft.T @ Ft, Ft.T @ Tt, Tt.T @ Tt)
+                       for Pmat, Ft, Tt in zip(Pmats, Fts, Tts)])
 
         Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
         bs = [matrix.jnp.sum(Ds[i] * Ds[j]) for (i,j) in self.pairs]  # Ds symmetric: tr(A@B)==sum(A*B)
@@ -482,6 +490,7 @@ class OS:
         return eig2cdf(osxs, eigx, cutoff=cutoff, limit=limit, epsabs=epsabs)
 
 
+# @jax.jit
 @jax.jit
 def imhof(u, x, eigs):
     theta = 0.5 * matrix.jnp.sum(matrix.jnp.arctan(eigs * u), axis=0) - 0.5 * x * u
