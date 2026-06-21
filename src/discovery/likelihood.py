@@ -524,11 +524,19 @@ class GlobalLikelihood:
 
 
 class ArrayLikelihood:
-    def __init__(self, psls, *, commongp=None, globalgp=None, transform=None):
+    def __init__(self, psls, *, commongp=None, globalgp=None, transform=None,
+                 decenter=False, extsignals=None):
         self.psls = psls
         self.commongp = commongp
         self.globalgp = globalgp
         self.transform = transform
+        self.decenter = decenter
+        # extsignals: deterministic signals on their OWN basis (matrix.ExtSignal),
+        # for signals needing higher frequencies than the GP bases reach (e.g. a
+        # CW); see discovery.deterministic.makecw_extsignal. For same-basis
+        # deterministic Fourier signals, use ``commongp=makecommongp_fourier(
+        # ..., means=mean_fn)`` instead.
+        self.extsignals = extsignals
 
     # @functools.cached_property
     # def cloglast(self):
@@ -563,21 +571,83 @@ class ArrayLikelihood:
         else:
             # merge common GPs and global GP
             cgp = self.commongp if isinstance(self.commongp, list) else [self.commongp]
+            gplist = cgp + [self.globalgp]
             commongp = matrix.VectorCompoundGP(cgp + [self.globalgp])
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+
+        # Both this line, and the decentering code below assumes that
+        # N and F are constants.
         self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
+
+        if self.decenter:
+            # create decentering transformation
+
+            NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.vsm.Ns, self.vsm.Fs)])
+            FtNmFs = [F.T @ NmF for F, NmF in zip(self.vsm.Fs, NmFs)]
+            NmFtys = [NmF.T @ y for NmF, y in zip(NmFs, self.ys)]
+            FtNmF, NmFty = matrix.jnparray(FtNmFs), matrix.jnparray(NmFtys)
+            def decenter_transform(params, c):
+                phis_invs_commongp = [gp.Phi.getN(params)**-1 for gp in (self.commongp if isinstance(self.commongp, list) else [self.commongp])]
+                # get diagonal piece of the globalGP (decenter using CURN)
+                if self.globalgp is not None:
+                    phis_invs_globalgp = matrix.jnp.diag(self.globalgp.Phi.getN(params)**-1).reshape((len(self.psls), -1))
+                    phis_invs = matrix.jnp.concatenate([*phis_invs_commongp, phis_invs_globalgp], axis=1)
+                else:
+                    phis_invs = matrix.jnp.concatenate([*phis_invs_commongp], axis=1)
+                i1, i2 = matrix.jnp.diag_indices(phis_invs.shape[1], ndim=2)
+
+                # supposedly, the native batching here should be better
+                # than vmap.
+
+                cf = matrix.matrix_factor(FtNmF.at[:,i1,i2].add(phis_invs), lower=True)
+                am = matrix.jsp.linalg.solve_triangular(cf[0], c, trans=1, lower=cf[1])
+                mus = matrix.matrix_solve(cf, NmFty)
+                # jacobian of our transformation | d f^{-1} / d(xi) | = |L|. cf[0] is L^{-1}.
+                ldL = -matrix.jnp.logdet(cf[0][:,i1,i2])
+
+                c = am + mus
+
+                return c, ldL
+            decenter_transform.params = []
+
+
         if hasattr(commongp, 'prior'):
             self.vsm.prior = commongp.prior
         if hasattr(commongp, 'index'):
             self.vsm.index = commongp.index
+        # propagate commongp's `means` so make_kernelproduct_gpcomponent applies
+        # the centered prior -- matches the wiring used in ArrayLikelihood.logL.
+        self.vsm.means = getattr(commongp, 'means', None)
 
-        loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys, transform=self.transform)
+        # reparam stage: bijections on the GP coefficients (Jacobians compose).
+        # Decentering and a user transform can now coexist -- both are reparams.
+        reparams = []
+        if self.decenter:
+            reparams.append(decenter_transform)
+        if self.transform is not None:
+            reparams.extend(self.transform if isinstance(self.transform, (list, tuple))
+                            else [self.transform])
+
+        loglike = self.vsm.make_kernelproduct_gpcomponent(
+            self.ys, transform=reparams, extsignals=self.extsignals)
 
         return loglike
 
     @functools.cached_property
     def logL(self):
+        # `extsignals` is only wired into make_kernelproduct_gpcomponent
+        # (the clogL / coefficient path). Calling logL on a model with
+        # extsignals would silently drop them -- raise loudly instead until
+        # the marginalized paths get the cross-term wiring.
+        if self.extsignals:
+            def _logL_extsignals_unsupported(*args, **kwargs):
+                raise NotImplementedError(
+                    "extsignals only enter clogL; call ArrayLikelihood.clogL, "
+                    "or remove extsignals to use logL")
+            _logL_extsignals_unsupported.params = []
+            return _logL_extsignals_unsupported
+
         if self.commongp is None:
             if self.globalgp is None:
                 def loglike(params):

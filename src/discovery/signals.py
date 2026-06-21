@@ -1,5 +1,6 @@
 import os
 import re
+import functools
 import inspect
 import types
 import typing
@@ -571,7 +572,14 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
 
             # the jnp.dot handles the "pixel basis" case where the elements of orfmat are n-vectors
             # and phidiag is an (m x n)-matrix; here n is the number of pixels and m of Fourier components
-            return jnp.block([[jnp.make2d(jnp.dot(phi, val)) for val in row] for row in orfmat])
+            #
+            if jnp is jax.numpy:
+                # this seems to speed things up, pre-compilation at least.
+                tmp = jnp.kron(orfmat, jnp.diag(phi))
+                return tmp
+            else:
+                return jnp.block([[jnp.make2d(jnp.dot(phi, val)) for val in row] for row in orfmat])
+
         priorfunc.params = argmap
         priorfunc.type = jax.Array
 
@@ -586,8 +594,9 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
                 # |S_ij Gamma_ab| = prod_i (|S_i Gamma_ab|) = prod_i (S_i^npsr |Gamma_ab|)
                 # log |S_ij Gamma_ab| = log (prod_i S_i^npsr) + log prod_i |Gamma_ab|
                 #                     = npsr * sum_i log S_i + nfreqs |Gamma_ab|
-                return (jnp.block([[jnp.make2d(val * invphi) for val in row] for row in invorf]),
-                        phi.shape[0] * orflogdet + orfmat.shape[0] * logdetphi)
+
+                return (jnp.kron(invorf, jnp.make2d(invphi)),
+                            phi.shape[0] * orflogdet + orfmat.shape[0] * logdetphi)
                         # was -orfmat.shape[0] * jnp.sum(jnp.log(invphidiag)))
             invprior.params = argmap
             invprior.type = jax.Array
@@ -1054,3 +1063,104 @@ def makedelay(psr, delay, components=None, common=[], name='delay'):
 # use with makedelay to set residuals dynamically from arrays
 def getresiduals(y):
     return -y
+
+
+def make_extsignal_fourier(psrs, coefffunc, components, T=None, common=[],
+                           name='extsignal'):
+    """Build a deterministic signal carried on its OWN Fourier basis (Route A).
+
+    Returns a ``matrix.ExtSignal`` for use as ``ArrayLikelihood(extsignals=[...])``.
+    Unlike a GP it has no prior: its Fourier coefficients are a deterministic
+    function of a few physical parameters (``coefffunc``). The likelihood folds
+    it in via cross-terms with the GP basis -- see
+    ``VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent``.
+
+    The signal gets its own ``components`` -- typically MORE than the red-noise
+    or GWB GPs use, so the basis reaches higher frequencies (bin spacing is
+    fixed at 1/T_obs for every Fourier basis; only the number of bins, hence
+    the maximum frequency, differs).
+
+    Parameters
+    ----------
+    psrs : list of Pulsar
+        Same order as the ArrayLikelihood's pulsar list.
+    coefffunc : callable
+        Per-pulsar map from physical parameters to a length-``2*components``
+        Fourier-coefficient vector. Its first two positional arguments must be
+        ``f, df`` (bound here to the basis); any argument that is a pulsar
+        attribute (``pos``, ``mintoa``, ...) is bound from the pulsar; the rest
+        become sampled parameters. Example: ``deterministic.makefourier_binary()``.
+    components : int
+        Number of frequency bins for this signal's basis.
+    T : float, optional
+        Baseline for the Fourier basis (default: per-pulsar span).
+    common : list of str
+        Parameter names shared across pulsars (e.g. CW earth-term parameters).
+    name : str
+        Parameter-name prefix and ExtSignal name.
+    """
+    # per-pulsar Fourier basis (f, df) and design matrix (fmat). f/df are
+    # stacked so the coefficient map can be vmap-ed over pulsars rather than
+    # Python-looped -- a Python loop builds npsr separate sub-graphs and makes
+    # the *gradient* npsr separate backward passes (the GP code vmaps for the
+    # same reason; see makecommongp_fourier).
+    fs, dfs, Fs = [], [], []
+    for psr in psrs:
+        f, df, fmat = fourierbasis(psr, components, T)
+        fs.append(np.asarray(f))
+        dfs.append(np.asarray(df))
+        # keep Fs host-side: they are TOA-scale and only consumed by the
+        # host-side trace-time collapse in make_kernelproduct_gpcomponent.
+        # Casting to a device array here would pin them on the GPU for the
+        # ExtSignal's whole lifetime even though the traced code never reads
+        # them (the coeffs closure uses f_arr/df_arr, not Fs).
+        Fs.append(np.asarray(fmat))
+    f_arr = matrix.jnparray(np.stack(fs))      # (npsr, 2*components)
+    df_arr = matrix.jnparray(np.stack(dfs))
+
+    # inspect coefffunc: arguments after the leading f, df
+    argspec = inspect.getfullargspec(coefffunc)
+    args = argspec.args + [a for a in argspec.kwonlyargs
+                           if a not in (argspec.kwonlydefaults or {})]
+    sig_args = [a for a in args if a not in ('f', 'df')]
+
+    # classify each remaining argument
+    is_attr = {a: hasattr(psrs[0], a) for a in sig_args}
+    is_common = {a: (not is_attr[a]) and (a in common or f'{name}_{a}' in common)
+                 for a in sig_args}
+
+    def pname(psr, a):                          # parameter name for arg `a`
+        if a in common:
+            return a
+        if f'{name}_{a}' in common:
+            return f'{name}_{a}'
+        return f'{psr.name}_{name}_{a}'
+
+    # stacked pulsar-attribute arrays (pos, mintoa, ...)
+    attr_arr = {a: matrix.jnparray(np.stack([np.asarray(getattr(p, a))
+                                             for p in psrs]))
+                for a in sig_args if is_attr[a]}
+
+    # vmap over pulsars: f/df and per-pulsar args map on axis 0, common -> None
+    in_axes = (0, 0) + tuple(None if is_common[a] else 0 for a in sig_args)
+    vfunc = jax.vmap(coefffunc, in_axes=in_axes)
+
+    params_list = sorted(set(
+        [pname(psrs[0], a) for a in sig_args if is_common[a]] +
+        [pname(p, a) for p in psrs for a in sig_args
+         if not is_attr[a] and not is_common[a]]))
+
+    def coeffs(params):
+        callargs = [f_arr, df_arr]
+        for a in sig_args:
+            if is_attr[a]:
+                callargs.append(attr_arr[a])
+            elif is_common[a]:
+                callargs.append(params[pname(psrs[0], a)])
+            else:                               # per-pulsar parameter
+                callargs.append(matrix.jnparray(
+                    [params[pname(p, a)] for p in psrs]))
+        return vfunc(*callargs)                 # (npsr, 2*components)
+    coeffs.params = params_list
+
+    return matrix.ExtSignal(Fs, coeffs, name=name)
