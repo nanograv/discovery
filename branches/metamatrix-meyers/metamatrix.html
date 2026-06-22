@@ -1,0 +1,1076 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Metamatrix: graph-based kernels &#8212; Discovery 0.5 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="_static/documentation_options.js?v=db78e746"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'metamatrix';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api/index.html" />
+    <link rel="prev" title="Single-precision likelihoods (and the reference–delta trick)" href="advanced/single_precision.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Discovery 0.5 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials/curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="guide/model_summary.html">
+    Inspecting a model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="tutorials/basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="tutorials/params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="tutorials/optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="tutorials/simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="tutorials/cookbook_models.html">
+    Model cookbook
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="tutorials/cw_extsignal_example.html">
+    Sampling a continuous-wave signal on its own Fourier basis
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="components/noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="components/priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="components/delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="advanced/single_precision.html">
+    Single-precision likelihoods (and the reference–delta trick)
+  </a>
+</li>
+
+
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    Metamatrix: graph-based kernels
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="examples.html">
+    Examples
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials/curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="guide/model_summary.html">
+    Inspecting a model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials/basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials/params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials/optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials/simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials/cookbook_models.html">
+    Model cookbook
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials/cw_extsignal_example.html">
+    Sampling a continuous-wave signal on its own Fourier basis
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="components/noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="components/priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="components/delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="advanced/single_precision.html">
+    Single-precision likelihoods (and the reference–delta trick)
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Metamatrix: graph-based kernels
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="examples.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Metamatrix: graph-based kernels</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="metamatrix-graph-based-kernels">
+<h1>Metamatrix: graph-based kernels<a class="headerlink" href="#metamatrix-graph-based-kernels" title="Link to this heading">#</a></h1>
+<p><em>Status of the <code class="docutils literal notranslate"><span class="pre">metamatrix-meyers</span></code> branch. Audience: Discovery developers.</em></p>
+<p>Source links below point at the <code class="docutils literal notranslate"><span class="pre">metamatrix-meyers</span></code> branch on GitHub.</p>
+<section id="tl-dr">
+<h2>TL;DR<a class="headerlink" href="#tl-dr" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> enumerated the Woodbury kernel <code class="docutils literal notranslate"><span class="pre">Σ</span> <span class="pre">=</span> <span class="pre">N</span> <span class="pre">+</span> <span class="pre">FPFᵀ</span></code> as a combinatorial
+family of hand-written const/var classes. <strong>Metamatrix</strong> replaces that with a
+small graph DSL: kernels are expressed once, symbolically, and graph <em>folding</em>
+specialises constant vs variable inputs at trace time — so the variant explosion
+collapses to one class per concept. Both paths are live behind
+<code class="docutils literal notranslate"><span class="pre">ds.config(kernels=…)</span></code>, and a suite of tests that build each model both ways and
+compare the results certifies the graph path reproduces <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> to machine
+precision — the prerequisite for eventually deprecating <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code>.</p>
+<p>This builds directly on Michele’s original metamatrix design; the work here
+carried it to feature-completeness (Phases 0–4) and added the test scaffolding,
+the runtime switch, and the example/cookbook surface.</p>
+</section>
+<section id="motivation">
+<h2>Motivation<a class="headerlink" href="#motivation" title="Link to this heading">#</a></h2>
+<p>For <code class="docutils literal notranslate"><span class="pre">Σ</span> <span class="pre">=</span> <span class="pre">N</span> <span class="pre">+</span> <span class="pre">FPFᵀ</span></code>, each of <code class="docutils literal notranslate"><span class="pre">N</span></code>, <code class="docutils literal notranslate"><span class="pre">F</span></code>, <code class="docutils literal notranslate"><span class="pre">P</span></code> is independently fixed-at-trace-time
+(“constant”) or parameter-dependent (“variable”). <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> enumerates the
+combinations by hand:</p>
+<ul class="simple">
+<li><p><strong>Woodbury:</strong> <a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/matrix.py"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar</span></code>, <code class="docutils literal notranslate"><span class="pre">_varP</span></code>, <code class="docutils literal notranslate"><span class="pre">_varN</span></code>, <code class="docutils literal notranslate"><span class="pre">_varNP</span></code>, <code class="docutils literal notranslate"><span class="pre">_varFP</span></code>,
+<code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP</span></code></a>
+— six classes.</p></li>
+<li><p><strong>NoiseMatrix:</strong> <code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_{novar,var}</span></code>, <code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_{novar,var}</span></code>,
+<code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_{novar,var}</span></code>, <code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix{1D,2D}_var</span></code> plus the
+<code class="docutils literal notranslate"><span class="pre">…12D_var</span></code> ndim-dispatchers.</p></li>
+</ul>
+<p>Adding a feature meant touching 4–6 sibling classes. The graph rewrite expresses
+the math symbolically and lets folding handle const-vs-var, eliminating the
+combinatorial surface. See
+<a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/dev_architecture/metamatrix/metamatrix_architecture.md"><code class="docutils literal notranslate"><span class="pre">dev_architecture/metamatrix/metamatrix_architecture.md</span></code></a>
+for the design rationale and the house rules for writing graph code.</p>
+</section>
+<section id="architecture-module-map">
+<h2>Architecture / module map<a class="headerlink" href="#architecture-module-map" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/metamatrix.py"><code class="docutils literal notranslate"><span class="pre">metamatrix.py</span></code></a></p></td>
+<td><p>The graph DSL: leaves, nodes, <code class="docutils literal notranslate"><span class="pre">&#64;graph</span></code>, folding/pruning, and <code class="docutils literal notranslate"><span class="pre">func()</span></code> which materialises a graph into a callable. <code class="docutils literal notranslate"><span class="pre">func()</span></code> is called <strong>once</strong>, at the likelihood boundary.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/metamath.py"><code class="docutils literal notranslate"><span class="pre">metamath.py</span></code></a></p></td>
+<td><p>The kernel/GP layer built on the DSL: <code class="docutils literal notranslate"><span class="pre">NoiseMatrix{,1D,2D,SM}</span></code>, <code class="docutils literal notranslate"><span class="pre">WoodburyKernel</span></code>, <code class="docutils literal notranslate"><span class="pre">GlobalWoodburyKernel</span></code>, <code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel</span></code>, <code class="docutils literal notranslate"><span class="pre">CompoundGP</span></code>, <code class="docutils literal notranslate"><span class="pre">CompoundDelay</span></code>. Methods return graphs; they never call <code class="docutils literal notranslate"><span class="pre">func()</span></code> or materialise internally.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/utils.py"><code class="docutils literal notranslate"><span class="pre">utils.py</span></code></a></p></td>
+<td><p>Path-neutral substrate: numerical backend config (<code class="docutils literal notranslate"><span class="pre">config(backend=…)</span></code>, the <code class="docutils literal notranslate"><span class="pre">jnp</span></code>/<code class="docutils literal notranslate"><span class="pre">jsp</span></code>/precision/factorisation globals, <code class="docutils literal notranslate"><span class="pre">cgsolve</span></code>, <code class="docutils literal notranslate"><span class="pre">make_logdet_estimator</span></code>) <strong>and</strong> the GP/Kernel marker types (<code class="docutils literal notranslate"><span class="pre">Kernel</span></code>, <code class="docutils literal notranslate"><span class="pre">GP</span></code>, <code class="docutils literal notranslate"><span class="pre">ConstantGP</span></code>, <code class="docutils literal notranslate"><span class="pre">VariableGP</span></code>, <code class="docutils literal notranslate"><span class="pre">GlobalVariableGP</span></code>, <code class="docutils literal notranslate"><span class="pre">ExtSignal</span></code>) + the indexed Sherman–Morrison helpers. Imported by both paths.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/_kernels.py"><code class="docutils literal notranslate"><span class="pre">_kernels.py</span></code></a></p></td>
+<td><p>The kernel-constructor <strong>factory</strong>. <code class="docutils literal notranslate"><span class="pre">signals.py</span></code> builds kernels by name through it; <code class="docutils literal notranslate"><span class="pre">set_mode()</span></code> (driven by <code class="docutils literal notranslate"><span class="pre">ds.config</span></code>) selects matrix vs metamath classes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/_kernel_switch.py"><code class="docutils literal notranslate"><span class="pre">_kernel_switch.py</span></code></a></p></td>
+<td><p>Used only by the tests: temporarily replaces the <code class="docutils literal notranslate"><span class="pre">matrix.*</span></code> kernel names with their metamath equivalents, so the <em>legacy</em> likelihood code can be run on the <em>new</em> kernels without editing it. It reads its name→class map from <code class="docutils literal notranslate"><span class="pre">_kernels</span></code>, so the two can never disagree.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/signals.py"><code class="docutils literal notranslate"><span class="pre">signals.py</span></code></a> / <a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/measurement_noise.py"><code class="docutils literal notranslate"><span class="pre">measurement_noise.py</span></code></a></p></td>
+<td><p>Model builders (<code class="docutils literal notranslate"><span class="pre">makegp_*</span></code>, <code class="docutils literal notranslate"><span class="pre">makecommongp_*</span></code>, <code class="docutils literal notranslate"><span class="pre">makeglobalgp_*</span></code>, <code class="docutils literal notranslate"><span class="pre">makedelay</span></code>, …). Build kernels through the factory + markers, so they are backend-agnostic.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/likelihood.py"><code class="docutils literal notranslate"><span class="pre">likelihood.py</span></code></a></p></td>
+<td><p>The original closure-based likelihoods built on <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code>. Kept as the reference implementation we compare the new path against; removed once <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> is deprecated.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/likelihood_metamath.py"><code class="docutils literal notranslate"><span class="pre">likelihood_metamath.py</span></code></a></p></td>
+<td><p>Metamath-native likelihoods (<code class="docutils literal notranslate"><span class="pre">PulsarLikelihood</span></code>, <code class="docutils literal notranslate"><span class="pre">GlobalLikelihood</span></code>, <code class="docutils literal notranslate"><span class="pre">ArrayLikelihood</span></code>), composing metamath kernels directly. Replaces <code class="docutils literal notranslate"><span class="pre">likelihood.py</span></code> once <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> is deprecated.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/recipes/__init__.py"><code class="docutils literal notranslate"><span class="pre">recipes/</span></code></a></p></td>
+<td><p>Importable “model zoo” — the exact models the comparison tests exercise and the <a class="reference internal" href="tutorials/cookbook_models.html"><span class="doc std std-doc">cookbook</span></a> renders.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="kernel-routes-and-the-config-switch">
+<h2>Kernel routes and the <code class="docutils literal notranslate"><span class="pre">config</span></code> switch<a class="headerlink" href="#kernel-routes-and-the-config-switch" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ds.config(kernels='matrix'|'metamath')</span></code> selects the kernel subsystem (distinct
+from <code class="docutils literal notranslate"><span class="pre">utils.config(backend='numpy'|'jax')</span></code>, which selects the numerical backend).
+It does two things: sets the <code class="docutils literal notranslate"><span class="pre">_kernels</span></code> factory mode, and rebinds the top-level
+<code class="docutils literal notranslate"><span class="pre">PulsarLikelihood</span></code>/<code class="docutils literal notranslate"><span class="pre">GlobalLikelihood</span></code>/<code class="docutils literal notranslate"><span class="pre">ArrayLikelihood</span></code> to the matrix or metamath
+implementation. Call it <strong>before</strong> building a model.</p>
+<p><code class="docutils literal notranslate"><span class="pre">signals.py</span></code> never names a kernel implementation — it calls
+<code class="docutils literal notranslate"><span class="pre">kernels.NoiseMatrix1D_var(…)</span></code> etc., and the factory resolves the name per mode
+(metamath classes from a canonical map, else fall through to <code class="docutils literal notranslate"><span class="pre">matrix.*</span></code>). This
+replaced the persistent <code class="docutils literal notranslate"><span class="pre">matrix.*</span></code> monkeypatch that the production metamath path
+formerly relied on.</p>
+<p>The comparison tests build <strong>every model three ways</strong> and check the results
+match:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>How the model is built</p></th>
+<th class="head"><p>What it isolates</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>original likelihood + <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> kernels</p></td>
+<td><p>the reference result</p></td>
+</tr>
+<tr class="row-odd"><td><p>original likelihood + metamath kernels (swapped in via the test-only monkeypatch)</p></td>
+<td><p>that the new <em>kernels</em> alone reproduce the reference, independent of the likelihood rewrite</p></td>
+</tr>
+<tr class="row-even"><td><p>new metamath likelihood + metamath kernels</p></td>
+<td><p>that the end-state path reproduces the reference</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The monkeypatch is now used only by these tests; the production metamath path
+uses the explicit factory instead.</p>
+</section>
+<section id="old-new-mapping">
+<h2>Old → new mapping<a class="headerlink" href="#old-new-mapping" title="Link to this heading">#</a></h2>
+<p>Graph folding dissolves the const/var (and the 1D/2D/vector) distinctions, so the
+matrix variant families collapse to one class each.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> (old)</p></th>
+<th class="head"><p>metamath (new)</p></th>
+<th class="head"><p>Note</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_{novar,varP,varN,varNP,varFP}</span></code></p></td>
+<td><p><a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/metamath.py"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel</span></code></a></p></td>
+<td><p>const/var by folding</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel</span></code></p></td>
+<td><p>+ <code class="docutils literal notranslate"><span class="pre">make_conditional</span></code> (new; matrix had none)</p></td>
+</tr>
+<tr class="row-even"><td><p>— (assembled ad hoc)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GlobalWoodburyKernel</span></code></p></td>
+<td><p>first-class global (HD) kernel</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_{novar,var}</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D</span></code></p></td>
+<td><p>array <em>or</em> callable</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_{novar,var}</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D</span></code></p></td>
+<td><p>array <em>or</em> callable</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrix12D_var</span></code> (dispatch)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrix12D</span></code></p></td>
+<td><p>ndim dispatch retained</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_{novar,var}</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM</span></code></p></td>
+<td><p>indexed Sherman–Morrison</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix{1D,2D,12D}_var</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D/2D/12D</span></code></p></td>
+<td><p>“vector” distinction dissolved</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CompoundGP</span></code>, <code class="docutils literal notranslate"><span class="pre">VectorCompoundGP</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CompoundGP</span></code></p></td>
+<td><p>+ mixed-Φ marginalised path (new)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CompoundGlobalGP</span></code> (in <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">signals.CompoundGlobalGP</span></code></p></td>
+<td><p>relocated, backend-agnostic</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CompoundDelay</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CompoundDelay</span></code></p></td>
+<td><p>unchanged contract</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The factory’s name→class map is the canonical encoding of this table:
+<a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/_kernels.py"><code class="docutils literal notranslate"><span class="pre">_kernels._METAMATH</span></code></a>.</p>
+</section>
+<section id="functionality-changed-and-added">
+<h2>Functionality: changed and added<a class="headerlink" href="#functionality-changed-and-added" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Measurement-noise collapse.</strong> <code class="docutils literal notranslate"><span class="pre">makenoise_measurement{,_simple}</span></code> moved to
+<a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/measurement_noise.py"><code class="docutils literal notranslate"><span class="pre">measurement_noise.py</span></code></a>
+in collapsed form: the four <code class="docutils literal notranslate"><span class="pre">_novar</span></code>/<code class="docutils literal notranslate"><span class="pre">_var</span></code> terminal returns became two
+variant-agnostic factory calls (<code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D</span></code> / <code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM</span></code>), the variant
+chosen from whether the argument is an array or a callable. <code class="docutils literal notranslate"><span class="pre">signals.py</span></code>
+re-exports them.</p></li>
+<li><p><strong>Mixed-Φ <code class="docutils literal notranslate"><span class="pre">CompoundGP</span></code>.</strong> A compound of a per-pulsar-diagonal (1D) GP and a
+dense (2D, e.g. HD) GP. The coefficient-log-prior / <code class="docutils literal notranslate"><span class="pre">Phi=None</span></code> branch is now
+gated to the vector/decentered path; a mixed but <em>marginalised</em> compound builds
+a real combined dense Φ (block-diagonal, 1D blocks promoted to dense).</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">CompoundGlobalGP</span></code> relocated</strong> out of <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> to a backend-agnostic
+<code class="docutils literal notranslate"><span class="pre">signals.CompoundGlobalGP</span></code> (factory + markers), so a list of global GPs
+(e.g. HD + monopole) works under both paths.</p></li>
+<li><p><strong>ExtSignal / continuous wave.</strong> <code class="docutils literal notranslate"><span class="pre">ExtSignal</span></code> (in <code class="docutils literal notranslate"><span class="pre">utils.py</span></code>) carries a
+deterministic signal on its own higher-frequency Fourier basis;
+<a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/deterministic.py"><code class="docutils literal notranslate"><span class="pre">makecw_extsignal</span></code></a></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">make_extsignal_fourier</span></code> fold it into <code class="docutils literal notranslate"><span class="pre">ArrayLikelihood</span></code> via GP cross-terms,
+with the CW parameters never entering the GP prior.</p></li>
+</ul>
+</li>
+<li><p><strong>Decentering, means, conditional.</strong> <code class="docutils literal notranslate"><span class="pre">ArrayLikelihood</span></code> supports decentered
+(whitened-coefficient) sampling, per-GP prior <code class="docutils literal notranslate"><span class="pre">means</span></code>, and <code class="docutils literal notranslate"><span class="pre">conditional</span></code> /
+<code class="docutils literal notranslate"><span class="pre">clogL</span></code> on the vector Woodbury path (the latter has no <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> analogue).</p></li>
+<li><p><strong>2-D covariance bases.</strong> <code class="docutils literal notranslate"><span class="pre">makegp_fftcov</span></code>/<code class="docutils literal notranslate"><span class="pre">avgcov</span></code>/<code class="docutils literal notranslate"><span class="pre">intcov</span></code> and
+<code class="docutils literal notranslate"><span class="pre">makegp_fourier_variance</span></code> (dense <code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D</span></code>) run through the graph path.</p></li>
+<li><p><strong>Backend substrate.</strong> Numerical config and the GP/Kernel markers were pulled
+out of <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> into <code class="docutils literal notranslate"><span class="pre">utils.py</span></code>, so neither path reaches into the other.</p></li>
+</ul>
+</section>
+<section id="what-has-been-checked">
+<h2>What has been checked<a class="headerlink" href="#what-has-been-checked" title="Link to this heading">#</a></h2>
+<p>The comparison tests (<code class="docutils literal notranslate"><span class="pre">tests/metamatrix/</span></code>) check that <code class="docutils literal notranslate"><span class="pre">logL</span></code>, <code class="docutils literal notranslate"><span class="pre">conditional</span></code>,
+<code class="docutils literal notranslate"><span class="pre">clogL</span></code>, <code class="docutils literal notranslate"><span class="pre">sample</span></code>, and <code class="docutils literal notranslate"><span class="pre">sample_conditional</span></code> agree — between the original
+<code class="docutils literal notranslate"><span class="pre">matrix.py</span></code> path and the new metamath path (both run through the original
+likelihood and through the new metamath likelihood) — to machine precision, on
+real NANOGrav pulsars. Coverage spans, at minimum:</p>
+<ul class="simple">
+<li><p><strong>Single pulsar:</strong> white noise (simple + per-backend), ECORR as a GP and folded
+via Sherman–Morrison, marginalised + variable timing models, power-law red
+noise (incl. <code class="docutils literal notranslate"><span class="pre">concat=False</span></code> chained Woodburys), multiple variable GPs (RN + DM),
+2-D <code class="docutils literal notranslate"><span class="pre">fftcov</span></code> and fixed-variance Fourier GPs, deterministic delays.</p></li>
+<li><p><strong>Global:</strong> independent pulsars, HD- and monopole-correlated global GPs, and a
+compound (HD + monopole) global GP.</p></li>
+<li><p><strong>Array:</strong> intrinsic (vectorised) red noise, intrinsic + common-spectrum via
+<code class="docutils literal notranslate"><span class="pre">make_combined_crn</span></code>, intrinsic + HD global, decentered variants, per-GP means,
+and a CW ExtSignal.</p></li>
+</ul>
+<p>Every kernel constructor that production code or the example notebooks emit is
+exercised by at least one of these models; the audit and disposition of each is in
+<a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/dev_architecture/metamatrix/phase3_coverage.md"><code class="docutils literal notranslate"><span class="pre">dev_architecture/metamatrix/phase3_coverage.md</span></code></a>.
+These same models are the importable <a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/src/discovery/recipes/__init__.py"><code class="docutils literal notranslate"><span class="pre">discovery.recipes</span></code></a>
+rendered in the <a class="reference internal" href="tutorials/cookbook_models.html"><span class="doc std std-doc">cookbook</span></a> — so the documented models
+and the checked models are the same objects.</p>
+<p>A real-scale check (5 pulsars, CW + HD global + decentered common RN) agrees
+between the two kernel paths to ~1e-9 relative.</p>
+<section id="not-yet-cross-checked">
+<h3>Not yet cross-checked<a class="headerlink" href="#not-yet-cross-checked" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">cglogL</span></code></strong> — the conjugate-gradient log-likelihood for very large arrays
+(CG solve + stochastic-Lanczos log-det estimator) is implemented on the
+metamath-native path but is <strong>not</strong> in the comparison tests; neither path’s
+<code class="docutils literal notranslate"><span class="pre">cglogL</span></code> is currently cross-checked.</p></li>
+<li><p><strong>Performance.</strong> The comparison-test suite checks correctness, not speed — there
+is no general <code class="docutils literal notranslate"><span class="pre">matrix.py</span></code>-vs-metamath timing comparison. (The single-precision
+work <em>does</em> have an HD-model benchmark: matrix vs metamath, <code class="docutils literal notranslate"><span class="pre">float64</span></code> vs <code class="docutils literal notranslate"><span class="pre">float32</span></code>;
+see the section below.)</p></li>
+<li><p><strong>GPU.</strong> The comparison tests run on CPU in <code class="docutils literal notranslate"><span class="pre">float64</span></code>. The graph path is
+JAX-native; it has now been exercised on GPU (GH200) for the single-precision HD
+benchmark below, but broader GPU coverage of the comparison suite is still pending.</p></li>
+<li><p><strong>Samplers.</strong> The numpyro samplers ride on <code class="docutils literal notranslate"><span class="pre">logL</span></code>/<code class="docutils literal notranslate"><span class="pre">clogL</span></code> (which are checked),
+but no end-to-end sampling comparison has been run.</p></li>
+</ul>
+</section>
+</section>
+<section id="single-precision-float32-on-gpu">
+<h2>Single precision (float32) on GPU<a class="headerlink" href="#single-precision-float32-on-gpu" title="Link to this heading">#</a></h2>
+<p>GPUs are far faster in <code class="docutils literal notranslate"><span class="pre">float32</span></code>, but a PTA marginal <code class="docutils literal notranslate"><span class="pre">logL</span></code> subtracts large numbers
+(a quadratic form <span class="math notranslate nohighlight">\(\sim 10^6\)</span>, log-determinants <span class="math notranslate nohighlight">\(\sim 10^4\)</span>) to land on an <span class="math notranslate nohighlight">\(O(1)\)</span>
+result. At the <code class="docutils literal notranslate"><span class="pre">float32</span></code> ulp of a <span class="math notranslate nohighlight">\(10^6\)</span>-scale number (<span class="math notranslate nohighlight">\(\approx 0.06\)</span>) that result is
+swamped, so a blanket-<code class="docutils literal notranslate"><span class="pre">float32</span></code> likelihood is too imprecise to sample with. Three
+complementary pieces address this. All are <strong>opt-in</strong> and byte-identical to the
+<code class="docutils literal notranslate"><span class="pre">float64</span></code> path when off; the user-facing comparison is in the
+<a class="reference internal" href="advanced/single_precision.html"><span class="doc std std-doc">single-precision tutorial</span></a>.</p>
+<ul class="simple">
+<li><p><strong>Half A — <code class="docutils literal notranslate"><span class="pre">float64</span></code> final combine.</strong> The expensive factorisations stay in the
+working (<code class="docutils literal notranslate"><span class="pre">float32</span></code>) dtype, but the final scalar assembly (the big <code class="docutils literal notranslate"><span class="pre">ytNmy</span> <span class="pre">−</span> <span class="pre">quad</span></code>
+subtraction and the log-determinant sum) is done in <code class="docutils literal notranslate"><span class="pre">float64</span></code> (<code class="docutils literal notranslate"><span class="pre">combine_f64</span></code> /
+<code class="docutils literal notranslate"><span class="pre">pin_f64</span></code>), with the per-pulsar raw quadratics and white-noise log-dets pinned to
+<code class="docutils literal notranslate"><span class="pre">float64</span></code> at source. This protects the <em>combination</em>, not the building of <code class="docutils literal notranslate"><span class="pre">mu</span></code>
+(which is still born from the <code class="docutils literal notranslate"><span class="pre">float32</span></code> Cholesky).</p></li>
+<li><p><strong>Half B — reference + delta.</strong> Freeze each GP level’s prior covariance once at a
+reference point <span class="math notranslate nohighlight">\(\theta_{\rm ref}\)</span> (in <code class="docutils literal notranslate"><span class="pre">float64</span></code>), and evaluate
+<span class="math notranslate nohighlight">\(\ln L(\theta) = \ln L_{\rm ref} + \Delta\!\ln L\)</span>: <span class="math notranslate nohighlight">\(\ln L_{\rm ref}\)</span> carries the large
+pieces (<code class="docutils literal notranslate"><span class="pre">float64</span></code>, computed once) and <code class="docutils literal notranslate"><span class="pre">float32</span></code> only ever holds the <span class="math notranslate nohighlight">\(O(1)\)</span>
+increment, built directly via a resolvent identity (never a current−reference
+subtraction of two large log-likelihoods). Opt in with
+<code class="docutils literal notranslate"><span class="pre">ArrayLikelihood(...,</span> <span class="pre">reference=θ_ref)</span></code>. The fused two-level HD path has
+reference+delta twins (<code class="docutils literal notranslate"><span class="pre">vectorwoodburyjointsolve_refdelta</span></code> →
+<code class="docutils literal notranslate"><span class="pre">globalwoodbury_fused_refdelta</span></code>).</p></li>
+<li><p><strong>Timing-model projection.</strong> Handle the timing model <span class="math notranslate nohighlight">\(M\)</span> by projection (the exact
+flat-prior limit) instead of a huge-variance prior — <code class="docutils literal notranslate"><span class="pre">float32</span></code>-safe, and it keeps
+the corrections. Opt in with <code class="docutils literal notranslate"><span class="pre">makegp_timing(...,</span> <span class="pre">project=True)</span></code>.</p></li>
+</ul>
+<p>Status (12 pulsars, NG15 HD model; precision vs the <code class="docutils literal notranslate"><span class="pre">float64</span></code> truth):</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>flavor</p></th>
+<th class="head"><p>max |ΔlogL| vs truth</p></th>
+<th class="head"><p>note</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">float64</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(\sim 10^{-8}\)</span></p></td>
+<td><p>machine precision</p></td>
+</tr>
+<tr class="row-odd"><td><p>blanket <code class="docutils literal notranslate"><span class="pre">float32</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(\sim 7\times 10^{-2}\)</span></p></td>
+<td><p>sampling-fatal; worsens with array size</p></td>
+</tr>
+<tr class="row-even"><td><p>reference+delta <code class="docutils literal notranslate"><span class="pre">float32</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(\sim 10^{-3}\)</span> (CPU)</p></td>
+<td><p>on GPU the floor is TF32 (<span class="math notranslate nohighlight">\(\sim 10^{-2}\)</span>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>On speed, the reference+delta fused HD kernel now costs <strong>~1.5× the <code class="docutils literal notranslate"><span class="pre">float64</span></code> path’s
+FLOPs</strong> (and ~1.5× its wall-clock on a GH200), down from ~74× before the outer
+log-determinant increment was rewritten to reuse the Cholesky log-dets it already
+computes. So the accurate <code class="docutils literal notranslate"><span class="pre">float32</span></code> path is roughly as fast as the normal path while
+recovering most of the precision.</p>
+<p><strong>Done:</strong> Half A, Half B (incl. the fused HD reference+delta twins and the
+outer-increment speedup), and projection are implemented and have a precision/speed
+harness + unit tests. <strong>Remaining:</strong> scaling re-measurement at 45/67 pulsars on GPU;
+optionally recovering the GPU TF32 floor with <code class="docutils literal notranslate"><span class="pre">jax_default_matmul_precision='highest'</span></code>;
+and routing reference+delta for the single-level (CURN/IRN) <code class="docutils literal notranslate"><span class="pre">vectorwoodbury</span></code> path
+(currently HD-only). Design decisions and notes live in
+<a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/dev_architecture/single_precision/"><code class="docutils literal notranslate"><span class="pre">dev_architecture/single_precision/</span></code></a>
+(README, research notes, and ADRs 0001–0004).</p>
+</section>
+<section id="status-and-remaining-work">
+<h2>Status and remaining work<a class="headerlink" href="#status-and-remaining-work" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>The metamath path is feature-complete.</strong> Shared substrate extracted,
+<code class="docutils literal notranslate"><span class="pre">signals.py</span></code> building through the factory, <code class="docutils literal notranslate"><span class="pre">likelihood_metamath</span></code> free of
+<code class="docutils literal notranslate"><span class="pre">matrix.py</span></code>, every used constructor checked, and the last two hard cases closed
+(the all-constant 2-D GP prior, and combining a list of global GPs). Nothing in
+the comparison tests is left failing or skipped.</p></li>
+<li><p><strong>What remains is the deprecation itself:</strong> once we’re confident enough to drop
+<code class="docutils literal notranslate"><span class="pre">matrix.py</span></code>, we delete it and the original <code class="docutils literal notranslate"><span class="pre">likelihood.py</span></code>, collapse the factory
+to metamath-only, drop the test monkeypatch, and rename <code class="docutils literal notranslate"><span class="pre">likelihood_metamath.py</span></code>
+→ <code class="docutils literal notranslate"><span class="pre">likelihood.py</span></code>. That’s deliberately held until the metamath path has been
+exercised on real analyses (this review is part of that).</p></li>
+</ul>
+<p>The step-by-step plan and the conditions for each step are in
+<a class="reference external" href="https://github.com/meyers-academic/discovery/blob/metamatrix-meyers/dev_architecture/metamatrix/exit_plan.md"><code class="docutils literal notranslate"><span class="pre">dev_architecture/metamatrix/exit_plan.md</span></code></a>.</p>
+</section>
+<section id="pointers">
+<h2>Pointers<a class="headerlink" href="#pointers" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="tutorials/cookbook_models.html"><span class="doc std std-doc">Model cookbook</span></a> — runnable gallery of every tested model.</p></li>
+<li><p><a class="reference internal" href="api/index.html"><span class="doc std std-doc">API reference</span></a> — <code class="docutils literal notranslate"><span class="pre">[source]</span></code> links to each function/class.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dev_architecture/metamatrix/</span></code> — design notes, exit plan, coverage audit.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="advanced/single_precision.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Single-precision likelihoods (and the reference–delta trick)</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="api/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API Reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tl-dr">TL;DR</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#motivation">Motivation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture-module-map">Architecture / module map</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kernel-routes-and-the-config-switch">Kernel routes and the <code class="docutils literal notranslate"><span class="pre">config</span></code> switch</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#old-new-mapping">Old → new mapping</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functionality-changed-and-added">Functionality: changed and added</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-has-been-checked">What has been checked</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#not-yet-cross-checked">Not yet cross-checked</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#single-precision-float32-on-gpu">Single precision (float32) on GPU</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#status-and-remaining-work">Status and remaining work</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pointers">Pointers</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/metamatrix.md.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, Michele Vallisneri.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

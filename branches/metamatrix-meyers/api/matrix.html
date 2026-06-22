@@ -1,0 +1,1375 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>matrix &#8212; Discovery 0.5 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../_static/documentation_options.js?v=db78e746"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/matrix';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pulsar" href="pulsar.html" />
+    <link rel="prev" title="measurement_noise" href="measurement_noise.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Discovery 0.5 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/model_summary.html">
+    Inspecting a model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/cookbook_models.html">
+    Model cookbook
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/cw_extsignal_example.html">
+    Sampling a continuous-wave signal on its own Fourier basis
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../advanced/single_precision.html">
+    Single-precision likelihoods (and the reference–delta trick)
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../metamatrix.html">
+    Metamatrix: graph-based kernels
+  </a>
+</li>
+
+
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/model_summary.html">
+    Inspecting a model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/cookbook_models.html">
+    Model cookbook
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/cw_extsignal_example.html">
+    Sampling a continuous-wave signal on its own Fourier basis
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../advanced/single_precision.html">
+    Single-precision likelihoods (and the reference–delta trick)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../metamatrix.html">
+    Metamatrix: graph-based kernels
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">matrix</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-discovery.matrix">
+<span id="matrix"></span><h1>matrix<a class="headerlink" href="#module-discovery.matrix" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.CompoundGlobalGP">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">CompoundGlobalGP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gplist</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#CompoundGlobalGP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.CompoundGlobalGP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.VectorCompoundGP">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">VectorCompoundGP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gplist</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorCompoundGP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorCompoundGP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.CompoundGP">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">CompoundGP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gplist</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#CompoundGP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.CompoundGP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.CompoundDelay">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">CompoundDelay</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">residuals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delays</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#CompoundDelay"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.CompoundDelay" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix12D_var">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">NoiseMatrix12D_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">getN</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix12D_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix12D_var" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">NoiseMatrix1D_novar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseMatrix</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ConstantKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar.make_kernelproduct">
+<span class="sig-name descname"><span class="pre">make_kernelproduct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar.make_kernelproduct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar.make_kernelproduct" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar.inv">
+<span class="sig-name descname"><span class="pre">inv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar.inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar.inv" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar.make_sqrt">
+<span class="sig-name descname"><span class="pre">make_sqrt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar.make_sqrt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar.make_sqrt" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar.solve_1d">
+<span class="sig-name descname"><span class="pre">solve_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar.solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar.solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar.solve_2d">
+<span class="sig-name descname"><span class="pre">solve_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar.solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar.solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar.make_solve_2d">
+<span class="sig-name descname"><span class="pre">make_solve_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar.make_solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar.make_solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_novar.make_sample">
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_novar.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_novar.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.SM_1d_fused">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">SM_1d_fused</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#SM_1d_fused"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.SM_1d_fused" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.SM_2d_fused">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">SM_2d_fused</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#SM_2d_fused"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.SM_2d_fused" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.SM_1d_indexed">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">SM_1d_indexed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Uind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#SM_1d_indexed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.SM_1d_indexed" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.SM_2d_indexed">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">SM_2d_indexed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Uind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#SM_2d_indexed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.SM_2d_indexed" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.SM_12d_indexed">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">SM_12d_indexed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Uind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#SM_12d_indexed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.SM_12d_indexed" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_novar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">NoiseMatrixSM_novar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_novar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_novar" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseMatrix</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ConstantKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_novar.solve_1d">
+<span class="sig-name descname"><span class="pre">solve_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_novar.solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_novar.solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_novar.solve_2d">
+<span class="sig-name descname"><span class="pre">solve_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_novar.solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_novar.solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_novar.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_novar.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_novar.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_novar.make_solve_2d">
+<span class="sig-name descname"><span class="pre">make_solve_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_novar.make_solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_novar.make_solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_var">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">NoiseMatrixSM_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">getN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">getP</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_var" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseMatrix</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_var.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_var.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_var.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_var.make_solve_2d">
+<span class="sig-name descname"><span class="pre">make_solve_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_var.make_solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_var.make_solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrixSM_var.make_solve_12d">
+<span class="sig-name descname"><span class="pre">make_solve_12d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrixSM_var.make_solve_12d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrixSM_var.make_solve_12d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">NoiseMatrix1D_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">getN</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseMatrix</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.make_kernelproduct">
+<span class="sig-name descname"><span class="pre">make_kernelproduct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.make_kernelproduct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.make_kernelproduct" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.inv">
+<span class="sig-name descname"><span class="pre">inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.inv" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.make_inv">
+<span class="sig-name descname"><span class="pre">make_inv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.make_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.make_inv" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.make_sqrt">
+<span class="sig-name descname"><span class="pre">make_sqrt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.make_sqrt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.make_sqrt" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.make_sample">
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.solve_1d">
+<span class="sig-name descname"><span class="pre">solve_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.solve_2d">
+<span class="sig-name descname"><span class="pre">solve_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix1D_var.make_solve_2d">
+<span class="sig-name descname"><span class="pre">make_solve_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix1D_var.make_solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix1D_var.make_solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix2D_novar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">NoiseMatrix2D_novar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix2D_novar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix2D_novar" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseMatrix</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ConstantKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix2D_novar.inv">
+<span class="sig-name descname"><span class="pre">inv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix2D_novar.inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix2D_novar.inv" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix2D_var">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">NoiseMatrix2D_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">getN</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix2D_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix2D_var" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseMatrix</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix2D_var.make_inv">
+<span class="sig-name descname"><span class="pre">make_inv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix2D_var.make_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix2D_var.make_inv" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix2D_var.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix2D_var.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix2D_var.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.NoiseMatrix2D_var.make_sample">
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#NoiseMatrix2D_var.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.NoiseMatrix2D_var.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.VectorNoiseMatrix12D_var">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">VectorNoiseMatrix12D_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">getN</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorNoiseMatrix12D_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorNoiseMatrix12D_var" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.VectorNoiseMatrix1D_var">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">VectorNoiseMatrix1D_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">getN</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorNoiseMatrix1D_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorNoiseMatrix1D_var" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseMatrix</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorNoiseMatrix1D_var.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorNoiseMatrix1D_var.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorNoiseMatrix1D_var.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorNoiseMatrix1D_var.make_inv">
+<span class="sig-name descname"><span class="pre">make_inv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorNoiseMatrix1D_var.make_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorNoiseMatrix1D_var.make_inv" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.VectorNoiseMatrix2D_var">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">VectorNoiseMatrix2D_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">getN</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorNoiseMatrix2D_var"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorNoiseMatrix2D_var" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseMatrix</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorNoiseMatrix2D_var.make_inv">
+<span class="sig-name descname"><span class="pre">make_inv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorNoiseMatrix2D_var.make_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorNoiseMatrix2D_var.make_inv" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">WoodburyKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">WoodburyKernel_novar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ConstantKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar.make_sample">
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar.make_kernelproduct">
+<span class="sig-name descname"><span class="pre">make_kernelproduct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar.make_kernelproduct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar.make_kernelproduct" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar.make_kernelterms">
+<span class="sig-name descname"><span class="pre">make_kernelterms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar.make_kernelterms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar.make_kernelterms" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar.make_kernelsolve">
+<span class="sig-name descname"><span class="pre">make_kernelsolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar.make_kernelsolve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar.make_kernelsolve" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar.solve_1d">
+<span class="sig-name descname"><span class="pre">solve_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar.solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar.solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar.solve_2d">
+<span class="sig-name descname"><span class="pre">solve_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar.solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar.solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_novar.make_solve_2d">
+<span class="sig-name descname"><span class="pre">make_solve_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_novar.make_solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_novar.make_solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varFP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">WoodburyKernel_varFP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varFP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varFP" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varFP.make_kernelproduct_vary">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varFP.make_kernelproduct_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varFP.make_kernelproduct_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varFP.make_kernelproduct">
+<span class="sig-name descname"><span class="pre">make_kernelproduct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varFP.make_kernelproduct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varFP.make_kernelproduct" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">WoodburyKernel_varNP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_sample">
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_vary">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_kernelproduct_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_kernelproduct">
+<span class="sig-name descname"><span class="pre">make_kernelproduct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_kernelproduct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_gpcomponent">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_gpcomponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_kernelproduct_gpcomponent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_gpcomponent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_kernelsolve">
+<span class="sig-name descname"><span class="pre">make_kernelsolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_kernelsolve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelsolve" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_kernelsolve_simple">
+<span class="sig-name descname"><span class="pre">make_kernelsolve_simple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_kernelsolve_simple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelsolve_simple" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_solve_2d">
+<span class="sig-name descname"><span class="pre">make_solve_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varNP.make_kernelterms">
+<span class="sig-name descname"><span class="pre">make_kernelterms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varNP.make_kernelterms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelterms" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">WoodburyKernel_varP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_sample">
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_solve_1d_vary">
+<span class="sig-name descname"><span class="pre">make_solve_1d_vary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_solve_1d_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_solve_1d_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_solve_2d_vary">
+<span class="sig-name descname"><span class="pre">make_solve_2d_vary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_solve_2d_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_solve_2d_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_kernelsolve_vary">
+<span class="sig-name descname"><span class="pre">make_kernelsolve_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_kernelsolve_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_kernelsolve_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_kernelsolve">
+<span class="sig-name descname"><span class="pre">make_kernelsolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_kernelsolve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_kernelsolve" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_kernelproduct_vary">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_kernelproduct_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_kernelproduct_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_kernelproduct">
+<span class="sig-name descname"><span class="pre">make_kernelproduct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_kernelproduct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_kernelproduct" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_kernelproduct_gpcomponent">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_gpcomponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_kernelproduct_gpcomponent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_kernelproduct_gpcomponent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_kernelterms_vary">
+<span class="sig-name descname"><span class="pre">make_kernelterms_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_kernelterms_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_kernelterms_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varP.make_kernelterms">
+<span class="sig-name descname"><span class="pre">make_kernelterms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varP.make_kernelterms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varP.make_kernelterms" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">WoodburyKernel_varN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_sample">
+<span class="sig-name descname"><span class="pre">make_sample</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_sample" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelproduct_vary">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelproduct_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelproduct_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelproduct">
+<span class="sig-name descname"><span class="pre">make_kernelproduct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelproduct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelproduct" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelterms_vary">
+<span class="sig-name descname"><span class="pre">make_kernelterms_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelterms_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelterms_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelterms">
+<span class="sig-name descname"><span class="pre">make_kernelterms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelterms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelterms" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelsolve_vary">
+<span class="sig-name descname"><span class="pre">make_kernelsolve_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelsolve_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelsolve_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_kernelsolve">
+<span class="sig-name descname"><span class="pre">make_kernelsolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_kernelsolve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_kernelsolve" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_solve_1d">
+<span class="sig-name descname"><span class="pre">make_solve_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_solve_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_solve_1d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.WoodburyKernel_varN.make_solve_2d">
+<span class="sig-name descname"><span class="pre">make_solve_2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#WoodburyKernel_varN.make_solve_2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.WoodburyKernel_varN.make_solve_2d" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="discovery.matrix.VectorWoodburyKernel_varP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">VectorWoodburyKernel_varP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Ns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Fs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorWoodburyKernel_varP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorWoodburyKernel_varP" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">VariableKernel</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_vary">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ys</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorWoodburyKernel_varP.make_kernelproduct_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_varN">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_varN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ys</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorWoodburyKernel_varP.make_kernelproduct_varN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_varN" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct">
+<span class="sig-name descname"><span class="pre">make_kernelproduct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ys</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorWoodburyKernel_varP.make_kernelproduct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent">
+<span class="sig-name descname"><span class="pre">make_kernelproduct_gpcomponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extsignals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorWoodburyKernel_varP.make_kernelterms_vary">
+<span class="sig-name descname"><span class="pre">make_kernelterms_vary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorWoodburyKernel_varP.make_kernelterms_vary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelterms_vary" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="discovery.matrix.VectorWoodburyKernel_varP.make_kernelterms">
+<span class="sig-name descname"><span class="pre">make_kernelterms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#VectorWoodburyKernel_varP.make_kernelterms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelterms" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.matrix.zero_out_negative_eigenvalues">
+<span class="sig-prename descclassname"><span class="pre">discovery.matrix.</span></span><span class="sig-name descname"><span class="pre">zero_out_negative_eigenvalues</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">M</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/matrix.html#zero_out_negative_eigenvalues"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.matrix.zero_out_negative_eigenvalues" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="measurement_noise.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">measurement_noise</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="pulsar.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">pulsar</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.CompoundGlobalGP"><code class="docutils literal notranslate"><span class="pre">CompoundGlobalGP()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorCompoundGP"><code class="docutils literal notranslate"><span class="pre">VectorCompoundGP()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.CompoundGP"><code class="docutils literal notranslate"><span class="pre">CompoundGP()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.CompoundDelay"><code class="docutils literal notranslate"><span class="pre">CompoundDelay()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix12D_var"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix12D_var()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_kernelproduct()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar.inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.inv()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar.make_sqrt"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_sqrt()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar.solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar.solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.solve_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_solve_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_novar.make_sample"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_novar.make_sample()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.SM_1d_fused"><code class="docutils literal notranslate"><span class="pre">SM_1d_fused()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.SM_2d_fused"><code class="docutils literal notranslate"><span class="pre">SM_2d_fused()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.SM_1d_indexed"><code class="docutils literal notranslate"><span class="pre">SM_1d_indexed()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.SM_2d_indexed"><code class="docutils literal notranslate"><span class="pre">SM_2d_indexed()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.SM_12d_indexed"><code class="docutils literal notranslate"><span class="pre">SM_12d_indexed()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_novar"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_novar.solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar.solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_novar.solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar.solve_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_novar.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_novar.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_novar.make_solve_2d()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_var"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_var</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_var.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_var.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_var.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_var.make_solve_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrixSM_var.make_solve_12d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrixSM_var.make_solve_12d()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_kernelproduct()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.inv()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.make_inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_inv()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.make_sqrt"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_sqrt()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.make_sample"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_sample()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.solve_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix1D_var.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix1D_var.make_solve_2d()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix2D_novar"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_novar</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix2D_novar.inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_novar.inv()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix2D_var"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_var</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix2D_var.make_inv"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_var.make_inv()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix2D_var.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_var.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.NoiseMatrix2D_var.make_sample"><code class="docutils literal notranslate"><span class="pre">NoiseMatrix2D_var.make_sample()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorNoiseMatrix12D_var"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix12D_var()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorNoiseMatrix1D_var"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix1D_var</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorNoiseMatrix1D_var.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix1D_var.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorNoiseMatrix1D_var.make_inv"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix1D_var.make_inv()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorNoiseMatrix2D_var"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix2D_var</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorNoiseMatrix2D_var.make_inv"><code class="docutils literal notranslate"><span class="pre">VectorNoiseMatrix2D_var.make_inv()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_sample()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_kernelproduct()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_kernelterms()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_kernelsolve()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar.solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar.solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.solve_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_novar.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_novar.make_solve_2d()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varFP"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varFP</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varFP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varFP.make_kernelproduct_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varFP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varFP.make_kernelproduct()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_sample()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelproduct_gpcomponent"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelproduct_gpcomponent()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelsolve()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelsolve_simple"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelsolve_simple()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_solve_2d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varNP.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varNP.make_kernelterms()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_sample()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_solve_1d_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_solve_1d_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_solve_2d_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_solve_2d_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_kernelsolve_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelsolve_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelsolve()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelproduct_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelproduct()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_kernelproduct_gpcomponent"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelproduct_gpcomponent()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_kernelterms_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelterms_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varP.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varP.make_kernelterms()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_sample"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_sample()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelproduct_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelproduct()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelterms_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelterms_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelterms()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelsolve_vary"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelsolve_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_kernelsolve"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_kernelsolve()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_solve_1d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_solve_1d()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.WoodburyKernel_varN.make_solve_2d"><code class="docutils literal notranslate"><span class="pre">WoodburyKernel_varN.make_solve_2d()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorWoodburyKernel_varP"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_vary"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelproduct_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_varN"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelproduct_varN()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelproduct()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelterms_vary"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelterms_vary()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.VectorWoodburyKernel_varP.make_kernelterms"><code class="docutils literal notranslate"><span class="pre">VectorWoodburyKernel_varP.make_kernelterms()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.matrix.zero_out_negative_eigenvalues"><code class="docutils literal notranslate"><span class="pre">zero_out_negative_eigenvalues()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/api/matrix.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, Michele Vallisneri.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

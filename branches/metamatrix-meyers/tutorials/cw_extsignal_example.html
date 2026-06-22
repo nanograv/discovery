@@ -1,0 +1,1654 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Sampling a continuous-wave signal on its own Fourier basis &#8212; Discovery 0.5 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../_static/documentation_options.js?v=db78e746"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/cw_extsignal_example';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Noise and Signal Components" href="../components/noise_signals.html" />
+    <link rel="prev" title="Model cookbook" href="cookbook_models.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Discovery 0.5 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/model_summary.html">
+    Inspecting a model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="cookbook_models.html">
+    Model cookbook
+  </a>
+</li>
+
+
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    Sampling a continuous-wave signal on its own Fourier basis
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../advanced/single_precision.html">
+    Single-precision likelihoods (and the reference–delta trick)
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../metamatrix.html">
+    Metamatrix: graph-based kernels
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/model_summary.html">
+    Inspecting a model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="cookbook_models.html">
+    Model cookbook
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Sampling a continuous-wave signal on its own Fourier basis
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../advanced/single_precision.html">
+    Single-precision likelihoods (and the reference–delta trick)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../metamatrix.html">
+    Metamatrix: graph-based kernels
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Sampling a continuous-wave signal on its own Fourier basis</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="sampling-a-continuous-wave-signal-on-its-own-fourier-basis">
+<h1>Sampling a continuous-wave signal on its own Fourier basis<a class="headerlink" href="#sampling-a-continuous-wave-signal-on-its-own-fourier-basis" title="Link to this heading">#</a></h1>
+<p>This tutorial builds a pulsar-timing-array model that contains a <strong>continuous-wave (CW) source carried on its own Fourier basis</strong> – “Route A” – and samples it with NUTS.</p>
+<p>The CW is added to a Hellings-Downs (HD) gravitational-wave-background model through <code class="docutils literal notranslate"><span class="pre">ArrayLikelihood(...,</span> <span class="pre">extsignals=[...])</span></code>. Unlike a Gaussian process, the CW has no prior: its Fourier coefficients are a deterministic function of a few physical parameters. Because it lives on its own basis it can use <em>more</em> frequency components than the red-noise / GWB GPs, so it reaches the higher frequencies a CW search needs (the bin spacing is fixed at <code class="docutils literal notranslate"><span class="pre">1/T_obs</span></code> for every Fourier basis).</p>
+<p>The model has four pieces:</p>
+<ul class="simple">
+<li><p><strong>per-pulsar red noise</strong> – a <code class="docutils literal notranslate"><span class="pre">commongp</span></code> Fourier GP</p></li>
+<li><p><strong>an HD common-process GWB</strong> – a <code class="docutils literal notranslate"><span class="pre">globalgp</span></code> Fourier GP</p></li>
+<li><p><strong>decentering</strong> – <code class="docutils literal notranslate"><span class="pre">ArrayLikelihood(decenter=True)</span></code>, which samples the GP coefficients in a whitened (unit-normal) frame</p></li>
+<li><p><strong>a CW on its own basis</strong> – <code class="docutils literal notranslate"><span class="pre">extsignals=[makecw_extsignal(...)]</span></code></p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
+<span class="c1"># from discovery import Params</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">metamath</span> <span class="k">as</span> <span class="n">mh</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">metamatrix</span> <span class="k">as</span> <span class="n">mm</span>
+
+<span class="c1"># enable .graph attribute on mm.func outputs so we can inspect the</span>
+<span class="c1"># computation graph after model construction.</span>
+<span class="n">mm</span><span class="o">.</span><span class="n">keepgraph</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="c1"># pull in the metamatrix monkeypatch from the parity-test scaffold so that</span>
+<span class="c1"># building this model captures metamath kernels instead of matrix.py ones.</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s1">&#39;tests&#39;</span><span class="p">))</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metamatrix._patch</span><span class="w"> </span><span class="kn">import</span> <span class="n">metamatrix_patch</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="load-the-pulsars">
+<h2>Load the pulsars<a class="headerlink" href="#load-the-pulsars" title="Link to this heading">#</a></h2>
+<p>We use the first 10 pulsars from the <code class="docutils literal notranslate"><span class="pre">v1p1</span></code> feather files shipped alongside <code class="docutils literal notranslate"><span class="pre">discovery</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">datapath</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="s1">&#39;../../data&#39;</span>
+<span class="n">psrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;v1p1*.feather&#39;</span><span class="p">))][:</span><span class="mi">5</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">psrs</span><span class="p">)</span><span class="si">}</span><span class="s2"> pulsars&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>loaded 5 pulsars
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="build-the-model">
+<h2>Build the model<a class="headerlink" href="#build-the-model" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">makecw_extsignal</span></code> builds the CW on its own Fourier basis with <code class="docutils literal notranslate"><span class="pre">n_cw</span></code> components. We choose <code class="docutils literal notranslate"><span class="pre">n_cw</span></code> larger than the red-noise (<code class="docutils literal notranslate"><span class="pre">n_rn</span></code>) and GWB (<code class="docutils literal notranslate"><span class="pre">n_gw</span></code>) component counts so the CW basis reaches higher frequencies.</p>
+<p>The rest is a standard <code class="docutils literal notranslate"><span class="pre">ArrayLikelihood</span></code>: a <code class="docutils literal notranslate"><span class="pre">commongp</span></code> for per-pulsar red noise, a <code class="docutils literal notranslate"><span class="pre">globalgp</span></code> for the HD-correlated background, and <code class="docutils literal notranslate"><span class="pre">decenter=True</span></code> for whitened-frame sampling. The CW is wired in with <code class="docutils literal notranslate"><span class="pre">extsignals=[cw]</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_rn</span> <span class="o">=</span> <span class="mi">30</span>   <span class="c1"># red-noise Fourier components</span>
+<span class="n">n_gw</span> <span class="o">=</span> <span class="mi">14</span>   <span class="c1"># GWB Fourier components</span>
+<span class="n">n_cw</span> <span class="o">=</span> <span class="mi">60</span>   <span class="c1"># CW Fourier components (own basis -- larger on purpose)</span>
+<span class="n">hd</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psrs</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">hd</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">metamatrix_patch</span><span class="p">():</span>
+        <span class="n">cw</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makecw_extsignal</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="n">n_cw</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">pulsarterm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ArrayLikelihood</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">([</span><span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
+                                <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="o">=</span><span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">,</span> <span class="n">ecorr</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                                <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+            <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">],</span>
+            <span class="n">commongp</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">makecommongp_fourier</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">makepowerlaw_crn</span><span class="p">(</span><span class="mi">14</span><span class="p">),</span> <span class="n">components</span><span class="o">=</span><span class="n">n_rn</span><span class="p">,</span>
+                                            <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;red_noise&#39;</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;crn_gamma&#39;</span><span class="p">,</span> <span class="s1">&#39;crn_log10_A&#39;</span><span class="p">]),</span>
+            <span class="n">decenter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">extsignals</span><span class="o">=</span><span class="p">[</span><span class="n">cw</span><span class="p">])</span>
+
+        <span class="c1"># force the cached_property to be built INSIDE the patch context so the</span>
+        <span class="c1"># graph captures metamath objects.</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">clogL</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">logL</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">clogL</span><span class="o">.</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2"> sampled parameters &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cw</span><span class="o">.</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2"> of them CW)&quot;</span><span class="p">)</span>
+
+<span class="c1"># n_rn = 30   # red-noise Fourier components</span>
+<span class="c1"># n_gw = 14   # GWB Fourier components</span>
+<span class="c1"># n_cw = 60   # CW Fourier components (own basis -- larger on purpose)</span>
+
+<span class="c1"># T = ds.getspan(psrs)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">metamatrix_patch</span><span class="p">():</span>
+        <span class="n">cw</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makecw_extsignal</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="n">n_cw</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">pulsarterm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ArrayLikelihood</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">([</span><span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
+                                <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="o">=</span><span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">,</span> <span class="n">ecorr</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                                <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">)])</span>
+            <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">],</span>
+            <span class="n">commongp</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">makecommongp_fourier</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="n">n_rn</span><span class="p">,</span>
+                                            <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;red_noise&#39;</span><span class="p">),</span>
+            <span class="n">globalgp</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">makeglobalgp_fourier</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span>
+                                            <span class="n">components</span><span class="o">=</span><span class="n">n_gw</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span><span class="p">),</span>
+            <span class="n">decenter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">extsignals</span><span class="o">=</span><span class="p">[</span><span class="n">cw</span><span class="p">])</span>
+
+        <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">clogL</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">logL</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">clogL</span><span class="o">.</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2"> sampled parameters &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cw</span><span class="o">.</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2"> of them CW)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>34 sampled parameters (12 of them CW)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ds</span><span class="o">.</span><span class="n">priordict_standard</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;(.*_)?efac&#39;: [0.1, 10],
+ &#39;(.*_)?t2equad&#39;: [-8.5, -5],
+ &#39;(.*_)?tnequad&#39;: [-8.5, -5],
+ &#39;(.*_)?log10_ecorr&#39;: [-8.5, -5],
+ &#39;(.*_)?rednoise_log10_A.*&#39;: [-20, -11],
+ &#39;(.*_)?rednoise_gamma.*&#39;: [0, 7],
+ &#39;(.*_)?rednoise_log10_fb&#39;: [-9, -6],
+ &#39;(.*_)?red_noise_log10_A.*&#39;: [-20, -11],
+ &#39;(.*_)?red_noise_gamma.*&#39;: [0, 7],
+ &#39;(.*_)?red_noise_log10_fb&#39;: [-9, -6],
+ &#39;crn_log10_A.*&#39;: [-18, -11],
+ &#39;crn_gamma.*&#39;: [0, 7],
+ &#39;crn_log10_fb&#39;: [-9, -6],
+ &#39;gw_(.*_)?log10_A&#39;: [-18, -11],
+ &#39;gw_(.*_)?gamma&#39;: [0, 7],
+ &#39;gw_log10_fb&#39;: [-9, -6],
+ &#39;(.*_)?dmgp_log10_A&#39;: [-20, -11],
+ &#39;(.*_)?dmgp_gamma&#39;: [0, 7],
+ &#39;(.*_)?dmgp_alpha&#39;: [1, 3],
+ &#39;crn_log10_rho&#39;: [-9, -4],
+ &#39;gw_(.*_)?log10_rho&#39;: [-9, -4],
+ &#39;(.*_)?red_noise_log10_rho\\(([0-9]*)\\)&#39;: [-9, -4],
+ &#39;(.*_)?red_noise_crn_log10_rho\\(([0-9]*)\\)&#39;: [-9, -4],
+ &#39;cw_ra&#39;: [0, 6.283185307179586],
+ &#39;cw_dec&#39;: [-1.5707963267948966, 1.5707963267948966],
+ &#39;cw_inc&#39;: [0, 3.141592653589793],
+ &#39;cw_sindec&#39;: [-1.0, 1.0],
+ &#39;cw_cosinc&#39;: [-1.0, 1.0],
+ &#39;cw_psi&#39;: [0, 3.141592653589793],
+ &#39;cw_log10_f0&#39;: [-9.0, -7.0],
+ &#39;cw_log10_h0&#39;: [-18.0, -11.0],
+ &#39;cw_phi_earth&#39;: [0.0, 6.283185307179586],
+ &#39;(.*_)?cw_phi_psr&#39;: [0.0, 6.283185307179586]}
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="look-at-the-clogl-computation-graph">
+<h2>Look at the clogL computation graph<a class="headerlink" href="#look-at-the-clogl-computation-graph" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">model.clogL</span></code> now wraps a metamath graph. With <code class="docutils literal notranslate"><span class="pre">mm.keepgraph</span> <span class="pre">=</span> <span class="pre">True</span></code> the
+callable carries <code class="docutils literal notranslate"><span class="pre">.graph</span></code> (the folded/pruned graph that runs at every
+sample) and <code class="docutils literal notranslate"><span class="pre">.graph.subgraphs</span></code> (the un-folded sub-graphs like
+<code class="docutils literal notranslate"><span class="pre">N.make_solve</span></code> and <code class="docutils literal notranslate"><span class="pre">P.make_inv</span></code>). Below we print a text summary and write
+an SVG of the top-level graph.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># top-level (folded, pruned) graph</span>
+<span class="n">mm</span><span class="o">.</span><span class="n">print_graph</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">clogL</span><span class="o">.</span><span class="n">graph</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>## graph
+coeffs: func = &lt;function VectorWoodburyKernel.make_kernelproduct_gpcomponent.&lt;locals&gt;._coeffs at 0x43cd40680&gt;
+means: const = 0.0
+ext_coeffs_0: func = &lt;function make_extsignal_fourier.&lt;locals&gt;.coeffs at 0x377f39260&gt;
+n47: const = array(5, 88)
+n48: const = array(5, 88, 88)
+n49: node(coeffs) = coeffs[0]
+n50: node(coeffs) = coeffs[1]
+n51: node(n49, means) = n49 - means
+prior_n52: graph = subgraph prior_n52[5dd1]
+n52: node(prior_n52, n51) = prior(n51)
+n53: node(n49, n48) = c.T @ FtNmF @ c
+n54: node(n49, n47) = sum(c * NmFty)
+n55: const = array()
+n56: node(n55, n54) = n55 + n54
+n57: node(n53) = 0.5 * n53
+n58: node(n56, n57) = n56 - n57
+n59: const = array()
+n60: node(n58, n59) = n58 - n59
+n61: node(n60, n52) = n60 + n52
+n62: node(n61, n50) = n61 + n50
+n78: const = array(5, 120)
+n89: const = array(5, 88, 120)
+n100: const = array(5, 120, 120)
+n101: node(ext_coeffs_0, n78) = sum(ccw * FcwNmy)
+n102: node(n49, n89, ext_coeffs_0) = c.T @ FtNmFcw @ ccw
+n103: node(ext_coeffs_0, n100) = ccw.T @ FcwtNmFcw @ ccw
+n104: node(n62, n101) = n62 + n101
+n105: node(n104, n102) = n104 - n102
+n106: node(n103) = 0.5 * n103
+logp: node(n105, n106) = n105 - n106
+staged: node(logp, n49) = pair(logp, n49)
+# total array constants: 164562 elements
+
+## subgraph prior_n52[5dd1]
+c_for_prior: arg
+gp0_phiN: func = &lt;function makecommongp_fourier.&lt;locals&gt;.priorfunc at 0x377f3bec0&gt;
+n0: node(c_for_prior) = c_for_prior[:,0:60]
+n1: node(n0, gp0_phiN) = gp0 diag logprior
+gp1_phiN: func = &lt;function makeglobalgp_fourier.&lt;locals&gt;.priorfunc at 0x377f3ca40&gt;
+n2: node(c_for_prior) = c_for_prior[:,60:88]
+n3: node(n2, gp1_phiN) = gp1 dense logprior
+logpr: node(n1, n3) = n1 + n3
+# total array constants: 0 elements
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>164562
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># render an SVG of the graph</span>
+<span class="n">mm</span><span class="o">.</span><span class="n">visualize_graph</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">clogL</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">fold</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;svg&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/392871f773c0150aa8767f1ab207d8c911b2444d6149a51702993d6dbf257b9a.svg" src="../_images/392871f773c0150aa8767f1ab207d8c911b2444d6149a51702993d6dbf257b9a.svg" />
+</div>
+</div>
+</section>
+<section id="evaluate-the-coefficient-likelihood">
+<h2>Evaluate the coefficient likelihood<a class="headerlink" href="#evaluate-the-coefficient-likelihood" title="Link to this heading">#</a></h2>
+<p>With <code class="docutils literal notranslate"><span class="pre">decenter=True</span></code> the quantity we sample is <code class="docutils literal notranslate"><span class="pre">clogL</span></code> – the <em>coefficient</em> likelihood, a function of the GP hyperparameters, the whitened GP coefficients, and the CW parameters. The CW enters <code class="docutils literal notranslate"><span class="pre">clogL</span></code> through GP-CW cross-terms; its parameters never touch the GP prior.</p>
+<p>Here is a single evaluation at a test point, just to confirm the model is wired up. We draw the hyperparameters from their priors, the whitened (decentered) GP coefficients as unit normals, and fix the CW at a non-degenerate point.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">pars</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sample_uniform</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+<span class="c1"># decentered GP coefficients are sampled in a whitened (unit-normal) frame</span>
+<span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">:</span>
+    <span class="n">pars</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_gw_coefficients(</span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_gw</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n_gw</span><span class="p">)</span>
+    <span class="n">pars</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_red_noise_coefficients(</span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_rn</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n_rn</span><span class="p">)</span>
+
+<span class="c1"># CW parameters at a fixed, non-degenerate point</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">cw</span><span class="o">.</span><span class="n">params</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;log10_h0&#39;</span><span class="p">):</span>
+        <span class="n">pars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">14.0</span>
+    <span class="k">elif</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;log10_f0&#39;</span><span class="p">):</span>
+        <span class="n">pars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">7.7</span>
+    <span class="k">elif</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;sindec&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;cosinc&#39;</span><span class="p">):</span>
+        <span class="n">pars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.3</span>
+    <span class="k">elif</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;phi_psr&#39;</span><span class="p">):</span>
+        <span class="n">pars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;cw_phi_earth&#39;</span><span class="p">:</span>
+        <span class="n">pars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.7</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pars</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+
+<span class="n">clogl</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">clogL</span><span class="p">)</span>
+<span class="n">P</span> <span class="o">=</span> <span class="n">pars</span> <span class="c1"># Params.from_dict(pars, names=model.clogL.params)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;clogL at test point =&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">clogl</span><span class="p">(</span><span class="n">P</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>clogL at test point = 885499.2601169792
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">clogL</span><span class="o">.</span><span class="n">params</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[&#39;B1855+09_cw_phi_psr&#39;,
+ &#39;B1855+09_gw_coefficients(28)&#39;,
+ &#39;B1855+09_red_noise_coefficients(60)&#39;,
+ &#39;B1855+09_red_noise_gamma&#39;,
+ &#39;B1855+09_red_noise_log10_A&#39;,
+ &#39;B1937+21_cw_phi_psr&#39;,
+ &#39;B1937+21_gw_coefficients(28)&#39;,
+ &#39;B1937+21_red_noise_coefficients(60)&#39;,
+ &#39;B1937+21_red_noise_gamma&#39;,
+ &#39;B1937+21_red_noise_log10_A&#39;,
+ &#39;B1953+29_cw_phi_psr&#39;,
+ &#39;B1953+29_gw_coefficients(28)&#39;,
+ &#39;B1953+29_red_noise_coefficients(60)&#39;,
+ &#39;B1953+29_red_noise_gamma&#39;,
+ &#39;B1953+29_red_noise_log10_A&#39;,
+ &#39;J0023+0923_cw_phi_psr&#39;,
+ &#39;J0023+0923_gw_coefficients(28)&#39;,
+ &#39;J0023+0923_red_noise_coefficients(60)&#39;,
+ &#39;J0023+0923_red_noise_gamma&#39;,
+ &#39;J0023+0923_red_noise_log10_A&#39;,
+ &#39;J0030+0451_cw_phi_psr&#39;,
+ &#39;J0030+0451_gw_coefficients(28)&#39;,
+ &#39;J0030+0451_red_noise_coefficients(60)&#39;,
+ &#39;J0030+0451_red_noise_gamma&#39;,
+ &#39;J0030+0451_red_noise_log10_A&#39;,
+ &#39;cw_cosinc&#39;,
+ &#39;cw_log10_f0&#39;,
+ &#39;cw_log10_h0&#39;,
+ &#39;cw_phi_earth&#39;,
+ &#39;cw_psi&#39;,
+ &#39;cw_ra&#39;,
+ &#39;cw_sindec&#39;,
+ &#39;gw_gamma&#39;,
+ &#39;gw_log10_A&#39;]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="sample-with-nuts">
+<h2>Sample with NUTS<a class="headerlink" href="#sample-with-nuts" title="Link to this heading">#</a></h2>
+<p>We sample the decentered model with NUTS from <code class="docutils literal notranslate"><span class="pre">numpyro</span></code>. The sample sites are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">xi</span></code> – the whitened GP coefficients, as <strong>one array-shaped site</strong> of shape <code class="docutils literal notranslate"><span class="pre">(npsr,</span> <span class="pre">2*(n_rn</span> <span class="pre">+</span> <span class="pre">n_gw))</span></code> (not one site per pulsar)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gammas</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_As</span></code> – the red-noise and GWB power-law hyperparameters</p></li>
+<li><p>the CW earth-term parameters (<code class="docutils literal notranslate"><span class="pre">cw_log10_h0</span></code>, <code class="docutils literal notranslate"><span class="pre">cw_log10_f0</span></code>, …)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cw_phi_psr</span></code> – the per-pulsar CW pulsar-term phases</p></li>
+</ul>
+<p>The model assembles these into the parameter dict that <code class="docutils literal notranslate"><span class="pre">clogL</span></code> expects and adds the log-likelihood with <code class="docutils literal notranslate"><span class="pre">numpyro.factor</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpyro</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpyro.distributions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpyro.infer</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">infer</span>
+
+<span class="n">jclogl</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">clogL</span><span class="p">)</span>
+<span class="n">npsr</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">psrs</span><span class="p">)</span>
+<span class="n">earth</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cw_log10_h0&#39;</span><span class="p">,</span> <span class="s1">&#39;cw_log10_f0&#39;</span><span class="p">,</span> <span class="s1">&#39;cw_ra&#39;</span><span class="p">,</span> <span class="s1">&#39;cw_sindec&#39;</span><span class="p">,</span>
+         <span class="s1">&#39;cw_cosinc&#39;</span><span class="p">,</span> <span class="s1">&#39;cw_psi&#39;</span><span class="p">,</span> <span class="s1">&#39;cw_phi_earth&#39;</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cw_model</span><span class="p">(</span><span class="n">hd</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">hd</span><span class="p">:</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;xi&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">([</span><span class="n">npsr</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_rn</span> <span class="o">+</span> <span class="n">n_gw</span><span class="p">)]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;xi&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">([</span><span class="n">npsr</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_rn</span><span class="p">)]))</span>
+    <span class="n">gammas</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;gammas&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">([</span><span class="n">npsr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))</span>
+    <span class="n">log10_As</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;log10_As&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">11</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">([</span><span class="n">npsr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))</span>
+
+    <span class="c1"># CW earth-term parameters</span>
+    <span class="n">h0</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;cw_log10_h0&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">18.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">11.0</span><span class="p">))</span>
+    <span class="n">f0</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;cw_log10_f0&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">9.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">7.0</span><span class="p">))</span>
+    <span class="n">ra</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;cw_ra&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+    <span class="n">sd</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;cw_sindec&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+    <span class="n">ci</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;cw_cosinc&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+    <span class="n">psi</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;cw_psi&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+    <span class="n">phe</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;cw_phi_earth&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+    <span class="n">phi_psr</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;cw_phi_psr&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">([</span><span class="n">npsr</span><span class="p">]))</span>
+
+    <span class="n">pars</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_red_noise_log10_A&#39;</span><span class="p">:</span> <span class="n">log10_As</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">psrs</span><span class="p">)}</span>
+    <span class="n">pars</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_red_noise_gamma&#39;</span><span class="p">:</span> <span class="n">gammas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">psrs</span><span class="p">)})</span>
+    <span class="k">if</span> <span class="n">hd</span><span class="p">:</span>
+        <span class="n">pars</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;gw_log10_A&#39;</span><span class="p">:</span> <span class="n">log10_As</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;gw_gamma&#39;</span><span class="p">:</span> <span class="n">gammas</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]})</span>
+        <span class="n">pars</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_gw_coefficients(</span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_gw</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">:</span> <span class="n">xi</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_rn</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">n_rn</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">n_gw</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">psrs</span><span class="p">)})</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pars</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;crn_log10_A&#39;</span><span class="p">:</span> <span class="n">log10_As</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;crn_gamma&#39;</span><span class="p">:</span> <span class="n">gammas</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]})</span>
+    <span class="n">pars</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_red_noise_coefficients(</span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_rn</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">:</span> <span class="n">xi</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n_rn</span><span class="p">]</span>
+                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">psrs</span><span class="p">)})</span>
+    <span class="c1"># pars.update({f&#39;{p.name}_crn_coefficients({2 * n_gw})&#39;: xi[i, 2 * n_rn:]</span>
+                <span class="c1">#  for i, p in enumerate(psrs)})</span>
+    <span class="n">pars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">earth</span><span class="p">,</span> <span class="p">(</span><span class="n">h0</span><span class="p">,</span> <span class="n">f0</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">sd</span><span class="p">,</span> <span class="n">ci</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">phe</span><span class="p">))))</span>
+    <span class="n">pars</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_cw_phi_psr&#39;</span><span class="p">:</span> <span class="n">phi_psr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">psrs</span><span class="p">)})</span>
+
+    <span class="n">ll</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">jclogl</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+    <span class="n">numpyro</span><span class="o">.</span><span class="n">deterministic</span><span class="p">(</span><span class="s2">&quot;loglike&quot;</span><span class="p">,</span> <span class="n">ll</span><span class="p">)</span>
+    <span class="n">numpyro</span><span class="o">.</span><span class="n">factor</span><span class="p">(</span><span class="s2">&quot;ll&quot;</span><span class="p">,</span> <span class="n">ll</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Run the sampler. The warmup/sample counts below are small so the tutorial finishes quickly – increase them substantially for a production run.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kernel</span> <span class="o">=</span> <span class="n">infer</span><span class="o">.</span><span class="n">NUTS</span><span class="p">(</span><span class="n">cw_model</span><span class="p">,</span> <span class="n">max_tree_depth</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">target_accept_prob</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">sampler</span> <span class="o">=</span> <span class="n">infer</span><span class="o">.</span><span class="n">MCMC</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="n">num_warmup</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">num_chains</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">sampler</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span>
+<span class="n">sampler</span><span class="o">.</span><span class="n">print_summary</span><span class="p">(</span><span class="n">exclude_deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>sample: 100%|██████████| 400/400 [03:02&lt;00:00,  2.19it/s, 255 steps of size 3.07e-03. acc. prob=0.99]
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                    mean       std    median      5.0%     95.0%     n_eff     r_hat
+     cw_cosinc      0.09      0.54      0.18     -0.70      0.89     14.34      1.11
+   cw_log10_f0     -7.55      0.36     -7.44     -8.00     -7.12      9.68      1.17
+   cw_log10_h0    -15.84      1.22    -16.20    -17.60    -14.16      3.54      2.03
+  cw_phi_earth      1.08      1.09      0.64      0.00      2.93     13.60      1.03
+ cw_phi_psr[0]      3.08      1.91      3.02      0.05      5.67      6.96      1.28
+ cw_phi_psr[1]      2.08      1.54      1.55      0.09      4.69      9.34      1.00
+ cw_phi_psr[2]      4.05      1.80      4.61      1.15      6.25      9.89      1.34
+ cw_phi_psr[3]      3.58      1.88      3.86      0.56      6.24      6.78      1.32
+ cw_phi_psr[4]      2.92      1.50      2.89      0.97      5.61     24.11      1.06
+        cw_psi      1.53      0.70      1.57      0.36      2.56     16.77      1.14
+         cw_ra      3.98      1.79      4.58      1.03      6.24     25.41      1.04
+     cw_sindec      0.07      0.32      0.10     -0.36      0.65     45.02      1.00
+     gammas[0]      2.50      1.76      2.38      0.02      5.39      7.05      1.48
+     gammas[1]      4.15      0.30      4.20      3.62      4.63      5.54      1.32
+     gammas[2]      2.01      0.63      2.04      0.90      2.96     18.57      1.19
+     gammas[3]      3.78      1.84      3.77      1.13      6.68     10.22      1.01
+     gammas[4]      3.50      2.39      3.29      0.52      6.98      4.35      1.85
+     gammas[5]      3.89      0.58      3.78      3.16      5.00      6.27      1.49
+   log10_As[0]    -17.02      1.84    -17.27    -19.85    -14.43     10.86      1.05
+   log10_As[1]    -13.59      0.06    -13.60    -13.70    -13.51     12.15      1.04
+   log10_As[2]    -12.82      0.15    -12.83    -13.02    -12.54     19.46      1.13
+   log10_As[3]    -16.46      1.58    -16.28    -19.11    -14.02      8.95      1.00
+   log10_As[4]    -18.04      1.65    -18.32    -19.97    -15.45      3.80      1.85
+   log10_As[5]    -14.08      0.24    -14.01    -14.54    -13.81      5.91      1.48
+       xi[0,0]     -0.14      0.83     -0.26     -1.63      1.06     18.16      1.02
+       xi[0,1]      0.75      0.88      0.77     -0.62      2.21     18.45      1.01
+       xi[0,2]      0.05      0.80      0.07     -1.59      1.19     25.33      1.00
+       xi[0,3]     -0.21      0.86     -0.46     -1.21      1.52      6.21      1.18
+       xi[0,4]      0.22      0.86      0.26     -1.22      1.65     13.77      1.00
+       xi[0,5]      0.16      0.73      0.11     -1.23      1.15     13.05      1.04
+       xi[0,6]      0.32      1.07      0.22     -1.48      1.84     10.57      1.05
+       xi[0,7]      0.09      1.18      0.07     -1.75      1.74     18.18      1.02
+       xi[0,8]      0.03      1.04     -0.01     -1.70      1.67      8.66      1.00
+       xi[0,9]      0.08      0.66      0.07     -0.92      1.21     27.42      1.01
+      xi[0,10]      0.40      1.10      0.41     -1.06      2.39     11.07      1.51
+      xi[0,11]     -0.11      1.13     -0.12     -1.68      1.87     14.15      1.12
+      xi[0,12]      0.04      1.06     -0.00     -1.41      2.05      7.23      1.41
+      xi[0,13]     -0.03      1.23     -0.29     -1.68      1.91     12.96      1.01
+      xi[0,14]      0.46      0.80      0.48     -0.84      1.94     24.42      1.00
+      xi[0,15]      0.07      0.81      0.02     -1.37      1.21      9.91      1.34
+      xi[0,16]     -0.01      0.77      0.05     -1.29      1.20     18.54      1.11
+      xi[0,17]     -0.41      0.74     -0.41     -1.65      0.56     12.15      1.06
+      xi[0,18]      0.34      0.71      0.30     -0.83      1.36     20.86      1.11
+      xi[0,19]      0.35      0.78      0.46     -0.84      1.49      9.87      1.00
+      xi[0,20]      0.18      0.99      0.25     -1.06      2.09      6.18      1.01
+      xi[0,21]      0.15      1.08      0.32     -1.35      1.77     10.26      1.01
+      xi[0,22]     -0.08      1.00     -0.21     -1.75      1.53      6.50      1.04
+      xi[0,23]      0.19      1.09      0.17     -1.36      2.01     15.51      1.00
+      xi[0,24]      0.62      0.86      0.61     -0.92      1.77     10.70      1.08
+      xi[0,25]     -0.12      0.99      0.08     -1.50      1.28     12.61      1.16
+      xi[0,26]      0.33      0.98      0.27     -1.29      2.03     18.69      1.04
+      xi[0,27]     -0.25      1.00      0.02     -2.10      0.92      9.37      1.00
+      xi[0,28]     -0.46      0.63     -0.38     -1.70      0.40      7.70      1.24
+      xi[0,29]     -0.63      0.92     -0.70     -1.90      0.93     20.90      1.12
+      xi[0,30]      0.24      0.96      0.07     -1.11      1.73      9.04      1.04
+      xi[0,31]      0.22      1.26      0.17     -1.72      2.16      5.68      1.00
+      xi[0,32]      0.03      0.84     -0.06     -1.24      1.49      5.80      1.42
+      xi[0,33]      0.18      0.62      0.07     -0.83      1.09     11.93      1.01
+      xi[0,34]      0.57      1.24      0.53     -1.69      2.23     11.04      1.23
+      xi[0,35]     -0.08      0.99     -0.09     -1.48      1.81      9.11      1.04
+      xi[0,36]     -0.90      1.08     -0.88     -2.34      1.01      9.30      1.02
+      xi[0,37]     -0.02      0.95     -0.01     -1.56      1.54     19.98      1.03
+      xi[0,38]      0.20      1.19      0.27     -1.52      2.14     10.49      1.08
+      xi[0,39]     -0.48      0.80     -0.49     -1.89      0.79     19.44      1.02
+      xi[0,40]     -0.06      1.23     -0.22     -1.67      1.95      9.32      1.01
+      xi[0,41]      0.24      0.96      0.22     -1.34      1.84     13.63      1.01
+      xi[0,42]      0.05      0.74     -0.04     -0.79      1.73     21.38      1.03
+      xi[0,43]     -0.25      0.96     -0.34     -1.83      1.45     14.50      1.08
+      xi[0,44]      0.21      0.73      0.14     -0.86      1.41     12.90      1.13
+      xi[0,45]      0.47      0.86      0.49     -0.79      1.93     26.71      1.01
+      xi[0,46]      0.64      0.73      0.80     -0.56      1.75      9.60      1.00
+      xi[0,47]      0.22      0.89      0.21     -0.98      1.90     21.06      1.01
+      xi[0,48]     -0.68      0.88     -0.66     -1.86      0.91      8.12      1.00
+      xi[0,49]     -0.37      0.89     -0.49     -1.66      1.32     11.78      1.47
+      xi[0,50]      0.04      0.98      0.19     -1.50      1.69      9.96      1.10
+      xi[0,51]      0.75      0.83      0.69     -0.46      2.09     13.43      1.00
+      xi[0,52]     -0.14      0.96     -0.07     -1.75      1.40      8.43      1.51
+      xi[0,53]      0.34      1.00      0.50     -1.51      1.67      9.75      1.14
+      xi[0,54]      0.36      0.89      0.39     -1.23      1.68      4.99      1.40
+      xi[0,55]     -0.13      0.85     -0.17     -1.40      1.13      5.92      1.56
+      xi[0,56]      0.63      0.86      0.53     -0.46      2.21     11.45      1.00
+      xi[0,57]     -0.25      0.77     -0.31     -1.38      1.07     25.97      1.17
+      xi[0,58]      0.45      0.95      0.58     -0.91      1.89     16.47      1.03
+      xi[0,59]      0.32      0.98      0.24     -0.82      2.03     17.98      1.05
+      xi[0,60]      0.24      0.61      0.16     -0.78      1.10     13.25      1.00
+      xi[0,61]     -0.02      1.38      0.05     -1.88      2.05      4.68      1.00
+      xi[0,62]      0.51      0.97      0.44     -1.37      1.97      6.95      1.26
+      xi[0,63]      0.66      0.93      0.62     -1.16      1.91     11.69      1.42
+      xi[0,64]      0.21      0.82      0.29     -1.28      1.44     10.86      1.10
+      xi[0,65]      0.19      0.97      0.49     -1.49      1.55      4.37      1.64
+      xi[0,66]     -0.10      0.89     -0.15     -1.34      1.65     10.77      1.19
+      xi[0,67]     -0.24      0.84     -0.32     -1.57      1.06     30.69      1.03
+      xi[0,68]     -0.31      1.15     -0.28     -2.18      1.44      6.04      1.08
+      xi[0,69]     -0.10      1.26      0.12     -2.23      1.99      6.58      1.00
+      xi[0,70]      0.02      0.90     -0.03     -1.49      1.34     17.13      1.06
+      xi[0,71]      0.72      0.89      0.87     -0.94      1.95      8.90      1.08
+      xi[0,72]     -0.08      0.86     -0.04     -1.32      1.37     16.89      1.00
+      xi[0,73]      0.70      1.26      0.98     -1.39      2.67      7.54      1.04
+      xi[0,74]     -0.44      1.01     -0.47     -1.84      1.06      8.74      1.00
+      xi[0,75]     -0.22      0.83     -0.27     -1.64      1.03     18.34      1.04
+      xi[0,76]      0.12      0.76      0.14     -1.22      1.24      7.86      1.66
+      xi[0,77]     -0.07      0.79     -0.15     -1.34      1.30     10.74      1.42
+      xi[0,78]      0.41      0.98      0.48     -1.26      1.87     12.66      1.05
+      xi[0,79]     -0.41      1.03     -0.18     -2.54      0.83      9.96      1.03
+      xi[0,80]     -0.31      1.00     -0.33     -1.68      1.33      6.45      1.28
+      xi[0,81]      0.68      0.99      0.61     -0.86      2.33      8.20      1.20
+      xi[0,82]      0.32      0.83      0.35     -0.84      1.64      9.02      1.07
+      xi[0,83]     -0.61      1.13     -0.54     -2.16      1.07      5.47      1.53
+      xi[0,84]      0.71      1.15      0.72     -1.08      2.66      3.99      1.84
+      xi[0,85]     -0.24      0.98     -0.31     -1.76      1.43      9.00      1.00
+      xi[0,86]     -0.20      1.07     -0.39     -1.40      2.09     10.37      1.33
+      xi[0,87]     -0.58      1.09     -0.54     -2.10      1.17      5.34      1.19
+       xi[1,0]     -0.40      1.13     -0.63     -1.92      1.64      7.13      1.00
+       xi[1,1]      0.23      1.00      0.21     -1.61      1.53     33.68      1.00
+       xi[1,2]     -0.09      1.01     -0.26     -1.57      1.63     26.44      1.01
+       xi[1,3]      0.31      0.93      0.33     -1.12      1.99     15.98      1.25
+       xi[1,4]      0.08      0.86      0.24     -1.50      1.23      9.69      1.02
+       xi[1,5]     -0.16      0.97     -0.07     -1.89      1.22      8.34      1.47
+       xi[1,6]     -0.16      0.77     -0.11     -1.41      1.05     15.36      1.07
+       xi[1,7]      0.28      0.99      0.25     -1.02      2.05     21.87      1.02
+       xi[1,8]     -0.40      0.96     -0.40     -2.10      0.99     16.66      1.25
+       xi[1,9]      0.00      1.31      0.21     -2.39      2.03      7.65      1.13
+      xi[1,10]     -0.52      1.01     -0.45     -2.08      1.00      7.88      1.00
+      xi[1,11]      0.22      0.88      0.33     -1.18      1.48     21.95      1.00
+      xi[1,12]     -0.04      0.75     -0.07     -1.20      1.23     24.20      1.03
+      xi[1,13]      0.19      1.06      0.16     -1.59      1.63     15.81      1.10
+      xi[1,14]     -0.20      0.92     -0.09     -1.65      1.32      9.34      1.10
+      xi[1,15]      0.16      0.84      0.25     -1.20      1.38     20.47      1.00
+      xi[1,16]     -0.39      0.98     -0.46     -1.70      1.43     13.98      1.00
+      xi[1,17]     -0.26      1.00     -0.39     -1.66      1.35     21.87      1.08
+      xi[1,18]      0.48      0.74      0.47     -0.59      1.66      6.24      1.40
+      xi[1,19]     -0.13      0.91     -0.15     -1.87      1.01     19.46      1.03
+      xi[1,20]      0.12      1.00      0.17     -1.54      1.48     10.24      1.00
+      xi[1,21]     -0.48      0.82     -0.38     -2.10      0.70      7.27      1.42
+      xi[1,22]     -0.30      0.92     -0.12     -1.78      0.92     11.34      1.18
+      xi[1,23]     -0.68      0.80     -0.61     -1.77      0.82     15.87      1.19
+      xi[1,24]      0.04      1.02     -0.07     -1.59      1.80     10.93      1.21
+      xi[1,25]      0.59      1.31      0.36     -1.13      3.09      7.10      1.00
+      xi[1,26]     -0.11      1.12     -0.17     -2.17      1.69      9.18      1.12
+      xi[1,27]     -0.23      0.90     -0.31     -1.48      1.47      9.26      1.11
+      xi[1,28]      0.19      0.86      0.25     -1.14      1.47      9.46      1.29
+      xi[1,29]      0.01      0.77     -0.07     -1.41      1.13     12.60      1.27
+      xi[1,30]      0.08      0.93      0.16     -1.27      1.67     11.81      1.10
+      xi[1,31]     -0.34      1.05     -0.42     -1.83      1.36     14.03      1.46
+      xi[1,32]      0.01      1.14     -0.05     -1.79      1.61      9.08      1.04
+      xi[1,33]      0.23      0.88      0.08     -1.04      1.71      6.92      1.33
+      xi[1,34]      0.16      0.78      0.30     -1.20      1.36     18.59      1.00
+      xi[1,35]      0.38      1.01      0.28     -1.19      1.97     12.51      1.03
+      xi[1,36]      0.51      0.76      0.56     -0.56      1.84     14.92      1.02
+      xi[1,37]     -0.27      1.00     -0.34     -1.82      1.20      5.74      1.35
+      xi[1,38]      0.11      0.77      0.17     -1.17      1.15     21.88      1.00
+      xi[1,39]      0.49      1.30      0.56     -1.95      2.06      8.81      1.12
+      xi[1,40]     -0.02      0.92     -0.22     -1.35      1.58     14.13      1.06
+      xi[1,41]      0.34      0.84      0.45     -1.34      1.42      9.04      1.06
+      xi[1,42]      0.13      0.76      0.15     -1.00      1.42     11.44      1.06
+      xi[1,43]      0.06      0.79      0.11     -1.16      1.36      8.06      1.18
+      xi[1,44]      0.63      0.88      0.69     -0.69      2.00      5.44      1.27
+      xi[1,45]     -0.17      0.93      0.09     -1.70      1.08      5.35      1.73
+      xi[1,46]      0.20      0.84      0.22     -1.00      1.86     28.43      1.00
+      xi[1,47]      0.06      1.19      0.05     -1.63      1.84      9.15      1.12
+      xi[1,48]     -0.32      0.66     -0.29     -1.48      0.68      9.37      1.04
+      xi[1,49]     -0.15      0.65     -0.15     -0.98      0.96     26.55      1.02
+      xi[1,50]     -0.65      0.91     -0.78     -2.05      0.72      8.58      1.03
+      xi[1,51]      0.13      0.84      0.30     -1.14      1.47     19.48      1.01
+      xi[1,52]     -0.29      1.03     -0.35     -1.83      1.32      7.37      1.31
+      xi[1,53]     -0.07      0.76     -0.03     -1.46      1.06     12.16      1.03
+      xi[1,54]     -0.03      0.94     -0.06     -1.54      1.34     14.66      1.05
+      xi[1,55]     -0.65      0.95     -0.74     -1.96      1.16     19.69      1.02
+      xi[1,56]     -0.01      0.70     -0.02     -1.01      1.21     16.07      1.00
+      xi[1,57]      0.64      1.09      0.69     -0.90      2.65     10.76      1.09
+      xi[1,58]     -0.08      0.73     -0.05     -1.29      1.01     20.01      1.13
+      xi[1,59]     -0.06      0.97     -0.05     -1.68      1.40     18.35      1.13
+      xi[1,60]     -0.50      0.70     -0.46     -1.91      0.43     10.89      1.06
+      xi[1,61]     -0.40      0.87     -0.49     -1.79      1.16      9.50      1.01
+      xi[1,62]      0.82      0.85      0.74     -0.68      2.11     10.73      1.02
+      xi[1,63]      0.30      1.09      0.47     -1.29      2.19      4.41      1.65
+      xi[1,64]      0.09      0.63      0.13     -0.98      0.95      8.11      1.18
+      xi[1,65]     -0.22      0.86     -0.12     -1.76      1.02      7.77      1.31
+      xi[1,66]      0.75      0.59      0.77     -0.10      2.04     27.70      1.00
+      xi[1,67]      0.64      0.91      0.72     -0.59      2.31     13.17      1.02
+      xi[1,68]     -0.65      0.77     -0.68     -1.86      0.46     10.34      1.03
+      xi[1,69]     -0.25      0.55     -0.26     -1.14      0.61     18.68      1.08
+      xi[1,70]      0.05      0.72      0.16     -1.13      1.20     16.16      1.00
+      xi[1,71]      0.26      0.92      0.42     -1.20      1.78     17.16      1.18
+      xi[1,72]     -0.39      0.60     -0.38     -1.46      0.38     29.63      1.00
+      xi[1,73]      0.81      0.94      1.07     -0.58      2.26      9.72      1.17
+      xi[1,74]     -0.49      0.75     -0.63     -1.61      0.75     17.63      1.00
+      xi[1,75]     -0.10      0.78     -0.02     -1.34      1.02     16.04      1.05
+      xi[1,76]      0.29      0.86      0.32     -0.98      1.69      6.97      1.38
+      xi[1,77]      0.04      0.44      0.07     -0.71      0.66     25.75      1.04
+      xi[1,78]      0.47      1.04      0.63     -1.45      2.02      9.35      1.05
+      xi[1,79]     -0.06      0.86      0.05     -1.43      1.12      8.04      1.11
+      xi[1,80]     -0.08      0.94     -0.10     -1.40      1.68      7.87      1.24
+      xi[1,81]      0.63      0.75      0.73     -0.51      1.81     21.98      1.07
+      xi[1,82]     -0.12      0.89     -0.15     -1.68      1.14     13.09      1.02
+      xi[1,83]     -0.06      0.87      0.07     -1.29      1.27     11.90      1.38
+      xi[1,84]      0.11      1.25      0.26     -2.08      2.00      5.40      1.34
+      xi[1,85]     -0.62      1.09     -0.41     -2.87      0.70      7.18      1.22
+      xi[1,86]      0.05      0.92     -0.10     -1.59      1.52      6.33      1.31
+      xi[1,87]     -0.33      0.79     -0.27     -1.74      0.71     18.19      1.10
+       xi[2,0]      0.41      0.83      0.40     -1.00      1.58     32.91      1.10
+       xi[2,1]      0.76      0.59      0.80     -0.09      1.70     17.00      1.07
+       xi[2,2]     -0.35      1.03     -0.33     -2.01      1.27      7.94      1.00
+       xi[2,3]      0.43      0.96      0.28     -0.79      2.18      9.00      1.01
+       xi[2,4]      0.11      0.90      0.15     -1.45      1.50     27.89      1.02
+       xi[2,5]     -0.66      0.68     -0.68     -1.58      0.45     20.89      1.04
+       xi[2,6]      0.31      1.19     -0.00     -1.14      2.42      6.68      1.00
+       xi[2,7]     -0.53      0.73     -0.58     -1.75      0.52     19.71      1.00
+       xi[2,8]     -0.07      1.07     -0.12     -1.67      1.58      6.00      1.56
+       xi[2,9]     -0.01      0.77     -0.02     -1.10      1.19     10.48      1.05
+      xi[2,10]     -0.26      1.34     -0.25     -2.47      1.65     12.94      1.21
+      xi[2,11]      0.08      0.91      0.04     -1.25      1.76     10.32      1.00
+      xi[2,12]     -0.25      0.83     -0.30     -1.87      0.79      9.31      1.24
+      xi[2,13]      0.07      0.92      0.15     -1.42      1.58     22.62      1.04
+      xi[2,14]      0.52      0.99      0.46     -0.92      2.06     12.41      1.01
+      xi[2,15]      0.63      0.63      0.55     -0.60      1.51      8.81      1.06
+      xi[2,16]     -0.03      0.87     -0.10     -1.44      1.42     11.15      1.31
+      xi[2,17]     -0.20      0.69     -0.18     -1.61      0.73     16.62      1.27
+      xi[2,18]     -0.42      0.93     -0.51     -2.06      1.14     12.98      1.06
+      xi[2,19]     -0.02      0.62      0.01     -1.11      0.76     17.11      1.01
+      xi[2,20]     -0.04      0.93     -0.02     -1.76      1.23     17.28      1.01
+      xi[2,21]      0.42      0.86      0.44     -0.78      1.92     13.72      1.25
+      xi[2,22]     -0.07      0.82     -0.14     -1.46      1.10     22.93      1.00
+      xi[2,23]     -0.02      1.04     -0.12     -1.56      1.56     12.45      1.00
+      xi[2,24]     -0.07      0.82     -0.15     -1.31      1.28     19.22      1.00
+      xi[2,25]     -0.51      0.97     -0.31     -2.14      1.10      5.69      1.42
+      xi[2,26]     -0.01      1.16      0.26     -1.75      1.68      7.04      1.12
+      xi[2,27]     -0.21      0.99     -0.13     -2.00      1.34      8.62      1.21
+      xi[2,28]     -0.96      0.92     -0.82     -2.36      0.61      7.28      1.31
+      xi[2,29]      0.96      1.20      1.17     -0.76      2.91      5.85      1.46
+      xi[2,30]      0.11      0.72      0.13     -0.85      1.27     13.86      1.00
+      xi[2,31]      0.40      1.30      0.40     -1.29      2.37      3.37      2.78
+      xi[2,32]      0.16      1.07      0.26     -1.56      1.78      5.46      1.64
+      xi[2,33]      0.25      1.08      0.31     -1.63      1.80      4.43      1.25
+      xi[2,34]      0.33      1.24      0.15     -1.25      2.50      6.18      1.53
+      xi[2,35]      0.24      0.71      0.28     -1.04      1.29     13.63      1.08
+      xi[2,36]     -0.04      1.27     -0.08     -2.20      1.77     11.14      1.02
+      xi[2,37]      0.51      0.71      0.44     -0.79      1.52     17.82      1.01
+      xi[2,38]      0.42      0.95      0.42     -0.97      2.01     29.52      1.00
+      xi[2,39]      0.30      1.00      0.34     -1.17      1.72     11.68      1.03
+      xi[2,40]     -0.12      1.21     -0.21     -1.89      2.21     12.99      1.00
+      xi[2,41]     -0.42      1.15     -0.20     -2.01      1.47     11.68      1.08
+      xi[2,42]     -0.71      0.92     -0.82     -2.08      0.88     15.56      1.08
+      xi[2,43]      0.07      1.06      0.14     -1.51      1.72     14.65      1.00
+      xi[2,44]     -0.10      1.29      0.11     -2.52      1.55      6.60      1.30
+      xi[2,45]     -0.26      0.74     -0.16     -1.43      0.83     13.64      1.05
+      xi[2,46]     -0.25      0.69     -0.21     -1.34      0.89     15.02      1.08
+      xi[2,47]     -0.35      0.88     -0.50     -1.44      1.35     11.43      1.15
+      xi[2,48]      0.23      0.88      0.24     -1.28      1.60     17.56      1.02
+      xi[2,49]      0.44      0.81      0.51     -1.06      1.54      6.50      1.03
+      xi[2,50]     -0.02      0.92      0.02     -1.18      1.87     11.34      1.14
+      xi[2,51]      0.35      0.80      0.32     -0.81      1.88     18.02      1.03
+      xi[2,52]      0.06      1.01      0.11     -1.56      1.63     17.05      1.07
+      xi[2,53]      0.34      0.80      0.30     -1.13      1.53     15.24      1.11
+      xi[2,54]     -1.12      0.85     -1.13     -2.27      0.45     18.47      1.02
+      xi[2,55]      1.03      1.00      1.03     -0.87      2.47      9.98      1.22
+      xi[2,56]     -0.13      0.88     -0.16     -1.68      1.13     12.25      1.01
+      xi[2,57]      0.01      0.94      0.10     -1.33      1.77     14.66      1.00
+      xi[2,58]     -0.17      0.69     -0.16     -1.27      0.92     24.35      1.11
+      xi[2,59]     -0.15      1.17     -0.11     -1.76      1.74     12.38      1.44
+      xi[2,60]     -0.76      0.91     -0.94     -2.10      0.86      9.89      1.00
+      xi[2,61]     -0.48      0.83     -0.41     -1.71      0.75     11.87      1.00
+      xi[2,62]      0.82      0.78      0.94     -0.50      2.07     14.26      1.04
+      xi[2,63]      0.20      0.84      0.13     -1.01      1.68      5.58      1.87
+      xi[2,64]      0.37      0.92      0.29     -1.00      1.83     19.98      1.00
+      xi[2,65]      0.22      0.69      0.27     -0.88      1.17      7.39      1.00
+      xi[2,66]      0.17      0.88      0.06     -1.08      1.59     17.05      1.11
+      xi[2,67]      0.56      0.74      0.67     -0.72      1.65     34.11      1.03
+      xi[2,68]     -0.48      1.09     -0.47     -1.91      1.73     12.75      1.00
+      xi[2,69]     -0.40      0.83     -0.38     -1.87      0.73     14.94      1.06
+      xi[2,70]      0.27      0.65      0.25     -0.65      1.41     20.08      1.00
+      xi[2,71]      0.14      0.85      0.07     -1.30      1.47     16.08      1.05
+      xi[2,72]     -0.74      0.79     -0.77     -1.84      0.69     13.80      1.00
+      xi[2,73]      0.84      1.05      0.65     -0.91      2.23      8.82      1.16
+      xi[2,74]     -0.18      0.79     -0.09     -1.46      1.06     14.97      1.00
+      xi[2,75]     -0.03      0.95      0.08     -1.61      1.45     15.28      1.01
+      xi[2,76]      0.40      1.14      0.29     -1.55      2.10     12.45      1.00
+      xi[2,77]      0.42      0.68      0.39     -0.63      1.44     44.13      1.03
+      xi[2,78]      0.20      1.05      0.13     -1.35      1.92      8.51      1.01
+      xi[2,79]     -0.32      0.60     -0.34     -1.42      0.45     22.28      1.00
+      xi[2,80]     -0.22      1.00     -0.33     -1.73      1.24      7.10      1.27
+      xi[2,81]      0.46      1.09      0.40     -1.21      2.21     18.11      1.08
+      xi[2,82]     -0.34      0.80     -0.37     -1.67      0.91     27.52      1.04
+      xi[2,83]      0.08      0.95      0.08     -1.56      1.48      8.83      1.66
+      xi[2,84]      0.54      0.82      0.57     -0.51      1.87      9.31      1.20
+      xi[2,85]     -0.18      1.31     -0.11     -2.59      1.67      8.48      1.14
+      xi[2,86]     -0.30      0.80     -0.34     -1.31      1.30      5.63      1.66
+      xi[2,87]      0.15      0.70      0.04     -0.94      1.32     28.86      1.18
+       xi[3,0]      0.22      0.80      0.28     -0.97      1.66     18.70      1.06
+       xi[3,1]     -0.15      0.87     -0.29     -1.30      1.54     22.92      1.05
+       xi[3,2]      0.71      0.97      0.68     -0.78      2.31     11.59      1.01
+       xi[3,3]      0.60      0.98      0.57     -0.94      2.07     15.76      1.14
+       xi[3,4]      0.05      1.26      0.43     -1.76      1.85      4.63      2.10
+       xi[3,5]      0.51      0.73      0.53     -0.51      1.70     11.96      1.01
+       xi[3,6]     -0.22      0.83     -0.19     -1.66      0.82     23.23      1.00
+       xi[3,7]      0.00      0.96      0.09     -1.48      1.56      6.44      1.13
+       xi[3,8]      0.25      0.83      0.30     -1.30      1.43     23.52      1.05
+       xi[3,9]      0.02      0.82      0.04     -1.39      1.36     10.15      1.16
+      xi[3,10]      0.10      1.03      0.15     -1.35      1.93      8.21      1.15
+      xi[3,11]      0.22      1.27      0.03     -2.00      2.11      4.82      1.59
+      xi[3,12]      0.22      1.09      0.19     -1.51      2.05     10.08      1.00
+      xi[3,13]      0.02      0.87     -0.12     -1.29      1.28      9.11      1.10
+      xi[3,14]      0.64      0.87      0.74     -1.14      1.60     15.83      1.00
+      xi[3,15]     -0.26      0.72     -0.31     -1.39      0.79     10.08      1.03
+      xi[3,16]     -0.17      1.13      0.11     -2.18      1.39      8.36      1.26
+      xi[3,17]      0.55      0.66      0.54     -0.61      1.57     16.73      1.00
+      xi[3,18]     -0.35      0.94     -0.47     -1.81      1.15      4.24      1.73
+      xi[3,19]     -0.36      0.74     -0.21     -1.65      0.65      9.91      1.00
+      xi[3,20]     -0.06      0.92     -0.01     -1.23      1.32     12.50      1.06
+      xi[3,21]      0.24      0.74      0.34     -0.88      1.54     12.22      1.02
+      xi[3,22]     -0.11      0.96     -0.24     -1.41      1.75     16.62      1.06
+      xi[3,23]     -0.04      0.91      0.10     -1.63      1.22     11.44      1.04
+      xi[3,24]     -0.80      0.92     -0.52     -2.39      0.42      9.84      1.03
+      xi[3,25]     -1.05      0.75     -1.05     -2.47      0.02      9.40      1.00
+      xi[3,26]     -0.12      1.06      0.09     -1.78      1.53     12.49      1.04
+      xi[3,27]      0.10      0.85      0.14     -1.44      1.40      7.42      1.30
+      xi[3,28]      0.08      0.76      0.14     -1.21      1.08     18.57      1.02
+      xi[3,29]     -0.59      0.89     -0.72     -1.90      0.75      9.22      1.05
+      xi[3,30]      0.05      0.89      0.17     -1.46      1.33      9.01      1.12
+      xi[3,31]     -0.04      1.06     -0.09     -1.76      1.67     14.40      1.03
+      xi[3,32]     -0.01      0.90      0.13     -1.57      1.30     14.07      1.00
+      xi[3,33]     -0.09      0.85      0.03     -1.67      1.19     17.47      1.00
+      xi[3,34]     -0.17      0.83     -0.19     -1.41      1.28     18.16      1.11
+      xi[3,35]     -0.19      1.01     -0.17     -1.66      1.63     11.15      1.00
+      xi[3,36]      0.25      0.92      0.23     -1.27      1.79     28.61      1.02
+      xi[3,37]      0.40      0.53      0.36     -0.54      1.25     26.19      1.00
+      xi[3,38]      0.39      0.81      0.24     -0.78      1.77     26.66      1.00
+      xi[3,39]      0.97      1.05      1.03     -0.67      2.62     12.04      1.20
+      xi[3,40]      0.07      0.90     -0.16     -1.20      1.57      5.70      1.19
+      xi[3,41]     -0.32      0.81     -0.40     -1.56      0.80      6.09      1.71
+      xi[3,42]     -0.32      0.92     -0.26     -1.60      1.26      8.14      1.00
+      xi[3,43]     -0.23      1.09     -0.18     -2.23      1.23     11.12      1.08
+      xi[3,44]      0.14      0.74      0.23     -1.05      1.00     15.94      1.02
+      xi[3,45]      0.09      0.75      0.13     -1.03      1.34     14.35      1.10
+      xi[3,46]     -0.31      0.66     -0.27     -1.34      0.70     12.48      1.00
+      xi[3,47]      0.98      0.68      1.05     -0.17      2.16     11.61      1.11
+      xi[3,48]      0.06      1.18     -0.09     -1.61      2.07     11.00      1.01
+      xi[3,49]      0.01      0.81     -0.02     -1.27      1.29     22.85      1.05
+      xi[3,50]      0.32      0.77      0.31     -0.95      1.52     24.97      1.10
+      xi[3,51]     -0.02      0.62      0.01     -1.07      0.88     17.88      1.11
+      xi[3,52]     -0.13      1.25     -0.33     -2.08      1.78      8.65      1.25
+      xi[3,53]      0.33      0.96      0.51     -1.30      1.70      9.45      1.05
+      xi[3,54]      0.39      0.77      0.41     -0.87      1.43     13.49      1.01
+      xi[3,55]      0.04      0.84     -0.09     -1.14      1.63     13.14      1.06
+      xi[3,56]      0.29      0.96      0.35     -1.34      1.69      7.82      1.16
+      xi[3,57]      0.12      0.73      0.14     -0.98      1.37      9.01      1.22
+      xi[3,58]     -0.59      0.98     -0.80     -2.14      1.07      4.77      1.99
+      xi[3,59]     -0.06      1.42      0.11     -2.76      1.83      3.69      2.06
+      xi[3,60]     -0.94      1.35     -1.08     -3.24      0.89      6.60      1.03
+      xi[3,61]      0.11      0.82      0.16     -1.07      1.50     10.60      1.25
+      xi[3,62]     -0.38      0.65     -0.35     -1.61      0.59     10.04      1.22
+      xi[3,63]     -0.17      0.83     -0.09     -1.69      0.97     12.22      1.08
+      xi[3,64]      0.69      1.28      0.80     -1.38      2.83      5.47      1.36
+      xi[3,65]      0.75      0.97      0.74     -0.66      2.57      7.08      1.20
+      xi[3,66]     -0.32      1.06     -0.30     -1.95      1.32      8.74      1.11
+      xi[3,67]     -0.20      1.03      0.00     -1.98      1.36     10.92      1.34
+      xi[3,68]     -0.00      0.92      0.06     -1.33      1.51     14.77      1.00
+      xi[3,69]     -0.86      0.83     -0.89     -2.39      0.23      9.89      1.32
+      xi[3,70]     -0.35      0.75     -0.35     -1.29      0.92     11.81      1.22
+      xi[3,71]      0.13      1.02      0.00     -1.19      1.97     15.04      1.00
+      xi[3,72]     -0.01      0.62     -0.03     -1.04      0.91     11.92      1.06
+      xi[3,73]     -0.30      1.11     -0.27     -1.88      1.58      9.28      1.32
+      xi[3,74]      0.04      1.18     -0.17     -1.95      1.90      5.40      1.42
+      xi[3,75]     -0.36      0.93     -0.29     -1.96      1.05     10.61      1.29
+      xi[3,76]     -0.33      0.80     -0.25     -1.64      0.96     11.38      1.00
+      xi[3,77]     -0.57      0.90     -0.60     -1.85      0.85     16.62      1.00
+      xi[3,78]     -0.01      0.69     -0.00     -0.87      1.16      6.96      1.18
+      xi[3,79]     -0.62      0.89     -0.67     -2.04      0.85     10.96      1.20
+      xi[3,80]      0.20      0.99      0.26     -1.46      1.68      9.29      1.15
+      xi[3,81]     -0.24      1.04     -0.21     -1.87      1.31     13.36      1.04
+      xi[3,82]     -0.10      0.83     -0.33     -1.46      1.08      7.37      1.15
+      xi[3,83]      0.25      1.04      0.23     -1.43      1.87     12.10      1.12
+      xi[3,84]      0.48      0.81      0.47     -0.61      1.84     14.61      1.00
+      xi[3,85]      0.37      0.80      0.32     -0.94      1.64     13.74      1.05
+      xi[3,86]     -0.07      1.34     -0.51     -1.55      2.51      4.49      1.32
+      xi[3,87]     -0.17      1.37     -0.05     -2.36      2.26      6.80      1.04
+       xi[4,0]     -0.07      0.91     -0.12     -1.42      1.44      5.79      1.77
+       xi[4,1]     -0.16      1.15     -0.34     -1.96      1.62      6.93      1.09
+       xi[4,2]     -0.07      0.87     -0.15     -1.62      1.08     11.44      1.04
+       xi[4,3]     -0.41      0.85     -0.38     -1.94      0.96     14.98      1.00
+       xi[4,4]      0.60      1.07      0.56     -1.42      2.18     11.84      1.00
+       xi[4,5]      0.06      0.73      0.09     -1.23      1.09      5.37      1.55
+       xi[4,6]      0.02      0.68      0.03     -1.09      1.10     18.01      1.10
+       xi[4,7]      0.08      1.02     -0.04     -1.46      1.91      6.96      1.00
+       xi[4,8]     -0.61      1.01     -0.64     -2.69      0.57     13.95      1.05
+       xi[4,9]      0.18      0.78      0.29     -1.13      1.41     15.29      1.28
+      xi[4,10]      0.13      1.09      0.26     -1.40      2.17     16.26      1.08
+      xi[4,11]     -0.27      0.94     -0.26     -1.62      1.52      9.54      1.11
+      xi[4,12]      0.01      1.03     -0.08     -1.67      1.34      8.18      1.03
+      xi[4,13]      0.00      0.88     -0.16     -1.16      1.66     18.88      1.00
+      xi[4,14]      0.02      1.02     -0.01     -1.66      1.56      8.40      1.06
+      xi[4,15]     -0.16      0.76     -0.18     -1.45      1.00     20.93      1.02
+      xi[4,16]     -0.44      0.63     -0.46     -1.56      0.58     17.55      1.05
+      xi[4,17]      0.02      1.09      0.05     -1.67      1.70     10.36      1.01
+      xi[4,18]     -0.13      1.11      0.14     -2.01      1.47      8.08      1.04
+      xi[4,19]      0.21      0.55      0.28     -0.76      0.93     10.23      1.01
+      xi[4,20]     -0.25      0.92     -0.34     -1.44      1.35      6.00      1.43
+      xi[4,21]     -0.25      0.77     -0.20     -1.47      1.01     23.35      1.14
+      xi[4,22]     -0.88      1.08     -0.92     -3.08      0.36     10.16      1.03
+      xi[4,23]     -0.63      0.77     -0.65     -1.64      0.82     24.87      1.13
+      xi[4,24]      0.02      0.87      0.01     -1.48      1.34     13.02      1.33
+      xi[4,25]      0.25      1.08      0.25     -1.28      2.14     10.54      1.06
+      xi[4,26]      0.28      0.88      0.27     -1.20      1.61     12.78      1.07
+      xi[4,27]     -0.03      1.31     -0.18     -1.66      2.47      8.33      1.00
+      xi[4,28]     -0.80      0.83     -0.73     -2.27      0.49      8.99      1.08
+      xi[4,29]     -0.22      1.12      0.10     -1.96      1.55      4.93      1.96
+      xi[4,30]     -0.07      0.97      0.01     -1.25      1.66     19.31      1.02
+      xi[4,31]     -0.13      1.14      0.23     -2.11      1.26      8.17      1.13
+      xi[4,32]      0.25      0.79      0.16     -0.98      1.75     19.82      1.03
+      xi[4,33]     -0.13      0.79     -0.25     -1.39      1.09      8.67      1.20
+      xi[4,34]      0.17      0.80      0.11     -1.06      1.46     19.52      1.03
+      xi[4,35]     -0.22      0.75     -0.32     -1.12      1.38     14.08      1.11
+      xi[4,36]     -0.26      0.77     -0.22     -1.46      0.87     20.97      1.02
+      xi[4,37]      0.49      0.96      0.48     -1.00      1.91     10.69      1.08
+      xi[4,38]     -0.06      1.12      0.02     -1.95      1.44     13.60      1.00
+      xi[4,39]     -0.98      0.97     -1.05     -2.57      0.40      9.97      1.19
+      xi[4,40]     -0.63      0.80     -0.53     -1.86      0.60      8.35      1.05
+      xi[4,41]      0.03      0.84      0.01     -1.04      1.67     11.84      1.00
+      xi[4,42]     -0.29      0.90     -0.35     -1.55      1.45      6.13      1.49
+      xi[4,43]      0.26      1.44      0.28     -1.88      2.66      4.67      1.19
+      xi[4,44]      0.94      1.02      0.85     -0.52      2.85      6.98      1.38
+      xi[4,45]      0.33      0.82      0.43     -1.01      1.66      8.00      1.29
+      xi[4,46]      0.20      0.68      0.16     -0.92      1.33     31.33      1.04
+      xi[4,47]     -0.16      0.83     -0.24     -1.23      1.27     16.63      1.00
+      xi[4,48]      0.04      0.88     -0.10     -1.18      1.62     16.59      1.09
+      xi[4,49]     -0.12      0.80     -0.09     -1.31      1.22      9.66      1.14
+      xi[4,50]      0.05      1.06      0.20     -1.83      1.52      8.54      1.04
+      xi[4,51]     -0.18      1.14     -0.19     -1.73      1.60      7.46      1.24
+      xi[4,52]     -0.25      0.91     -0.32     -1.49      1.56     10.34      1.02
+      xi[4,53]      0.40      0.90      0.37     -0.86      1.82     25.77      1.02
+      xi[4,54]     -0.08      0.86     -0.12     -1.31      1.47     10.73      1.24
+      xi[4,55]     -0.41      0.72     -0.47     -1.47      0.81     13.03      1.06
+      xi[4,56]      0.20      1.17     -0.13     -1.66      1.97      7.79      1.00
+      xi[4,57]      0.38      1.01      0.38     -1.14      2.01      4.33      1.78
+      xi[4,58]      0.80      0.94      0.73     -0.78      2.15      9.16      1.22
+      xi[4,59]     -0.02      1.04     -0.07     -1.43      1.84      7.03      1.00
+      xi[4,60]     -0.31      0.73     -0.32     -1.39      0.97      7.77      1.05
+      xi[4,61]      0.22      0.93      0.37     -1.22      1.63     16.08      1.17
+      xi[4,62]      0.15      1.28      0.24     -1.69      2.37      6.84      1.17
+      xi[4,63]      0.55      1.11      0.26     -1.06      2.47      6.37      1.16
+      xi[4,64]      0.62      0.79      0.67     -0.95      1.61     10.81      1.01
+      xi[4,65]     -0.46      0.99     -0.60     -1.60      1.44      6.08      1.31
+      xi[4,66]     -0.09      1.24      0.04     -2.12      1.84     10.66      1.02
+      xi[4,67]      0.08      0.72      0.07     -1.05      1.29     16.98      1.01
+      xi[4,68]     -0.09      0.70      0.03     -1.25      0.89      7.20      1.02
+      xi[4,69]      0.33      1.14      0.36     -1.24      2.41      8.60      1.05
+      xi[4,70]     -0.11      0.68     -0.07     -1.31      0.91     21.08      1.12
+      xi[4,71]      0.55      0.87      0.45     -0.53      2.30     10.44      1.04
+      xi[4,72]      0.11      0.74      0.20     -1.14      1.25     12.85      1.00
+      xi[4,73]     -0.97      0.95     -1.04     -2.36      0.76      9.08      1.18
+      xi[4,74]      0.53      0.97      0.61     -1.08      2.15     12.66      1.24
+      xi[4,75]     -0.65      0.61     -0.55     -1.57      0.35     16.94      1.06
+      xi[4,76]      0.25      0.82      0.20     -0.72      1.84     14.37      1.01
+      xi[4,77]     -0.48      0.82     -0.51     -1.66      0.91     15.82      1.04
+      xi[4,78]      0.44      0.73      0.49     -0.68      1.56     11.40      0.99
+      xi[4,79]     -0.47      0.78     -0.49     -1.64      0.93      8.72      1.19
+      xi[4,80]      0.24      0.76      0.19     -0.77      1.68      6.67      1.01
+      xi[4,81]      0.03      0.82     -0.03     -1.26      1.33      7.63      1.27
+      xi[4,82]      0.17      0.71      0.09     -0.86      1.48     13.55      1.31
+      xi[4,83]      0.05      1.12      0.18     -1.63      1.90     17.97      1.17
+      xi[4,84]      0.46      0.63      0.53     -0.51      1.46     13.22      1.00
+      xi[4,85]      0.21      0.92      0.19     -1.10      1.87     15.18      1.00
+      xi[4,86]     -0.10      0.71     -0.15     -1.16      1.15     11.61      1.04
+      xi[4,87]      0.16      1.02      0.17     -1.77      1.59      9.74      1.01
+
+Number of divergences: 0
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="look-at-the-posterior">
+<h2>Look at the posterior<a class="headerlink" href="#look-at-the-posterior" title="Link to this heading">#</a></h2>
+<p>The samples come back as a dict of arrays. As a quick look, here is the marginal posterior on the CW strain amplitude <code class="docutils literal notranslate"><span class="pre">cw_log10_h0</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="s1">&#39;cw_log10_h0&#39;</span><span class="p">]),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+         <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;stepfilled&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\log_</span><span class="si">{10}</span><span class="s1"> h_0$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;posterior samples&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/be600dd4d822a3499caa0d0e071140c4a58f88e21a9da4f338dd803e34c92475.png" src="../_images/be600dd4d822a3499caa0d0e071140c4a58f88e21a9da4f338dd803e34c92475.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">corner</span><span class="w"> </span><span class="kn">import</span> <span class="n">corner</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="s1">&#39;gammas&#39;</span><span class="p">][:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+         <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;stepfilled&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\gamma$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;posterior samples&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="s1">&#39;log10_As&#39;</span><span class="p">][:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+         <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;stepfilled&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\log_</span><span class="si">{10}</span><span class="s1"> A$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;posterior samples&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/5f4d6ffa2706da07d220853b21c1f7ae978b434efcf48c9a46e51751cd517ac1.png" src="../_images/5f4d6ffa2706da07d220853b21c1f7ae978b434efcf48c9a46e51751cd517ac1.png" />
+<img alt="../_images/6d02141208b951db4d9a56f40ff4c4a18761ba36c4d821167da2957b12921a74.png" src="../_images/6d02141208b951db4d9a56f40ff4c4a18761ba36c4d821167da2957b12921a74.png" />
+</div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="cookbook_models.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Model cookbook</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../components/noise_signals.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Noise and Signal Components</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load-the-pulsars">Load the pulsars</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-the-model">Build the model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#look-at-the-clogl-computation-graph">Look at the clogL computation graph</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#evaluate-the-coefficient-likelihood">Evaluate the coefficient likelihood</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sample-with-nuts">Sample with NUTS</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#look-at-the-posterior">Look at the posterior</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/tutorials/cw_extsignal_example.ipynb.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, Michele Vallisneri.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

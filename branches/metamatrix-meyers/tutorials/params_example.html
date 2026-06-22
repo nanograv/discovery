@@ -1,0 +1,949 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Fast likelihood evaluation with Params &#8212; Discovery 0.5 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../_static/documentation_options.js?v=db78e746"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/params_example';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Optimal Statistic" href="optimal_statistic.html" />
+    <link rel="prev" title="Basic Likelihood" href="basic_likelihood.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Discovery 0.5 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/model_summary.html">
+    Inspecting a model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="cookbook_models.html">
+    Model cookbook
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="cw_extsignal_example.html">
+    Sampling a continuous-wave signal on its own Fourier basis
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../advanced/single_precision.html">
+    Single-precision likelihoods (and the reference–delta trick)
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../metamatrix.html">
+    Metamatrix: graph-based kernels
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/model_summary.html">
+    Inspecting a model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="cookbook_models.html">
+    Model cookbook
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="cw_extsignal_example.html">
+    Sampling a continuous-wave signal on its own Fourier basis
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../advanced/single_precision.html">
+    Single-precision likelihoods (and the reference–delta trick)
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../metamatrix.html">
+    Metamatrix: graph-based kernels
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Fast likelihood evaluation with <code class="docutils literal notranslate"><span class="pre">Params</span></code></span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="fast-likelihood-evaluation-with-params">
+<h1>Fast likelihood evaluation with <code class="docutils literal notranslate"><span class="pre">Params</span></code><a class="headerlink" href="#fast-likelihood-evaluation-with-params" title="Link to this heading">#</a></h1>
+<p>A discovery likelihood <code class="docutils literal notranslate"><span class="pre">logL</span></code> is normally called with a parameter <strong>dict</strong> keyed by name. Under JAX every dict entry is a separate pytree leaf, so a jitted <code class="docutils literal notranslate"><span class="pre">logL</span></code> has one input binding per parameter and <code class="docutils literal notranslate"><span class="pre">jax.value_and_grad</span></code> produces a leaf-per-parameter cotangent. For a full PTA (~136 parameters) that per-leaf marshalling at the jit boundary – not the linear algebra – dominates the GPU forward/grad time.</p>
+<p><a class="reference internal" href="../api/index.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">discovery.Params</span></code></span></a> solves this: it stores every parameter in <strong>one flat array</strong> plus a static layout, and registers as a <em>single-leaf</em> JAX pytree. It is also a read-only <code class="docutils literal notranslate"><span class="pre">Mapping</span></code>, so a dict-based <code class="docutils literal notranslate"><span class="pre">logL</span></code> indexes it unchanged.</p>
+<p>This notebook shows, for a single pulsar (<code class="docutils literal notranslate"><span class="pre">B1855+09</span></code> from the shipped 15yr data):</p>
+<ol class="arabic simple">
+<li><p>sampling parameters from their uniform priors,</p></li>
+<li><p>wrapping them in a <code class="docutils literal notranslate"><span class="pre">Params</span></code> object,</p></li>
+<li><p>calling the jitted likelihood and its gradient, and</p></li>
+<li><p>using <code class="docutils literal notranslate"><span class="pre">Params</span></code> inside a <code class="docutils literal notranslate"><span class="pre">numpyro</span></code> model.</p></li>
+</ol>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s1">&#39;jax_enable_x64&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">prior</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">discovery.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">Params</span><span class="p">,</span> <span class="n">make_layout</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="build-a-single-pulsar-likelihood">
+<h2>Build a single-pulsar likelihood<a class="headerlink" href="#build-a-single-pulsar-likelihood" title="Link to this heading">#</a></h2>
+<p>We read the first 15yr pulsar, <code class="docutils literal notranslate"><span class="pre">B1855+09</span></code>, and build a <code class="docutils literal notranslate"><span class="pre">PulsarLikelihood</span></code> with measurement noise, ECORR, a timing-model GP, and a powerlaw red-noise GP. The measurement/ECORR parameters are fixed from the pulsar’s <code class="docutils literal notranslate"><span class="pre">noisedict</span></code>, so the only free parameters are the red-noise amplitude and spectral index.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">&#39;../../data/v1p1_de440_pint_bipm2019-B1855+09.feather&#39;</span><span class="p">)</span>
+<span class="n">Tspan</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+
+<span class="n">logL</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">([</span><span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
+                            <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
+                            <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
+                            <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                            <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                                              <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;red_noise&#39;</span><span class="p">)])</span><span class="o">.</span><span class="n">logL</span>
+
+<span class="n">logL</span><span class="o">.</span><span class="n">params</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[&#39;B1855+09_red_noise_gamma&#39;, &#39;B1855+09_red_noise_log10_A&#39;]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="sample-from-the-uniform-priors">
+<h2>1. Sample from the uniform priors<a class="headerlink" href="#sample-from-the-uniform-priors" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ds.sample_uniform</span></code> draws a parameter <strong>dict</strong> from the default uniform priors for the given parameter names.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">p0</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sample_uniform</span><span class="p">(</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+<span class="n">p0</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;B1855+09_red_noise_gamma&#39;: 0.1616758097635821,
+ &#39;B1855+09_red_noise_log10_A&#39;: -11.010679240035966}
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="wrap-the-dict-in-a-params-object">
+<h2>2. Wrap the dict in a <code class="docutils literal notranslate"><span class="pre">Params</span></code> object<a class="headerlink" href="#wrap-the-dict-in-a-params-object" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Params.from_dict</span></code> packs the dict into a single flat array. Pass <code class="docutils literal notranslate"><span class="pre">names=logL.params</span></code> so the column ordering matches what the likelihood expects.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Params</span></code> is a read-only <code class="docutils literal notranslate"><span class="pre">Mapping</span></code>: you can index it by name (<code class="docutils literal notranslate"><span class="pre">params['...']</span></code>) and spread it (<code class="docutils literal notranslate"><span class="pre">{**params}</span></code>) exactly like the original dict – but to JAX it is a single pytree leaf.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="n">Params</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>                                  <span class="c1"># Params(size=..., nparams=...)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;flat array      :&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;indexed by name :&#39;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;pytree leaves   :&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">params</span><span class="p">)),</span>
+      <span class="s1">&#39;vs&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">p0</span><span class="p">)),</span> <span class="s1">&#39;for the dict&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Params(size=2, nparams=2)
+flat array      : [  0.16167581 -11.01067924]
+indexed by name : 0.1616758097635821
+pytree leaves   : 1 vs 2 for the dict
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="call-the-jitted-likelihood-and-its-gradient">
+<h2>3. Call the jitted likelihood and its gradient<a class="headerlink" href="#call-the-jitted-likelihood-and-its-gradient" title="Link to this heading">#</a></h2>
+<p>Because <code class="docutils literal notranslate"><span class="pre">Params</span></code> is a <code class="docutils literal notranslate"><span class="pre">Mapping</span></code>, the dict-based <code class="docutils literal notranslate"><span class="pre">logL</span></code> accepts it unchanged – and the result is identical to passing the dict. The difference is the pytree structure crossing the jit boundary: one leaf instead of N.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logL(dict)   :&#39;</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">p0</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logL(Params) :&#39;</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">params</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;jit          :&#39;</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">logL</span><span class="p">)(</span><span class="n">params</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>logL(dict)   : 90899.99397316329
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>logL(Params) : 90899.99397316329
+jit          : 90899.99397316329
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># value_and_grad: the cotangent is itself a single-leaf Params, not an N-key dict</span>
+<span class="n">value</span><span class="p">,</span> <span class="n">grad</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">logL</span><span class="p">))(</span><span class="n">params</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;value :&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;grad  :&#39;</span><span class="p">,</span> <span class="n">grad</span><span class="p">,</span> <span class="s1">&#39;-&gt;&#39;</span><span class="p">,</span> <span class="n">grad</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>value : 90899.99397316329
+grad  : Params(size=2, nparams=2) -&gt; [  -5.45665359 -124.20598362]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="using-params-in-a-numpyro-model">
+<h2>4. Using <code class="docutils literal notranslate"><span class="pre">Params</span></code> in a <code class="docutils literal notranslate"><span class="pre">numpyro</span></code> model<a class="headerlink" href="#using-params-in-a-numpyro-model" title="Link to this heading">#</a></h2>
+<p>(This section requires <code class="docutils literal notranslate"><span class="pre">numpyro</span></code>.)</p>
+<p>To keep the single-leaf benefit through MCMC, sample <strong>one flat array</strong> site rather than one site per parameter, then rebuild a <code class="docutils literal notranslate"><span class="pre">Params</span></code> from it inside the model. <code class="docutils literal notranslate"><span class="pre">make_layout</span></code> gives the static layout, and <code class="docutils literal notranslate"><span class="pre">prior.getprior_uniform</span></code> gives the per-parameter uniform bounds.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpyro</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpyro</span><span class="w"> </span><span class="kn">import</span> <span class="n">infer</span><span class="p">,</span> <span class="n">distributions</span> <span class="k">as</span> <span class="n">dist</span>
+
+<span class="c1"># static layout shared by every Params built inside the model</span>
+<span class="n">layout</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="n">make_layout</span><span class="p">(</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+<span class="c1"># flat uniform bounds, one entry per (scalar) parameter</span>
+<span class="n">bounds</span> <span class="o">=</span> <span class="p">[</span><span class="n">prior</span><span class="o">.</span><span class="n">getprior_uniform</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">]</span>
+<span class="n">lo</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bounds</span><span class="p">])</span>
+<span class="n">hi</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bounds</span><span class="p">])</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">numpyro_model</span><span class="p">():</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;raw&#39;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">))</span>   <span class="c1"># one (P,) array site</span>
+    <span class="n">numpyro</span><span class="o">.</span><span class="n">factor</span><span class="p">(</span><span class="s1">&#39;logl&#39;</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">Params</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">layout</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/Users/pmeyers/miniforge3/envs/disc_tutorial_new/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sampler</span> <span class="o">=</span> <span class="n">infer</span><span class="o">.</span><span class="n">MCMC</span><span class="p">(</span><span class="n">infer</span><span class="o">.</span><span class="n">NUTS</span><span class="p">(</span><span class="n">numpyro_model</span><span class="p">),</span>
+                     <span class="n">num_warmup</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<span class="n">sampler</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/400 [00:00&lt;?, ?it/s]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>warmup:   0%|          | 1/400 [00:00&lt;02:04,  3.20it/s, 1 steps of size 2.34e+00. acc. prob=0.00]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>warmup:   9%|▉         | 35/400 [00:00&lt;00:03, 107.09it/s, 47 steps of size 2.62e-02. acc. prob=0.74]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>warmup:  20%|██        | 80/400 [00:00&lt;00:01, 210.35it/s, 15 steps of size 1.58e-01. acc. prob=0.77]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>warmup:  31%|███▏      | 125/400 [00:00&lt;00:00, 275.48it/s, 55 steps of size 1.37e-01. acc. prob=0.78]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>warmup:  43%|████▎     | 173/400 [00:00&lt;00:00, 335.41it/s, 7 steps of size 8.11e-02. acc. prob=0.78] 
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>sample:  60%|█████▉    | 239/400 [00:00&lt;00:00, 430.53it/s, 11 steps of size 2.28e-01. acc. prob=0.92]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>sample:  77%|███████▋  | 308/400 [00:00&lt;00:00, 506.69it/s, 7 steps of size 2.28e-01. acc. prob=0.92] 
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>sample:  94%|█████████▍| 376/400 [00:01&lt;00:00, 555.45it/s, 15 steps of size 2.28e-01. acc. prob=0.93]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>sample: 100%|██████████| 400/400 [00:01&lt;00:00, 374.94it/s, 3 steps of size 2.28e-01. acc. prob=0.93] 
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">raw</span></code> samples have shape <code class="docutils literal notranslate"><span class="pre">(num_samples,</span> <span class="pre">P)</span></code>; column <code class="docutils literal notranslate"><span class="pre">i</span></code> corresponds to <code class="docutils literal notranslate"><span class="pre">logL.params[i]</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">raw_samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()[</span><span class="s1">&#39;raw&#39;</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">):</span>
+    <span class="n">col</span> <span class="o">=</span> <span class="n">raw_samples</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s1">30s</span><span class="si">}</span><span class="s1"> mean=</span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s1">+.3f</span><span class="si">}</span><span class="s1">  std=</span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>B1855+09_red_noise_gamma       mean=+4.077  std=0.896
+B1855+09_red_noise_log10_A     mean=-14.043  std=0.307
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="basic_likelihood.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Basic Likelihood</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="optimal_statistic.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Optimal Statistic</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-a-single-pulsar-likelihood">Build a single-pulsar likelihood</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sample-from-the-uniform-priors">1. Sample from the uniform priors</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#wrap-the-dict-in-a-params-object">2. Wrap the dict in a <code class="docutils literal notranslate"><span class="pre">Params</span></code> object</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#call-the-jitted-likelihood-and-its-gradient">3. Call the jitted likelihood and its gradient</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-params-in-a-numpyro-model">4. Using <code class="docutils literal notranslate"><span class="pre">Params</span></code> in a <code class="docutils literal notranslate"><span class="pre">numpyro</span></code> model</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/tutorials/params_example.ipynb.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, Michele Vallisneri.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

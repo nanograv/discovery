@@ -1,0 +1,1994 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "3e1de701",
+   "metadata": {},
+   "source": [
+    "# Model cookbook\n",
+    "\n",
+    "A one-page, indexed gallery of pulsar-timing model recipes — from a bare white-noise model up to a full PTA model with a Hellings–Downs background, a decentered parameterisation, and a continuous-wave signal.\n",
+    "\n",
+    "Each recipe is a small function that assembles a Discovery likelihood from the public API. **These are the exact models the parity test-suite exercises** (`tests/metamatrix/`): they are defined once in `discovery.recipes` and imported both there and by the tests, so every recipe on this page is covered by a test that asserts the `matrix` and `metamath` kernel backends agree.\n",
+    "\n",
+    "Every recipe works unchanged under either backend — flip between them with `ds.config(kernels='matrix')` and `ds.config(kernels='metamath')` (see the last section).\n",
+    "\n",
+    "\n",
+    "> **These recipes are illustrative, not a configurable API.** Each takes only a pulsar (or list of pulsars) — there are no keyword knobs — so treat them as starting points to copy and adapt, not components to parametrise. The small shared helpers they reuse (`_psl_skeleton`, `_psl_with_rn`, `_toy_delay`) are shown in **Building blocks** below, so every ingredient is in one place.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "6f9e6091",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-15T15:43:39.860736Z",
+     "iopub.status.busy": "2026-06-15T15:43:39.860462Z",
+     "iopub.status.idle": "2026-06-15T15:43:40.738117Z",
+     "shell.execute_reply": "2026-06-15T15:43:40.737829Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "single: B1855+09;  array: ['B1855+09', 'B1937+21', 'B1953+29']\n"
+     ]
+    }
+   ],
+   "source": [
+    "import inspect\n",
+    "from pathlib import Path\n",
+    "\n",
+    "import numpy as np\n",
+    "import jax\n",
+    "jax.config.update('jax_enable_x64', True)\n",
+    "\n",
+    "import discovery as ds\n",
+    "import discovery.recipes as R   # the model zoo (also used by the parity tests)\n",
+    "from IPython.display import Markdown, HTML, display\n",
+    "\n",
+    "# bundled example pulsars\n",
+    "datapath = Path(ds.__path__[0]) / '../../data'\n",
+    "files = sorted(datapath.glob('v1p1*.feather'))\n",
+    "psr = ds.Pulsar.read_feather(files[0])          # one pulsar, for single-pulsar recipes\n",
+    "psrs = [ds.Pulsar.read_feather(f) for f in files[:3]]   # a few, for multi-pulsar recipes\n",
+    "print(f'single: {psr.name};  array: {[p.name for p in psrs]}')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "84cd5453",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-15T15:43:40.739408Z",
+     "iopub.status.busy": "2026-06-15T15:43:40.739283Z",
+     "iopub.status.idle": "2026-06-15T15:43:40.742414Z",
+     "shell.execute_reply": "2026-06-15T15:43:40.742210Z"
+    },
+    "tags": [
+     "remove-input"
+    ]
+   },
+   "outputs": [],
+   "source": [
+    "def show(recipe, arg):\n",
+    "    \"\"\"Render one recipe: caption (its docstring), source, sampled params, and a logL value.\"\"\"\n",
+    "    caption = ' '.join((recipe.__doc__ or '').split())\n",
+    "    display(Markdown(f'<a id=\"recipe-{recipe.__name__}\"></a>\\n\\n#### `{recipe.__name__}`\\n\\n{caption}'))\n",
+    "    display(Markdown(f\"```python\\n{inspect.getsource(recipe)}\\n```\"))\n",
+    "\n",
+    "    model = recipe(arg)\n",
+    "    params = list(model.logL.params)\n",
+    "    display(Markdown(f\"- **sampled (hyper)parameters** ({len(params)}): \"\n",
+    "                     + (', '.join(f'`{p}`' for p in params) if params else '_none_')))\n",
+    "    try:\n",
+    "        np.random.seed(0)\n",
+    "        p0 = ds.sample_uniform(params) if params else {}\n",
+    "        display(Markdown(f\"- log-likelihood at a random draw: `{float(model.logL(p0)):.3f}`\"))\n",
+    "    except Exception as e:\n",
+    "        display(Markdown(f\"- _logL eval skipped ({type(e).__name__}: needs manual params)_\"))\n",
+    "\n",
+    "def show_src(fn, note=''):\n",
+    "    \"\"\"Render a shared helper: its source plus a one-line note.\"\"\"\n",
+    "    display(Markdown(f\"**`{fn.__name__}`** — {note}\\n\\n```python\\n{inspect.getsource(fn)}\\n```\"))\n",
+    "\n",
+    "\n",
+    "def make_toc():\n",
+    "    \"\"\"Build the 3-section recipe index as an HTML table, linked to each recipe below.\"\"\"\n",
+    "    def esc(t): return t.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')\n",
+    "    sections = [('Single-pulsar — PulsarLikelihood', R.SINGLE_PULSAR),\n",
+    "                ('Multi-pulsar — GlobalLikelihood', R.GLOBAL),\n",
+    "                ('Multi-pulsar — ArrayLikelihood', R.ARRAY)]\n",
+    "    html = []\n",
+    "    for title, recipes in sections:\n",
+    "        html.append(f'<h3>{title}</h3>')\n",
+    "        html.append('<table style=\"text-align:left\"><thead><tr>'\n",
+    "                    '<th style=\"text-align:left\">Recipe</th>'\n",
+    "                    '<th style=\"text-align:left\">What it builds</th></tr></thead><tbody>')\n",
+    "        for r in recipes:\n",
+    "            cap = esc(' '.join((r.__doc__ or '').split()))\n",
+    "            html.append(f'<tr><td style=\"text-align:left\">'\n",
+    "                        f'<a href=\"#recipe-{r.__name__}\"><code>{r.__name__}</code></a></td>'\n",
+    "                        f'<td style=\"text-align:left\">{cap}</td></tr>')\n",
+    "        html.append('</tbody></table>')\n",
+    "    display(HTML('\\n'.join(html)))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "40e15d98",
+   "metadata": {},
+   "source": [
+    "## Recipe index\n",
+    "\n",
+    "Click a recipe to jump to it. Every recipe is in `discovery.recipes` and is parity-tested under both kernel backends."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "6845fefb",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-15T15:43:40.743552Z",
+     "iopub.status.busy": "2026-06-15T15:43:40.743471Z",
+     "iopub.status.idle": "2026-06-15T15:43:40.746392Z",
+     "shell.execute_reply": "2026-06-15T15:43:40.746148Z"
+    },
+    "tags": [
+     "remove-input"
+    ]
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<h3>Single-pulsar — PulsarLikelihood</h3>\n",
+       "<table style=\"text-align:left\"><thead><tr><th style=\"text-align:left\">Recipe</th><th style=\"text-align:left\">What it builds</th></tr></thead><tbody>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-measurement_simple\"><code>measurement_simple</code></a></td><td style=\"text-align:left\">White noise only, single-backend (efac + t2equad), no selection.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-measurement_white\"><code>measurement_white</code></a></td><td style=\"text-align:left\">White noise with per-backend efac/equad selection.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-ecorr_gp\"><code>ecorr_gp</code></a></td><td style=\"text-align:left\">White noise plus ECORR modelled as a separate Gaussian-process component.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-ecorr_sm\"><code>ecorr_sm</code></a></td><td style=\"text-align:left\">ECORR folded into the noise matrix via Sherman-Morrison (+ timing GP wrapper).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-meas_timing\"><code>meas_timing</code></a></td><td style=\"text-align:left\">White noise plus an (SVD-stabilised) marginalised timing-model GP.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-full_rn\"><code>full_rn</code></a></td><td style=\"text-align:left\">Realistic single-pulsar model: white + ECORR-GP + timing + power-law red noise.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-full_rn_concat_false\"><code>full_rn_concat_false</code></a></td><td style=\"text-align:left\">Same as full_rn but with concat=False → chained (nested) Woodbury kernels.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-multi_vgp\"><code>multi_vgp</code></a></td><td style=\"text-align:left\">Two variable GPs: achromatic red noise + a chromatic DM GP (on the DM Fourier basis).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-variable_timing\"><code>variable_timing</code></a></td><td style=\"text-align:left\">Timing model as a *variable* GP (coefficients sampled, not marginalised) + RN.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-fftcov_2d\"><code>fftcov_2d</code></a></td><td style=\"text-align:left\">Red noise via an FFT-derived dense (2D) covariance basis (makegp_fftcov).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-delay\"><code>delay</code></a></td><td style=\"text-align:left\">A deterministic delay subtracted from the residuals (makedelay → CompoundDelay).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-fourier_variance_fixed\"><code>fourier_variance_fixed</code></a></td><td style=\"text-align:left\">A Fourier GP whose prior covariance is supplied directly as a fixed matrix.</td></tr>\n",
+       "</tbody></table>\n",
+       "<h3>Multi-pulsar — GlobalLikelihood</h3>\n",
+       "<table style=\"text-align:left\"><thead><tr><th style=\"text-align:left\">Recipe</th><th style=\"text-align:left\">What it builds</th></tr></thead><tbody>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-no_global\"><code>no_global</code></a></td><td style=\"text-align:left\">Independent pulsars — GlobalLikelihood with no correlated GP (sum of per-psr logL).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-global_hd\"><code>global_hd</code></a></td><td style=\"text-align:left\">A Hellings-Downs-correlated common GW signal across pulsars (dense 2D prior).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-global_monopole\"><code>global_monopole</code></a></td><td style=\"text-align:left\">A monopole-correlated common signal across pulsars.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-global_compound\"><code>global_compound</code></a></td><td style=\"text-align:left\">Two correlated global GPs at once (HD + monopole) via a globalgp list (CompoundGlobalGP).</td></tr>\n",
+       "</tbody></table>\n",
+       "<h3>Multi-pulsar — ArrayLikelihood</h3>\n",
+       "<table style=\"text-align:left\"><thead><tr><th style=\"text-align:left\">Recipe</th><th style=\"text-align:left\">What it builds</th></tr></thead><tbody>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-no_common\"><code>no_common</code></a></td><td style=\"text-align:left\">ArrayLikelihood with per-pulsar red noise inline, no shared/correlated GP.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-intrinsic_rn\"><code>intrinsic_rn</code></a></td><td style=\"text-align:left\">Per-pulsar intrinsic red noise on a shared Fourier basis (vectorised; independent amplitudes per pulsar).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-intrinsic_plus_crn\"><code>intrinsic_plus_crn</code></a></td><td style=\"text-align:left\">Per-pulsar intrinsic red noise + a common-spectrum (CRN) process on one shared basis, via make_combined_crn.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-intrinsic_rn_plus_global_hd\"><code>intrinsic_rn_plus_global_hd</code></a></td><td style=\"text-align:left\">Per-pulsar intrinsic red noise plus an HD-correlated global GW signal (the canonical PTA model).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-decenter_intrinsic_rn\"><code>decenter_intrinsic_rn</code></a></td><td style=\"text-align:left\">intrinsic_rn built in a decentered (whitened-coefficient) parameterisation.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-decenter_intrinsic_rn_global_hd\"><code>decenter_intrinsic_rn_global_hd</code></a></td><td style=\"text-align:left\">Decentered intrinsic red noise + HD global GP (decentered sampling of the full model).</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-means_on_commongp\"><code>means_on_commongp</code></a></td><td style=\"text-align:left\">An (intrinsic-RN) common GP with a non-zero prior mean supplied by a `means` callable.</td></tr>\n",
+       "<tr><td style=\"text-align:left\"><a href=\"#recipe-extsignal_cw\"><code>extsignal_cw</code></a></td><td style=\"text-align:left\">Intrinsic red noise plus a continuous-wave deterministic signal on its own basis.</td></tr>\n",
+       "</tbody></table>"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "make_toc()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9747dd38",
+   "metadata": {},
+   "source": [
+    "## Building blocks (shared helpers)\n",
+    "\n",
+    "The multi-pulsar recipes reuse two small per-pulsar model helpers, and the single-pulsar `delay` recipe uses a toy delay function. Here they are in full — the only pieces the recipes rely on that aren't already inline:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "5354f9e0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-15T15:43:40.747642Z",
+     "iopub.status.busy": "2026-06-15T15:43:40.747565Z",
+     "iopub.status.idle": "2026-06-15T15:43:40.750670Z",
+     "shell.execute_reply": "2026-06-15T15:43:40.750441Z"
+    },
+    "tags": [
+     "remove-input"
+    ]
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/markdown": [
+       "**`_psl_skeleton`** — per-pulsar model for the ArrayLikelihood recipes (no red noise — it lives in the commongp)\n",
+       "\n",
+       "```python\n",
+       "def _psl_skeleton(psr):\n",
+       "    # per-pulsar model WITHOUT red noise (red noise lives in the commongp)\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_ecorr(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "**`_psl_with_rn`** — per-pulsar model for the GlobalLikelihood recipes (carries its own intrinsic red noise)\n",
+       "\n",
+       "```python\n",
+       "def _psl_with_rn(psr, T):\n",
+       "    # per-pulsar model carrying its own red noise (for GlobalLikelihood rows)\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_ecorr(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "        ds.makegp_fourier(psr, ds.powerlaw, components=30, T=T, name=\"rednoise\"),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "**`_toy_delay`** — deterministic, parameter-free delay used by the single-pulsar `delay` recipe\n",
+       "\n",
+       "```python\n",
+       "def _toy_delay(toas):\n",
+       "    # deterministic, parameter-free delay (args come only from psr attributes).\n",
+       "    return 1e-9 * jnp.sin(2.0 * jnp.pi * (toas - toas.min()) / 3.16e8)\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "for fn, note in [\n",
+    "    (R._psl_skeleton, 'per-pulsar model for the ArrayLikelihood recipes (no red noise — it lives in the commongp)'),\n",
+    "    (R._psl_with_rn,  'per-pulsar model for the GlobalLikelihood recipes (carries its own intrinsic red noise)'),\n",
+    "    (R._toy_delay,    'deterministic, parameter-free delay used by the single-pulsar `delay` recipe'),\n",
+    "]:\n",
+    "    show_src(fn, note)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "08193d3e",
+   "metadata": {},
+   "source": [
+    "## Single-pulsar models — `PulsarLikelihood`\n",
+    "\n",
+    "A {class}`~discovery.likelihood.PulsarLikelihood` is a list whose first entry is the residuals and the rest are noise / GP / delay components. Ordered roughly from simplest to most featureful.\n",
+    "\n",
+    "**Functions used** (click through to the API page, which has a `[source]` link to the code): {func}`~discovery.measurement_noise.makenoise_measurement`, {func}`~discovery.measurement_noise.makenoise_measurement_simple`, {func}`~discovery.signals.makegp_ecorr`, {func}`~discovery.signals.makegp_timing`, {func}`~discovery.signals.makegp_fourier`, {func}`~discovery.signals.makegp_fftcov`, {func}`~discovery.signals.makegp_fourier_variance`, {func}`~discovery.signals.makedelay`, {func}`~discovery.signals.dmfourierbasis`; wrapped in {class}`~discovery.likelihood.PulsarLikelihood`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "fe794dcd",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-15T15:43:40.751764Z",
+     "iopub.status.busy": "2026-06-15T15:43:40.751673Z",
+     "iopub.status.idle": "2026-06-15T15:43:43.518993Z",
+     "shell.execute_reply": "2026-06-15T15:43:43.518743Z"
+    },
+    "tags": [
+     "remove-input"
+    ]
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-measurement_simple\"></a>\n",
+       "\n",
+       "#### `measurement_simple`\n",
+       "\n",
+       "White noise only, single-backend (efac + t2equad), no selection."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def measurement_simple(psr):\n",
+       "    \"\"\"White noise only, single-backend (efac + t2equad), no selection.\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement_simple(psr),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (2): `B1855+09_efac`, `B1855+09_log10_t2equad`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `88934.233`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-measurement_white\"></a>\n",
+       "\n",
+       "#### `measurement_white`\n",
+       "\n",
+       "White noise with per-backend efac/equad selection."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def measurement_white(psr):\n",
+       "    \"\"\"White noise with per-backend efac/equad selection.\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (8): `B1855+09_430_ASP_efac`, `B1855+09_430_PUPPI_efac`, `B1855+09_L-wide_ASP_efac`, `B1855+09_L-wide_PUPPI_efac`, `B1855+09_430_ASP_log10_t2equad`, `B1855+09_430_PUPPI_log10_t2equad`, `B1855+09_L-wide_ASP_log10_t2equad`, `B1855+09_L-wide_PUPPI_log10_t2equad`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `83872.013`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-ecorr_gp\"></a>\n",
+       "\n",
+       "#### `ecorr_gp`\n",
+       "\n",
+       "White noise plus ECORR modelled as a separate Gaussian-process component."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def ecorr_gp(psr):\n",
+       "    \"\"\"White noise plus ECORR modelled as a separate Gaussian-process component.\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr),\n",
+       "        ds.makegp_ecorr(psr),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (12): `B1855+09_430_ASP_efac`, `B1855+09_430_ASP_log10_ecorr`, `B1855+09_430_ASP_log10_t2equad`, `B1855+09_430_PUPPI_efac`, `B1855+09_430_PUPPI_log10_ecorr`, `B1855+09_430_PUPPI_log10_t2equad`, `B1855+09_L-wide_ASP_efac`, `B1855+09_L-wide_ASP_log10_ecorr`, `B1855+09_L-wide_ASP_log10_t2equad`, `B1855+09_L-wide_PUPPI_efac`, `B1855+09_L-wide_PUPPI_log10_ecorr`, `B1855+09_L-wide_PUPPI_log10_t2equad`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `91680.424`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-ecorr_sm\"></a>\n",
+       "\n",
+       "#### `ecorr_sm`\n",
+       "\n",
+       "ECORR folded into the noise matrix via Sherman-Morrison (+ timing GP wrapper)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def ecorr_sm(psr):\n",
+       "    \"\"\"ECORR folded into the noise matrix via Sherman-Morrison (+ timing GP wrapper).\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict, ecorr=True),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (0): _none_"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `90998.497`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-meas_timing\"></a>\n",
+       "\n",
+       "#### `meas_timing`\n",
+       "\n",
+       "White noise plus an (SVD-stabilised) marginalised timing-model GP."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def meas_timing(psr):\n",
+       "    \"\"\"White noise plus an (SVD-stabilised) marginalised timing-model GP.\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (0): _none_"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `89903.631`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-full_rn\"></a>\n",
+       "\n",
+       "#### `full_rn`\n",
+       "\n",
+       "Realistic single-pulsar model: white + ECORR-GP + timing + power-law red noise."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def full_rn(psr):\n",
+       "    \"\"\"Realistic single-pulsar model: white + ECORR-GP + timing + power-law red noise.\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_ecorr(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "        ds.makegp_fourier(psr, ds.powerlaw, components=30, name=\"rednoise\"),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (2): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `91087.407`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-full_rn_concat_false\"></a>\n",
+       "\n",
+       "#### `full_rn_concat_false`\n",
+       "\n",
+       "Same as full_rn but with concat=False → chained (nested) Woodbury kernels."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def full_rn_concat_false(psr):\n",
+       "    \"\"\"Same as full_rn but with concat=False → chained (nested) Woodbury kernels.\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_ecorr(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "        ds.makegp_fourier(psr, ds.powerlaw, components=30, name=\"rednoise\"),\n",
+       "    ], concat=False)\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (2): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `91087.407`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-multi_vgp\"></a>\n",
+       "\n",
+       "#### `multi_vgp`\n",
+       "\n",
+       "Two variable GPs: achromatic red noise + a chromatic DM GP (on the DM Fourier basis)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def multi_vgp(psr):\n",
+       "    \"\"\"Two variable GPs: achromatic red noise + a chromatic DM GP (on the DM Fourier basis).\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_ecorr(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "        ds.makegp_fourier(psr, ds.powerlaw, components=30, name=\"rednoise\"),\n",
+       "        # DM noise is chromatic -> use the DM (nu^-2) Fourier basis, not the default\n",
+       "        ds.makegp_fourier(psr, ds.powerlaw, components=14, name=\"dmgp\",\n",
+       "                          fourierbasis=ds.dmfourierbasis),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (4): `B1855+09_dmgp_gamma`, `B1855+09_dmgp_log10_A`, `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `91063.910`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-variable_timing\"></a>\n",
+       "\n",
+       "#### `variable_timing`\n",
+       "\n",
+       "Timing model as a *variable* GP (coefficients sampled, not marginalised) + RN."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def variable_timing(psr):\n",
+       "    \"\"\"Timing model as a *variable* GP (coefficients sampled, not marginalised) + RN.\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, ecorr=True),\n",
+       "        ds.makegp_timing(psr, svd=True, variable=True),\n",
+       "        ds.makegp_fourier(psr, ds.powerlaw, components=30, name=\"rednoise\"),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (14): `B1855+09_430_ASP_efac`, `B1855+09_430_ASP_log10_ecorr`, `B1855+09_430_ASP_log10_t2equad`, `B1855+09_430_PUPPI_efac`, `B1855+09_430_PUPPI_log10_ecorr`, `B1855+09_430_PUPPI_log10_t2equad`, `B1855+09_L-wide_ASP_efac`, `B1855+09_L-wide_ASP_log10_ecorr`, `B1855+09_L-wide_ASP_log10_t2equad`, `B1855+09_L-wide_PUPPI_efac`, `B1855+09_L-wide_PUPPI_log10_ecorr`, `B1855+09_L-wide_PUPPI_log10_t2equad`, `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `82073.042`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-fftcov_2d\"></a>\n",
+       "\n",
+       "#### `fftcov_2d`\n",
+       "\n",
+       "Red noise via an FFT-derived dense (2D) covariance basis (makegp_fftcov)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def fftcov_2d(psr):\n",
+       "    \"\"\"Red noise via an FFT-derived dense (2D) covariance basis (makegp_fftcov).\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "        ds.makegp_fftcov(psr, ds.powerlaw, components=31, name=\"rednoise\"),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (2): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `90815.562`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-delay\"></a>\n",
+       "\n",
+       "#### `delay`\n",
+       "\n",
+       "A deterministic delay subtracted from the residuals (makedelay → CompoundDelay)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def delay(psr):\n",
+       "    \"\"\"A deterministic delay subtracted from the residuals (makedelay → CompoundDelay).\"\"\"\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "        ds.makedelay(psr, _toy_delay, name=\"toydelay\"),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (0): _none_"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `89902.680`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-fourier_variance_fixed\"></a>\n",
+       "\n",
+       "#### `fourier_variance_fixed`\n",
+       "\n",
+       "A Fourier GP whose prior covariance is supplied directly as a fixed matrix."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def fourier_variance_fixed(psr):\n",
+       "    \"\"\"A Fourier GP whose prior covariance is supplied directly as a fixed matrix.\"\"\"\n",
+       "    comps = 10\n",
+       "    argname = f\"{psr.name}_fourierGP_variance({comps * 2},{comps * 2})\"\n",
+       "    cov = np.diag(np.full(comps * 2, 1e-4))\n",
+       "    return ds.PulsarLikelihood([\n",
+       "        psr.residuals,\n",
+       "        ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "        ds.makegp_timing(psr, svd=True),\n",
+       "        ds.makegp_fourier_variance(psr, components=comps, noisedict={argname: cov}),\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/Users/pmeyers/miniforge3/envs/discovery/lib/python3.13/site-packages/numpy/linalg/_linalg.py:2374: RuntimeWarning: divide by zero encountered in slogdet\n",
+      "  sign, logdet = _umath_linalg.slogdet(a, signature=signature)\n",
+      "/Users/pmeyers/miniforge3/envs/discovery/lib/python3.13/site-packages/numpy/linalg/_linalg.py:2374: RuntimeWarning: overflow encountered in slogdet\n",
+      "  sign, logdet = _umath_linalg.slogdet(a, signature=signature)\n",
+      "/Users/pmeyers/miniforge3/envs/discovery/lib/python3.13/site-packages/numpy/linalg/_linalg.py:2374: RuntimeWarning: invalid value encountered in slogdet\n",
+      "  sign, logdet = _umath_linalg.slogdet(a, signature=signature)\n"
+     ]
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (0): _none_"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `90606.014`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "for recipe in R.SINGLE_PULSAR:\n",
+    "    show(recipe, psr)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "568425a4",
+   "metadata": {},
+   "source": [
+    "## Multi-pulsar — `GlobalLikelihood`\n",
+    "\n",
+    "{class}`~discovery.likelihood.GlobalLikelihood` wraps a list of per-pulsar {class}`~discovery.likelihood.PulsarLikelihood`s and an optional `globalgp` for a signal correlated *across* pulsars (e.g. a Hellings–Downs background).\n",
+    "\n",
+    "**Functions used:** {class}`~discovery.likelihood.GlobalLikelihood`, {func}`~discovery.signals.makeglobalgp_fourier`, {func}`~discovery.signals.hd_orf`, {func}`~discovery.signals.monopole_orf`, {func}`~discovery.signals.CompoundGlobalGP`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "aa0ad3a5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-15T15:43:43.520188Z",
+     "iopub.status.busy": "2026-06-15T15:43:43.520111Z",
+     "iopub.status.idle": "2026-06-15T15:43:45.712568Z",
+     "shell.execute_reply": "2026-06-15T15:43:45.712225Z"
+    },
+    "tags": [
+     "remove-input"
+    ]
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-no_global\"></a>\n",
+       "\n",
+       "#### `no_global`\n",
+       "\n",
+       "Independent pulsars — GlobalLikelihood with no correlated GP (sum of per-psr logL)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def no_global(psrs):\n",
+       "    \"\"\"Independent pulsars — GlobalLikelihood with no correlated GP (sum of per-psr logL).\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.GlobalLikelihood([_psl_with_rn(p, T) for p in psrs])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (6): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `472034.430`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-global_hd\"></a>\n",
+       "\n",
+       "#### `global_hd`\n",
+       "\n",
+       "A Hellings-Downs-correlated common GW signal across pulsars (dense 2D prior)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def global_hd(psrs):\n",
+       "    \"\"\"A Hellings-Downs-correlated common GW signal across pulsars (dense 2D prior).\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.GlobalLikelihood(\n",
+       "        [_psl_with_rn(p, T) for p in psrs],\n",
+       "        globalgp=ds.makeglobalgp_fourier(psrs, ds.powerlaw, ds.hd_orf,\n",
+       "                                         components=14, T=T, name=\"gw\"),\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (8): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`, `gw_gamma`, `gw_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `473689.766`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-global_monopole\"></a>\n",
+       "\n",
+       "#### `global_monopole`\n",
+       "\n",
+       "A monopole-correlated common signal across pulsars."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def global_monopole(psrs):\n",
+       "    \"\"\"A monopole-correlated common signal across pulsars.\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.GlobalLikelihood(\n",
+       "        [_psl_with_rn(p, T) for p in psrs],\n",
+       "        globalgp=ds.makeglobalgp_fourier(psrs, ds.powerlaw, ds.monopole_orf,\n",
+       "                                         components=14, T=T, name=\"gw\"),\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (8): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`, `gw_gamma`, `gw_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `473743.112`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-global_compound\"></a>\n",
+       "\n",
+       "#### `global_compound`\n",
+       "\n",
+       "Two correlated global GPs at once (HD + monopole) via a globalgp list (CompoundGlobalGP)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def global_compound(psrs):\n",
+       "    \"\"\"Two correlated global GPs at once (HD + monopole) via a globalgp list (CompoundGlobalGP).\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.GlobalLikelihood(\n",
+       "        [_psl_with_rn(p, T) for p in psrs],\n",
+       "        globalgp=[\n",
+       "            ds.makeglobalgp_fourier(psrs, ds.powerlaw, ds.hd_orf,\n",
+       "                                    components=14, T=T, name=\"gw\"),\n",
+       "            ds.makeglobalgp_fourier(psrs, ds.powerlaw, ds.monopole_orf,\n",
+       "                                    components=14, T=T, name=\"gw_mono\"),\n",
+       "        ],\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (10): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`, `gw_gamma`, `gw_log10_A`, `gw_mono_gamma`, `gw_mono_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `473689.763`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "for recipe in R.GLOBAL:\n",
+    "    show(recipe, psrs)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "94780478",
+   "metadata": {},
+   "source": [
+    "## Multi-pulsar — `ArrayLikelihood`\n",
+    "\n",
+    "{class}`~discovery.likelihood.ArrayLikelihood` is the vectorised multi-pulsar likelihood. It adds `commongp` (a shared-basis process across pulsars), `globalgp` (cross-pulsar correlated), `decenter` (whitened-coefficient sampling), per-GP `means`, and `extsignals` (deterministic signals on their own basis, e.g. a continuous wave).\n",
+    "\n",
+    "**Functions used:** {class}`~discovery.likelihood.ArrayLikelihood`, {func}`~discovery.signals.makecommongp_fourier`, {func}`~discovery.signals.make_combined_crn`, {func}`~discovery.deterministic.makecw_extsignal`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "1930929e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-15T15:43:45.713820Z",
+     "iopub.status.busy": "2026-06-15T15:43:45.713744Z",
+     "iopub.status.idle": "2026-06-15T15:43:49.489628Z",
+     "shell.execute_reply": "2026-06-15T15:43:49.489353Z"
+    },
+    "tags": [
+     "remove-input"
+    ]
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-no_common\"></a>\n",
+       "\n",
+       "#### `no_common`\n",
+       "\n",
+       "ArrayLikelihood with per-pulsar red noise inline, no shared/correlated GP."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def no_common(psrs):\n",
+       "    \"\"\"ArrayLikelihood with per-pulsar red noise inline, no shared/correlated GP.\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.ArrayLikelihood([\n",
+       "        ds.PulsarLikelihood([\n",
+       "            psr.residuals,\n",
+       "            ds.makenoise_measurement(psr, psr.noisedict),\n",
+       "            ds.makegp_ecorr(psr, psr.noisedict),\n",
+       "            ds.makegp_timing(psr, svd=True),\n",
+       "            ds.makegp_fourier(psr, ds.powerlaw, components=30, T=T, name=\"rednoise\"),\n",
+       "        ]) for psr in psrs\n",
+       "    ])\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (6): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `472034.430`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-intrinsic_rn\"></a>\n",
+       "\n",
+       "#### `intrinsic_rn`\n",
+       "\n",
+       "Per-pulsar intrinsic red noise on a shared Fourier basis (vectorised; independent amplitudes per pulsar)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def intrinsic_rn(psrs):\n",
+       "    \"\"\"Per-pulsar intrinsic red noise on a shared Fourier basis (vectorised; independent amplitudes per pulsar).\"\"\"\n",
+       "    # NOTE: a `commongp` with no `common=[...]` params is *intrinsic* (per-pulsar)\n",
+       "    # red noise, vectorised over the array — NOT a common/correlated process.\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.ArrayLikelihood(\n",
+       "        [_psl_skeleton(p) for p in psrs],\n",
+       "        commongp=ds.makecommongp_fourier(psrs, ds.powerlaw, components=30,\n",
+       "                                         T=T, name=\"rednoise\"),\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (6): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `472034.430`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-intrinsic_plus_crn\"></a>\n",
+       "\n",
+       "#### `intrinsic_plus_crn`\n",
+       "\n",
+       "Per-pulsar intrinsic red noise + a common-spectrum (CRN) process on one shared basis, via make_combined_crn."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def intrinsic_plus_crn(psrs):\n",
+       "    \"\"\"Per-pulsar intrinsic red noise + a common-spectrum (CRN) process on one shared basis, via make_combined_crn.\"\"\"\n",
+       "    # The idiomatic way to put intrinsic RN and a common-spectrum process on the\n",
+       "    # same basis: build a single combined PSD; CRN params (gw_*) are shared\n",
+       "    # across pulsars (passed as `common`), intrinsic params stay per-pulsar.\n",
+       "    T = ds.getspan(psrs)\n",
+       "    combined, crn_params = ds.make_combined_crn(14, ds.powerlaw, ds.powerlaw,\n",
+       "                                                crn_prefix=\"gw_\")\n",
+       "    return ds.ArrayLikelihood(\n",
+       "        [_psl_skeleton(p) for p in psrs],\n",
+       "        commongp=ds.makecommongp_fourier(psrs, combined, components=30,\n",
+       "                                         T=T, name=\"rednoise\", common=crn_params),\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (8): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`, `gw_gamma`, `gw_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `473685.479`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-intrinsic_rn_plus_global_hd\"></a>\n",
+       "\n",
+       "#### `intrinsic_rn_plus_global_hd`\n",
+       "\n",
+       "Per-pulsar intrinsic red noise plus an HD-correlated global GW signal (the canonical PTA model)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def intrinsic_rn_plus_global_hd(psrs):\n",
+       "    \"\"\"Per-pulsar intrinsic red noise plus an HD-correlated global GW signal (the canonical PTA model).\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.ArrayLikelihood(\n",
+       "        [_psl_skeleton(p) for p in psrs],\n",
+       "        commongp=ds.makecommongp_fourier(psrs, ds.powerlaw, components=30,\n",
+       "                                         T=T, name=\"rednoise\"),\n",
+       "        globalgp=ds.makeglobalgp_fourier(psrs, ds.powerlaw, ds.hd_orf,\n",
+       "                                         components=14, T=T, name=\"gw\"),\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (8): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`, `gw_gamma`, `gw_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `473689.766`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-decenter_intrinsic_rn\"></a>\n",
+       "\n",
+       "#### `decenter_intrinsic_rn`\n",
+       "\n",
+       "intrinsic_rn built in a decentered (whitened-coefficient) parameterisation."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def decenter_intrinsic_rn(psrs):\n",
+       "    \"\"\"intrinsic_rn built in a decentered (whitened-coefficient) parameterisation.\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.ArrayLikelihood(\n",
+       "        [_psl_skeleton(p) for p in psrs],\n",
+       "        commongp=ds.makecommongp_fourier(psrs, ds.powerlaw, components=30,\n",
+       "                                         T=T, name=\"rednoise\"),\n",
+       "        decenter=True,\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (6): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `472034.430`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-decenter_intrinsic_rn_global_hd\"></a>\n",
+       "\n",
+       "#### `decenter_intrinsic_rn_global_hd`\n",
+       "\n",
+       "Decentered intrinsic red noise + HD global GP (decentered sampling of the full model)."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def decenter_intrinsic_rn_global_hd(psrs):\n",
+       "    \"\"\"Decentered intrinsic red noise + HD global GP (decentered sampling of the full model).\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.ArrayLikelihood(\n",
+       "        [_psl_skeleton(p) for p in psrs],\n",
+       "        commongp=ds.makecommongp_fourier(psrs, ds.powerlaw, components=30,\n",
+       "                                         T=T, name=\"rednoise\"),\n",
+       "        globalgp=ds.makeglobalgp_fourier(psrs, ds.powerlaw, ds.hd_orf,\n",
+       "                                         components=14, T=T, name=\"gw\"),\n",
+       "        decenter=True,\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (8): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`, `gw_gamma`, `gw_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `473689.766`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-means_on_commongp\"></a>\n",
+       "\n",
+       "#### `means_on_commongp`\n",
+       "\n",
+       "An (intrinsic-RN) common GP with a non-zero prior mean supplied by a `means` callable."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def means_on_commongp(psrs):\n",
+       "    \"\"\"An (intrinsic-RN) common GP with a non-zero prior mean supplied by a `means` callable.\"\"\"\n",
+       "    def my_means(f, df, mean_amp):\n",
+       "        return mean_amp * jnp.ones_like(f)\n",
+       "\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.ArrayLikelihood(\n",
+       "        [_psl_skeleton(p) for p in psrs],\n",
+       "        commongp=ds.makecommongp_fourier(psrs, ds.powerlaw, components=30,\n",
+       "                                         T=T, name=\"rednoise\", means=my_means),\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (9): `B1855+09_meanFourierCommonGP_mean_amp`, `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_meanFourierCommonGP_mean_amp`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_meanFourierCommonGP_mean_amp`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- _logL eval skipped (KeyError: needs manual params)_"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "<a id=\"recipe-extsignal_cw\"></a>\n",
+       "\n",
+       "#### `extsignal_cw`\n",
+       "\n",
+       "Intrinsic red noise plus a continuous-wave deterministic signal on its own basis."
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "```python\n",
+       "def extsignal_cw(psrs):\n",
+       "    \"\"\"Intrinsic red noise plus a continuous-wave deterministic signal on its own basis.\"\"\"\n",
+       "    T = ds.getspan(psrs)\n",
+       "    return ds.ArrayLikelihood(\n",
+       "        [_psl_skeleton(p) for p in psrs],\n",
+       "        commongp=ds.makecommongp_fourier(psrs, ds.powerlaw, components=30,\n",
+       "                                         T=T, name=\"rednoise\"),\n",
+       "        extsignals=[\n",
+       "            ds.makecw_extsignal(psrs, components=50, T=T, pulsarterm=True, name=\"cw\"),\n",
+       "        ],\n",
+       "    )\n",
+       "\n",
+       "```"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- **sampled (hyper)parameters** (6): `B1855+09_rednoise_gamma`, `B1855+09_rednoise_log10_A`, `B1937+21_rednoise_gamma`, `B1937+21_rednoise_log10_A`, `B1953+29_rednoise_gamma`, `B1953+29_rednoise_log10_A`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/markdown": [
+       "- log-likelihood at a random draw: `472034.430`"
+      ],
+      "text/plain": [
+       "<IPython.core.display.Markdown object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "for recipe in R.ARRAY:\n",
+    "    show(recipe, psrs)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "87b837d9",
+   "metadata": {},
+   "source": [
+    "## Switching kernel backends\n",
+    "\n",
+    "The same recipe runs on either kernel implementation; `ds.config(kernels=...)` selects it before you build the model. The two agree to numerical precision (this equivalence is what the parity suite certifies)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "f7c9e829",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-06-15T15:43:49.490756Z",
+     "iopub.status.busy": "2026-06-15T15:43:49.490691Z",
+     "iopub.status.idle": "2026-06-15T15:43:50.064776Z",
+     "shell.execute_reply": "2026-06-15T15:43:50.064459Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "full_rn logL  matrix=91087.407075  metamath=91087.407075  diff=4.37e-11\n"
+     ]
+    }
+   ],
+   "source": [
+    "np.random.seed(0)\n",
+    "p0 = ds.sample_uniform(R.full_rn(psr).logL.params)\n",
+    "\n",
+    "ds.config(kernels='matrix')\n",
+    "v_matrix = float(R.full_rn(psr).logL(p0))\n",
+    "\n",
+    "ds.config(kernels='metamath')\n",
+    "v_metamath = float(R.full_rn(psr).logL(p0))\n",
+    "\n",
+    "ds.config(kernels='matrix')   # restore default\n",
+    "print(f'full_rn logL  matrix={v_matrix:.6f}  metamath={v_metamath:.6f}  diff={abs(v_matrix-v_metamath):.2e}')"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "discovery",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.13.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
