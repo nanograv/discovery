@@ -25,7 +25,7 @@ def fpc_fast(pos, gwtheta, gwphi):
     fplus = 0.5 * (m_dot_pos**2 - n_dot_pos**2) / denom
     fcross = (m_dot_pos * n_dot_pos) / denom
 
-    return fplus, fcross
+    return fplus, fcross, -omhat_dot_pos
 
 
 def makedelay_binary(pulsarterm=True):
@@ -38,7 +38,7 @@ def makedelay_binary(pulsarterm=True):
         dec, inc = jnp.arcsin(sindec), jnp.arccos(cosinc)
 
         # calculate antenna pattern (note: pos is pulsar sky position unit vector)
-        fplus, fcross = fpc_fast(pos, 0.5 * jnp.pi - dec, ra)  # careful with dec -> gwtheta conversion
+        fplus, fcross, _ = fpc_fast(pos, 0.5 * jnp.pi - dec, ra)  # careful with dec -> gwtheta conversion
 
         if pulsarterm:
             phi_avg = 0.5 * (phi_earth + phi_psr)
@@ -196,7 +196,204 @@ def makedelay_binary_coefficients(pulsarterm=True):
 
     return delay_binary_coefficients
 
+def makedelay_binary_evolving(tref = 86400.0 * 51544.5):
+    def delay_binary(
+        toas, pos, pdist,
+        log10_h0, log10_f0,
+        ra, sindec, cosinc,
+        psi, phi_earth, phi_psr,
+        d_psr, log10_Mc
+    ):
+        
+        # --- Precompute parameters ---
+        h0 = 10.0**log10_h0
+        f0 = 10.0**log10_f0
+        w0 = jnp.pi * f0
+        
 
+        mc = 10.0**log10_Mc * const.Tsun
+        mc53 = mc**(5.0 / 3.0)
+
+        dist = 2.0 * mc53 * (jnp.pi * f0)**(2.0 / 3.0) / h0
+
+        # Convert GW phase → orbital phase
+        phi_earth = phi_earth / 2.0
+
+        dec, inc = jnp.arcsin(sindec), jnp.arccos(cosinc)
+
+        # --- Antenna pattern ---
+        fplus, fcross, cosMu = fpc_fast(pos, 0.5 * jnp.pi - dec, ra)
+
+        # --- Pulsar distance ---
+        p_dist = (pdist[0] + pdist[1] * d_psr) * const.kpc / const.c
+
+        # --- Frequencies (phase_approx) ---
+        coef = (256.0 / 5.0) * mc53 * w0**(8.0 / 3.0)
+
+        omega   = w0
+        omega_p = w0 * (1.0 + coef * p_dist * (1.0 - cosMu))**(-3.0 / 8.0)
+
+        # --- Waveform phases ---
+        phase = phi_earth + omega * (toas - tref)
+        phase_p = phi_earth + omega_p * (toas - tref) + phi_psr
+
+        # --- Waveform amplitudes ---
+        At   = -0.5 * jnp.sin(2 * phase)   * (3.0 + jnp.cos(2 * inc))
+        Bt   =  2.0 * jnp.cos(2 * phase)   * jnp.cos(inc)
+        At_p = -0.5 * jnp.sin(2 * phase_p) * (3.0 + jnp.cos(2 * inc))
+        Bt_p =  2.0 * jnp.cos(2 * phase_p) * jnp.cos(inc)
+
+        alpha   = mc53 / (dist * omega**(1.0 / 3.0))
+        alpha_p = mc53 / (dist * omega_p**(1.0 / 3.0))
+
+        rplus   = alpha   * (-At   * jnp.cos(2 * psi) + Bt   * jnp.sin(2 * psi))
+        rcross  = alpha   * ( At   * jnp.sin(2 * psi) + Bt   * jnp.cos(2 * psi))
+        rplus_p = alpha_p * (-At_p * jnp.cos(2 * psi) + Bt_p * jnp.sin(2 * psi))
+        rcross_p= alpha_p * ( At_p * jnp.sin(2 * psi) + Bt_p * jnp.cos(2 * psi))
+
+        # --- Residual (psrTerm=True) ---
+        res = fplus * (rplus_p - rplus) + fcross * (rcross_p - rcross)
+        return res
+
+    return delay_binary
+
+def makedelay_binary_phases_evolving(tref = 86400.0 * 51544.5):
+    def delay_binary_phases(toas, pos, pdist, log10_f0, log10_Mc, sindec, ra, d_psr):
+        
+        f0 = 10.0**log10_f0
+        
+        dec = jnp.arcsin(sindec)
+        fplus, fcross, cosMu = fpc_fast(pos, 0.5 * jnp.pi - dec, ra)
+        
+        p_dist = (pdist[0] + pdist[1] * d_psr) * const.kpc / const.c
+        
+        mc = 10.0**log10_Mc * const.Tsun
+        mc53 = mc**(5.0/3.0)
+        w0 = jnp.pi * f0
+        coef = (256.0/5.0) * mc53 * w0**(8.0/3.0)
+        
+        omega_p = w0 * (1.0 + coef * p_dist * (1.0 - cosMu))**(-3.0/8.0)
+        
+        # Phase basis
+        phase_base = 2.0 * w0 * (toas - tref)
+        cphase = jnp.cos(phase_base)
+        sphase = jnp.sin(phase_base)
+        
+        phase_base_p = 2.0 * omega_p * (toas - tref)
+        cphase_p = jnp.cos(phase_base_p)
+        sphase_p = jnp.sin(phase_base_p)
+        
+        return jnp.array([cphase, sphase, cphase_p, sphase_p])
+
+    return delay_binary_phases
+
+def makedelay_binary_coefficients_evolving():
+    """
+    This version is optimized for vmapping over phi_psr angles.
+    """
+    def delay_binary_coefficients_single(toas, pos, pdist, log10_h0, log10_f0,
+                                   log10_Mc, ra, sindec, cosinc, psi,
+                                   phi_earth, phi_psr, d_psr):
+
+        h0 = 10.0**log10_h0
+        f0 = 10.0**log10_f0
+        dec = jnp.arcsin(sindec)
+        inc = jnp.arccos(cosinc)
+        
+        fplus, fcross, cosMu = fpc_fast(pos, 0.5 * jnp.pi - dec, ra)
+        
+        p_dist = (pdist[0] + pdist[1] * d_psr) * const.kpc / const.c
+        
+        mc = 10.0**log10_Mc * const.Tsun
+        mc53 = mc**(5.0/3.0)
+        w0 = jnp.pi * f0
+        coef = (256.0/5.0) * mc53 * w0**(8.0/3.0)
+        
+        omega_p = w0 * (1.0 + coef * p_dist * (1.0 - cosMu))**(-3.0/8.0)
+        
+        dist = 2.0 * mc53 * (jnp.pi * f0)**(2.0/3.0) / h0
+        
+        # Orbital phase (GW phase / 2)
+        phi_e = phi_earth / 2.0
+        
+        alpha = mc53 / (dist * w0**(1.0/3.0))
+        alpha_p = mc53 / (dist * omega_p**(1.0/3.0))
+        
+        pol_factor = 0.5 * (3.0 + jnp.cos(2*inc))
+        
+        At_cos = -pol_factor * jnp.sin(2*phi_e)
+        At_sin = -pol_factor * jnp.cos(2*phi_e)
+        
+        Bt_cos = 2.0 * jnp.cos(inc) * jnp.cos(2*phi_e)
+        Bt_sin = -2.0 * jnp.cos(inc) * jnp.sin(2*phi_e)
+        
+        # rplus contributions
+        rplus_cos = alpha * (-At_cos * jnp.cos(2*psi) + Bt_cos * jnp.sin(2*psi))
+        rplus_sin = alpha * (-At_sin * jnp.cos(2*psi) + Bt_sin * jnp.sin(2*psi))
+        
+        # rcross contributions
+        rcross_cos = alpha * (At_cos * jnp.sin(2*psi) + Bt_cos * jnp.cos(2*psi))
+        rcross_sin = alpha * (At_sin * jnp.sin(2*psi) + Bt_sin * jnp.cos(2*psi))
+        
+        # Total Earth term coefficients
+        Ae = -(fplus * rplus_cos + fcross * rcross_cos)
+        Be = -(fplus * rplus_sin + fcross * rcross_sin)
+        
+        # Pulsar term (same structure with phi_p and alpha_p, and MINUS sign)
+        At_cos_p = -pol_factor * jnp.sin(2*(phi_e + phi_psr))
+        At_sin_p = -pol_factor * jnp.cos(2*(phi_e + phi_psr))
+        
+        Bt_cos_p = 2.0 * jnp.cos(inc) * jnp.cos(2*(phi_e + phi_psr))
+        Bt_sin_p = -2.0 * jnp.cos(inc) * jnp.sin(2*(phi_e + phi_psr))
+        
+        rplus_cos_p = alpha_p * (-At_cos_p * jnp.cos(2*psi) + Bt_cos_p * jnp.sin(2*psi))
+        rplus_sin_p = alpha_p * (-At_sin_p * jnp.cos(2*psi) + Bt_sin_p * jnp.sin(2*psi))
+        
+        rcross_cos_p = alpha_p * (At_cos_p * jnp.sin(2*psi) + Bt_cos_p * jnp.cos(2*psi))
+        rcross_sin_p = alpha_p * (At_sin_p * jnp.sin(2*psi) + Bt_sin_p * jnp.cos(2*psi))
+        
+        Ap = fplus * rplus_cos_p + fcross * rcross_cos_p
+        Bp = fplus * rplus_sin_p + fcross * rcross_sin_p
+        
+        return jnp.array([Ae, Be, Ap, Bp])
+
+    delay_binary_coefficients_vectorized = jax.vmap(
+        delay_binary_coefficients_single,
+        in_axes=(None, None, None, None, None, None, None, None, None,
+                 None, None, 0, None)  # Only phi_psr (arg 11) is vectorized
+    )
+    
+    def delay_binary_coefficients(toas, pos, pdist, log10_h0, log10_f0,
+                                   log10_Mc, ra, sindec, cosinc, psi,
+                                   phi_earth, phi_psr, d_psr):
+        """Compute coefficients for multiple phi_psr angles.
+
+        phi_psr can be either:
+        - scalar: returns shape (4,)
+        - array: returns shape (nangles, 4) then transposed to (4, nangles)
+
+        Returns:
+            coeffs: array of shape (4,) or (4, nangles)
+                [Ae, Be, Ap, Bp] where Ae, Be are constant, Ap, Bp vary
+        """
+        phi_psr_array = jnp.atleast_1d(phi_psr)
+
+        if phi_psr_array.shape[0] == 1:
+            # Single angle case
+            return delay_binary_coefficients_single(
+                toas, pos, pdist, log10_h0, log10_f0, log10_Mc, ra,
+                sindec, cosinc, psi, phi_earth, phi_psr_array[0], d_psr
+            )
+        else:
+            # Multiple angles case - use vmap
+            result = delay_binary_coefficients_vectorized(
+                toas, pos, pdist, log10_h0, log10_f0, log10_Mc, ra,
+                sindec, cosinc, psi, phi_earth, phi_psr_array, d_psr
+            )
+            # result is (nangles, 4), transpose to (4, nangles)
+            return result.T
+
+    return delay_binary_coefficients
 
 def cos2comp(f, df, A, f0, phi, t0):
     """Project signal A * cos(2pi f t + phi) onto Fourier basis
