@@ -671,7 +671,7 @@
             <span class="k">def</span><span class="w"> </span><span class="nf">cond</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
                 <span class="n">mu</span><span class="p">,</span> <span class="n">cf</span> <span class="o">=</span> <span class="n">ksolve</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">cf</span>
-            <span class="n">cond</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">N_Nmat</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">cond</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">N_Nmat</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
             <span class="k">return</span> <span class="n">cond</span>
         <span class="n">P_var_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">Phi_inv</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">make_inv</span><span class="p">()</span>
 
@@ -699,7 +699,7 @@
 
                 <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">cf</span>
 
-            <span class="n">cond</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ksolve</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span>
+            <span class="n">cond</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ksolve</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">cond</span>
 
@@ -820,7 +820,7 @@
                 <span class="c1"># ys = [key, _ := sl(key, params) + jnp.dot(F, c[slc]) for sl, F, slc in zip(sls, Fs, slcs)]</span>
                 <span class="k">return</span> <span class="n">key</span><span class="p">,</span> <span class="n">ys</span>
 
-            <span class="n">sampler</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="n">sl</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">sls</span><span class="p">]))</span> <span class="o">+</span> <span class="n">Phi_sample</span><span class="o">.</span><span class="n">params</span>
+            <span class="n">sampler</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="n">sl</span><span class="o">.</span><span class="n">params</span> <span class="k">for</span> <span class="n">sl</span> <span class="ow">in</span> <span class="n">sls</span><span class="p">],</span> <span class="p">[])</span> <span class="o">+</span> <span class="n">Phi_sample</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">sampler</span>
 
@@ -882,7 +882,7 @@
 
             <span class="n">params_kterms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="n">kterm</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="k">for</span> <span class="n">kterm</span> <span class="ow">in</span> <span class="n">kterms</span><span class="p">]))</span>
             <span class="n">params_kmeans</span> <span class="o">=</span> <span class="n">kmeans</span><span class="o">.</span><span class="n">params</span> <span class="k">if</span> <span class="n">kmeans</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
-            <span class="n">loglike</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">params_kterms</span> <span class="o">+</span> <span class="n">params_kmeans</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">loglike</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">params_kterms</span> <span class="o">+</span> <span class="n">params_kmeans</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">loglike</span>
 
@@ -1049,7 +1049,7 @@
                     <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">cf</span>
                     <span class="c1"># return mu, cf, phiinv, tnt</span>
 
-                <span class="n">cond</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="n">ksolve</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="k">for</span> <span class="n">ksolve</span> <span class="ow">in</span> <span class="n">ksolves</span><span class="p">]))</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span>
+                <span class="n">cond</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="n">ksolve</span><span class="o">.</span><span class="n">params</span> <span class="k">for</span> <span class="n">ksolve</span> <span class="ow">in</span> <span class="n">ksolves</span><span class="p">],</span> <span class="p">[])</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">cond</span></div>
 
@@ -1174,7 +1174,7 @@
                 <span class="k">return</span> <span class="n">logp</span>
 
             <span class="n">params_kmeans</span> <span class="o">=</span> <span class="n">kmeans</span><span class="o">.</span><span class="n">params</span> <span class="k">if</span> <span class="n">kmeans</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
-            <span class="n">loglike</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">kterms</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">params_kmeans</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">loglike</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">kterms</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">params_kmeans</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">loglike</span>
 
@@ -1297,7 +1297,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown logdet method: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">make_logdet</span><span class="p">))</span>
 
-            <span class="n">loglike</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">kterms</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">factors</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">loglike</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">kterms</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">factors</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">loglike</span></div>
 </div>

@@ -885,7 +885,9 @@
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">callable</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">gplist</span><span class="p">):</span>
             <span class="k">def</span><span class="w"> </span><span class="nf">F</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">gp</span><span class="o">.</span><span class="n">F</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="k">else</span> <span class="n">gp</span><span class="o">.</span><span class="n">F</span> <span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">gplist</span><span class="p">])</span>
-            <span class="n">F</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">((</span><span class="n">gp</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">params</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">gplist</span><span class="p">),</span> <span class="p">[])</span>
+            <span class="c1"># Deduplicate shared param names</span>
+            <span class="n">F</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">F</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+                                            <span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">gplist</span><span class="p">)))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">gp</span><span class="o">.</span><span class="n">F</span> <span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">gplist</span><span class="p">])</span>
 
@@ -1845,7 +1847,7 @@
 
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ytNmy</span> <span class="o">-</span> <span class="n">ytXy</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
 
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">F_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">F_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
@@ -1875,7 +1877,7 @@
 
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ytNmy</span> <span class="o">-</span> <span class="n">ytXy</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
 
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">F_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">F_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 </div>
@@ -1941,7 +1943,7 @@
 
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ytNmy</span> <span class="o">-</span> <span class="n">ytXy</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
 
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">Ffunc</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">Ffunc</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
@@ -1983,7 +1985,7 @@
 
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ytNmy</span> <span class="o">-</span> <span class="n">ytXy</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
 
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">Ffunc</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">Ffunc</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
@@ -2010,7 +2012,7 @@
 
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">yp</span> <span class="o">@</span> <span class="n">Nmyp</span> <span class="o">+</span> <span class="n">c</span> <span class="o">@</span> <span class="n">Pmc</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">ldN</span><span class="p">)</span>
 
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">cvars</span><span class="p">)</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">cvars</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
@@ -2046,7 +2048,7 @@
 
             <span class="k">return</span> <span class="n">TtSy</span><span class="p">,</span> <span class="n">TtST</span>
 
-        <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelsolve</span></div>
 
@@ -2075,7 +2077,7 @@
 
             <span class="k">return</span> <span class="n">b_mean</span><span class="p">,</span> <span class="n">ch</span>
 
-        <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">kernelsolve</span></div>
 
 
@@ -2098,7 +2100,7 @@
             <span class="n">ld</span> <span class="o">=</span> <span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
 
             <span class="k">return</span> <span class="n">N_solve_2d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">Fr</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">NmFl</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">NmFltFr</span><span class="p">),</span> <span class="n">ld</span>
-        <span class="n">solve_2d</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">solve_2d</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">solve_2d</span></div>
 
@@ -2122,7 +2124,7 @@
             <span class="n">ld</span> <span class="o">=</span> <span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
 
             <span class="k">return</span> <span class="n">N_solve_1d</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">y</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">NmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">NmFty</span><span class="p">),</span> <span class="n">ld</span>
-        <span class="n">solve_1d</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">solve_1d</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">solve_1d</span></div>
 
@@ -2172,7 +2174,7 @@
 
             <span class="k">return</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span>
 
-        <span class="n">kernelterms</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelterms</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelterms</span></div>
 </div>
@@ -2230,7 +2232,7 @@
             <span class="n">cf</span> <span class="o">=</span> <span class="n">matrix_factor</span><span class="p">(</span><span class="n">Pinv</span> <span class="o">+</span> <span class="n">FtNmF</span><span class="p">)</span>
 
             <span class="k">return</span> <span class="n">Nmy</span> <span class="o">-</span> <span class="n">NmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmy</span><span class="p">),</span> <span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-        <span class="n">solve_1d</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">solve_1d</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">solve_1d</span></div>
 
@@ -2254,7 +2256,7 @@
             <span class="n">cf</span> <span class="o">=</span> <span class="n">matrix_factor</span><span class="p">(</span><span class="n">Pinv</span> <span class="o">+</span> <span class="n">FtNmF</span><span class="p">)</span>
 
             <span class="k">return</span> <span class="n">NmT</span> <span class="o">-</span> <span class="n">NmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmT</span><span class="p">),</span> <span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-        <span class="n">solve_2d</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">solve_2d</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">solve_2d</span></div>
 
@@ -2298,7 +2300,7 @@
 
             <span class="k">return</span> <span class="n">TtSy</span><span class="p">,</span> <span class="n">TtST</span>
 
-        <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelsolve</span></div>
 
@@ -2369,7 +2371,7 @@
             <span class="n">ytXy</span> <span class="o">=</span> <span class="n">FtNmy</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmy</span><span class="p">)</span>
 
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ytNmy</span> <span class="o">-</span> <span class="n">ytXy</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
-        <span class="n">kernel</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernel</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernel</span></div>
 
@@ -2420,7 +2422,7 @@
 
             <span class="k">return</span> <span class="n">logp</span>
 
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="p">(</span><span class="n">kmean</span><span class="o">.</span><span class="n">params</span> <span class="k">if</span> <span class="n">kmean</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]))</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="p">(</span><span class="n">kmean</span><span class="o">.</span><span class="n">params</span> <span class="k">if</span> <span class="n">kmean</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[])))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
@@ -2623,7 +2625,7 @@
 
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ytNmy</span> <span class="o">-</span> <span class="n">ytXy</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">ldN</span> <span class="o">+</span> <span class="n">ldP</span> <span class="o">+</span> <span class="n">matrix_norm</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logdet</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cf</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
 
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">Ffunc</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">Ffunc</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
@@ -2693,7 +2695,7 @@
             <span class="n">c</span> <span class="o">=</span> <span class="n">TtNmT</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">sol2</span>
 
             <span class="k">return</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span>
-        <span class="n">kernelterms</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">kernelterms</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelterms</span></div>
 
@@ -2776,7 +2778,7 @@
                 <span class="n">TtST</span> <span class="o">=</span> <span class="n">TtNmT</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmT</span><span class="p">)</span>
 
                 <span class="k">return</span> <span class="n">TtSy</span><span class="p">,</span> <span class="n">TtST</span>
-            <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">T</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">T</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">Tmat</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
 
@@ -2802,7 +2804,7 @@
                 <span class="n">TtST</span> <span class="o">=</span> <span class="n">TtNmT</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmT</span><span class="p">)</span>
 
                 <span class="k">return</span> <span class="n">TtSy</span><span class="p">,</span> <span class="n">TtST</span>
-            <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">y_var</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelsolve</span></div>
 
@@ -2841,7 +2843,7 @@
                 <span class="n">TtST</span> <span class="o">=</span> <span class="n">TtNmT</span> <span class="o">-</span> <span class="n">TtNmF</span> <span class="o">@</span> <span class="n">matrix_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmT</span><span class="p">)</span>
 
                 <span class="k">return</span> <span class="n">TtSy</span><span class="p">,</span> <span class="n">TtST</span>
-            <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">T</span><span class="o">.</span><span class="n">params</span>
+            <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N_var</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">T</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">Tmat</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
 
@@ -3047,8 +3049,8 @@
             <span class="k">return</span> <span class="n">logp</span>
 
         <span class="n">params_kmeans</span> <span class="o">=</span> <span class="n">kmeans</span><span class="o">.</span><span class="n">params</span> <span class="k">if</span> <span class="n">kmeans</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="n">N_solve_1d</span><span class="o">.</span><span class="n">params</span> <span class="k">for</span> <span class="n">N_solve_1d</span> <span class="ow">in</span> <span class="n">N_solve_1ds</span><span class="p">],</span> <span class="p">[])</span> <span class="o">+</span>
-                                      <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">params_kmeans</span><span class="p">)</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">sum</span><span class="p">([</span><span class="n">N_solve_1d</span><span class="o">.</span><span class="n">params</span> <span class="k">for</span> <span class="n">N_solve_1d</span> <span class="ow">in</span> <span class="n">N_solve_1ds</span><span class="p">],</span> <span class="p">[])</span> <span class="o">+</span>
+                                          <span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">params_kmeans</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
@@ -3106,7 +3108,7 @@
             <span class="k">return</span> <span class="n">logp</span>
 
         <span class="n">params_kmeans</span> <span class="o">=</span> <span class="n">kmeans</span><span class="o">.</span><span class="n">params</span> <span class="k">if</span> <span class="n">kmeans</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
-        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">params_kmeans</span><span class="p">)</span>
+        <span class="n">kernelproduct</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span> <span class="o">+</span> <span class="n">params_kmeans</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">kernelproduct</span></div>
 
