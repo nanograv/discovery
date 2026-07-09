@@ -748,7 +748,7 @@ with default uniform (or log-uniform) prior ranges for common parameter names:</
 <h3>DM Variations<a class="headerlink" href="#dm-variations" title="Link to this heading">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># DM with power law</span>
 <span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis</span><span class="p">,</span>
+                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span>
                           <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dm&#39;</span><span class="p">)</span>
 
 <span class="c1"># Parameters: dm_log10_A, dm_gamma</span>

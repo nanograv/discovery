@@ -273,7 +273,7 @@ DM Variations
 
    # DM with power law
    dm_gp = ds.makegp_fourier(psr, ds.powerlaw, components=30,
-                             fourierbasis=ds.dmfourierbasis,
+                             fourierbasis=ds.fourierbasis_dm,
                              name='dm')
 
    # Parameters: dm_log10_A, dm_gamma

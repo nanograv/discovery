@@ -587,7 +587,7 @@ outlier analysis (see <a class="reference external" href="https://arxiv.org/abs/
 
 <span class="c1"># DM variations</span>
 <span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis</span><span class="p">,</span>
+                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span>
                           <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dmgp&#39;</span><span class="p">)</span>
 
 <span class="c1"># Common process (shared parameters)</span>
@@ -697,16 +697,16 @@ for <code class="docutils literal notranslate"><span class="pre">k</span> <span 
 <section id="dm-fourier-basis">
 <h3>DM Fourier Basis<a class="headerlink" href="#dm-fourier-basis" title="Link to this heading">#</a></h3>
 <p>For dispersion measure variations (chromatic index <span class="math notranslate nohighlight">\(\\alpha = 2\)</span>):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">F</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mi">1400</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">F</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mi">1400</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Rescales the basis by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**2</span></code> for DM scaling.</p>
-<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.dmfourierbasis" title="discovery.signals.dmfourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">dmfourierbasis()</span></code></a>.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis_dm" title="discovery.signals.fourierbasis_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_dm()</span></code></a>.</p>
 </section>
 <section id="chromatic-noise-basis">
 <h3>Chromatic Noise Basis<a class="headerlink" href="#chromatic-noise-basis" title="Link to this heading">#</a></h3>
 <p>For general chromatic noise with arbitrary spectral index:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis_alpha</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mi">1400</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_chrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mi">1400</span><span class="p">)</span>
 
 <span class="c1"># fmat_func is a closure that takes the chromatic index</span>
 <span class="n">F</span> <span class="o">=</span> <span class="n">fmat_func</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>  <span class="c1"># Returns basis scaled by (fref / psr.freqs)**alpha</span>
@@ -717,7 +717,7 @@ scaled by <code class="docutils literal notranslate"><span class="pre">(fref</sp
 This allows the chromatic index to be a free parameter in the model.</p>
 <p><strong>Example usage:</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create GP with variable chromatic index</span>
-<span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">dmfourierbasis_alpha</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_chrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">chromatic_prior</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
     <span class="c1"># alpha is a free parameter here</span>
@@ -729,7 +729,7 @@ This allows the chromatic index to be a free parameter in the model.</p>
                              <span class="n">name</span><span class="o">=</span><span class="s1">&#39;chromatic&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.dmfourierbasis_alpha" title="discovery.signals.dmfourierbasis_alpha"><code class="xref py py-func docutils literal notranslate"><span class="pre">dmfourierbasis_alpha()</span></code></a>.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis_chrom" title="discovery.signals.fourierbasis_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_chrom()</span></code></a>.</p>
 </section>
 </section>
 <section id="utility-functions">

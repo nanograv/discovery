@@ -105,7 +105,7 @@ Example GP Usage
 
    # Create a DM variation GP
    dm_gp = ds.makegp_fourier(psr, ds.powerlaw, components=30,
-                             fourierbasis=ds.dmfourierbasis, name='dmgp')
+                             fourierbasis=ds.fourierbasis_dm, name='dmgp')
 
 WoodburyKernel
 --------------

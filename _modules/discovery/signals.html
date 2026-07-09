@@ -529,6 +529,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -554,19 +555,44 @@
 <span class="c1"># no backends</span>
 <div class="viewcode-block" id="makenoise_measurement_simple">
 <a class="viewcode-back" href="../../api/signals.html#discovery.signals.makenoise_measurement_simple">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">makenoise_measurement_simple</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="o">=</span><span class="p">{}):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">makenoise_measurement_simple</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="o">=</span><span class="p">{},</span> <span class="n">add_equad</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tnequad</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Single-EFAC (optionally single-EQUAD) white-noise model for a pulsar.</span>
+
+<span class="sd">    Builds a diagonal measurement-noise matrix using one ``efac`` for the whole</span>
+<span class="sd">    pulsar. When ``add_equad`` is True an EQUAD term is included: ``tnequad=True``</span>
+<span class="sd">    uses the TempoNest convention (EQUAD added outside the EFAC scaling), while the</span>
+<span class="sd">    default (``tnequad=False``) uses the tempo2/``t2equad`` convention (EQUAD added</span>
+<span class="sd">    in quadrature with the TOA errors, inside the EFAC scaling). Set</span>
+<span class="sd">    ``add_equad=False`` for an EFAC-only model. If all required parameters are present</span>
+<span class="sd">    in ``noisedict`` a constant matrix is returned, otherwise a variable one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">efac</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_efac&#39;</span>
-    <span class="n">log10_t2equad</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_log10_t2equad&#39;</span>
-    <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="n">efac</span><span class="p">,</span> <span class="n">log10_t2equad</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">tnequad</span> <span class="ow">and</span> <span class="n">add_equad</span><span class="p">:</span>
+        <span class="n">log10_tnequad</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_log10_tnequad&#39;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="n">efac</span><span class="p">,</span> <span class="n">log10_tnequad</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">add_equad</span><span class="p">:</span>
+        <span class="n">log10_t2equad</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_log10_t2equad&#39;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="n">efac</span><span class="p">,</span> <span class="n">log10_t2equad</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="n">efac</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">par</span> <span class="ow">in</span> <span class="n">noisedict</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">params</span><span class="p">):</span>
-        <span class="n">noise</span> <span class="o">=</span> <span class="n">noisedict</span><span class="p">[</span><span class="n">efac</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toaerrs</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">noisedict</span><span class="p">[</span><span class="n">log10_t2equad</span><span class="p">]))</span>
-
+        <span class="k">if</span> <span class="n">tnequad</span> <span class="ow">and</span> <span class="n">add_equad</span><span class="p">:</span>
+            <span class="n">noise</span> <span class="o">=</span> <span class="n">noisedict</span><span class="p">[</span><span class="n">efac</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">psr</span><span class="o">.</span><span class="n">toaerrs</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">noisedict</span><span class="p">[</span><span class="n">log10_tnequad</span><span class="p">]))</span>
+        <span class="k">elif</span> <span class="n">add_equad</span><span class="p">:</span>
+            <span class="n">noise</span> <span class="o">=</span> <span class="n">noisedict</span><span class="p">[</span><span class="n">efac</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toaerrs</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">noisedict</span><span class="p">[</span><span class="n">log10_t2equad</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">noise</span> <span class="o">=</span> <span class="n">noisedict</span><span class="p">[</span><span class="n">efac</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">psr</span><span class="o">.</span><span class="n">toaerrs</span><span class="o">**</span><span class="mi">2</span>
         <span class="k">return</span> <span class="n">matrix</span><span class="o">.</span><span class="n">NoiseMatrix1D_novar</span><span class="p">(</span><span class="n">noise</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">toaerrs</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toaerrs</span><span class="p">)</span>
-        <span class="k">def</span><span class="w"> </span><span class="nf">getnoise</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="n">efac</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">toaerrs</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">params</span><span class="p">[</span><span class="n">log10_t2equad</span><span class="p">]))</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">getnoise</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">tnequad</span><span class="o">=</span><span class="n">tnequad</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">tnequad</span> <span class="ow">and</span> <span class="n">add_equad</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="n">efac</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">toaerrs</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">params</span><span class="p">[</span><span class="n">log10_tnequad</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">add_equad</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="n">efac</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">toaerrs</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">params</span><span class="p">[</span><span class="n">log10_t2equad</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="n">efac</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">toaerrs</span><span class="o">**</span><span class="mi">2</span>
         <span class="n">getnoise</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span>
 
         <span class="k">return</span> <span class="n">matrix</span><span class="o">.</span><span class="n">NoiseMatrix1D_var</span><span class="p">(</span><span class="n">getnoise</span><span class="p">)</span></div>
@@ -892,9 +918,16 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">fmat</span></div>
 
 
-<div class="viewcode-block" id="dmfourierbasis">
-<a class="viewcode-back" href="../../api/signals.html#discovery.signals.dmfourierbasis">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">dmfourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<div class="viewcode-block" id="fourierbasis_dm">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.fourierbasis_dm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fourierbasis_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fourier design matrix for a DM (dispersion measure) Gaussian process.</span>
+
+<span class="sd">    Identical to :func:`fourierbasis`, but each row is scaled by the cold-plasma</span>
+<span class="sd">    dispersion factor ``(fref / psr.freqs) ** 2``, i.e. a fixed chromatic index</span>
+<span class="sd">    alpha = 2. Use :func:`fourierbasis_chrom` when the chromatic index is a free</span>
+<span class="sd">    parameter, in which case the process is general chromatic noise rather than DM.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">=</span> <span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
 
     <span class="n">Dm</span> <span class="o">=</span> <span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
@@ -902,9 +935,17 @@
     <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">*</span> <span class="n">Dm</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="dmfourierbasis_alpha">
-<a class="viewcode-back" href="../../api/signals.html#discovery.signals.dmfourierbasis_alpha">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">dmfourierbasis_alpha</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<div class="viewcode-block" id="fourierbasis_chrom">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.fourierbasis_chrom">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fourierbasis_chrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fourier design matrix for a chromatic Gaussian process with variable index.</span>
+
+<span class="sd">    Returns a callable design-matrix factory ``fmatfunc(alpha)`` that scales the</span>
+<span class="sd">    achromatic :func:`fourierbasis` columns by ``(fref / psr.freqs) ** alpha``,</span>
+<span class="sd">    where the chromatic index ``alpha`` is a free parameter. Because alpha is not</span>
+<span class="sd">    fixed to 2 the resulting process is general chromatic noise, not DM; use</span>
+<span class="sd">    :func:`fourierbasis_dm` for the alpha = 2 (DM) case.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">=</span> <span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
 
     <span class="n">fmat</span><span class="p">,</span> <span class="n">fnorm</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">fmat</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
@@ -912,6 +953,59 @@
         <span class="k">return</span> <span class="n">fmat</span> <span class="o">*</span> <span class="n">fnorm</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span><span class="o">**</span><span class="n">alpha</span>
 
     <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmatfunc</span></div>
+
+
+<div class="viewcode-block" id="make_fourierbasis_dm">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.make_fourierbasis_dm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_fourierbasis_dm</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tndm</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a DM Fourier-basis function with a fixed chromatic index ``alpha``.</span>
+
+<span class="sd">    Returns a ``basis(psr, components, T, fref)`` callable whose columns are the</span>
+<span class="sd">    achromatic :func:`fourierbasis` scaled by ``(fref / psr.freqs) ** alpha``. With</span>
+<span class="sd">    ``tndm=True`` the tempo2/TempoNest DM normalisation is also applied. A genuine</span>
+<span class="sd">    DM basis should keep ``alpha = 2``; for a variable chromatic index use</span>
+<span class="sd">    :func:`fourierbasis_chrom`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">basis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+        <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">=</span> <span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tndm</span><span class="p">:</span>
+            <span class="n">Dm</span> <span class="o">=</span> <span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span> <span class="o">**</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">12.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">1400.0</span> <span class="o">/</span> <span class="mf">1400.0</span> <span class="o">/</span> <span class="mf">2.41e-4</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Dm</span> <span class="o">=</span> <span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span> <span class="o">**</span> <span class="n">alpha</span>
+
+        <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">*</span> <span class="n">Dm</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">basis</span></div>
+
+
+<div class="viewcode-block" id="make_fourierbasis_chrom">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.make_fourierbasis_chrom">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_fourierbasis_chrom</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">tndm</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a chromatic Fourier-basis function with a fixed chromatic index ``alpha``.</span>
+
+<span class="sd">    Thin wrapper around :func:`make_fourierbasis_dm` with a default ``alpha = 4`` (a</span>
+<span class="sd">    common scattering-like index). The returned basis scales the achromatic</span>
+<span class="sd">    :func:`fourierbasis` columns by ``(fref / psr.freqs) ** alpha``. Use this for a</span>
+<span class="sd">    fixed-index chromatic process; for DM use :func:`make_fourierbasis_dm` (alpha = 2).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">make_fourierbasis_dm</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">tndm</span><span class="o">=</span><span class="n">tndm</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="dmfourierbasis">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.dmfourierbasis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dmfourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;dmfourierbasis is deprecated; use fourierbasis_dm instead.&quot;</span><span class="p">,</span>
+                  <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fourierbasis_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="n">fref</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="dmfourierbasis_alpha">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.dmfourierbasis_alpha">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dmfourierbasis_alpha</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;dmfourierbasis_alpha is deprecated; use fourierbasis_chrom instead.&quot;</span><span class="p">,</span>
+                  <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fourierbasis_chrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="n">fref</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="dmfourierbasis_solar">
@@ -926,17 +1020,9 @@
 <div class="viewcode-block" id="make_dmfourierbasis">
 <a class="viewcode-back" href="../../api/signals.html#discovery.signals.make_dmfourierbasis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_dmfourierbasis</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tndm</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">basis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
-        <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">=</span> <span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">tndm</span><span class="p">:</span>
-            <span class="n">Dm</span> <span class="o">=</span> <span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span> <span class="o">**</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">12.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">1400.0</span> <span class="o">/</span> <span class="mf">1400.0</span> <span class="o">/</span> <span class="mf">2.41e-4</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">Dm</span> <span class="o">=</span> <span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span> <span class="o">**</span> <span class="n">alpha</span>
-
-        <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">*</span> <span class="n">Dm</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
-
-    <span class="k">return</span> <span class="n">basis</span></div>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;make_dmfourierbasis is deprecated; use make_fourierbasis_dm instead.&quot;</span><span class="p">,</span>
+                  <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">make_fourierbasis_dm</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">tndm</span><span class="o">=</span><span class="n">tndm</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="makegp_fourier">
@@ -1344,9 +1430,54 @@
     <span class="k">return</span> <span class="n">timeinterpbasis</span></div>
 
 
+<div class="viewcode-block" id="make_timeinterpbasis_dm">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.make_timeinterpbasis_dm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_timeinterpbasis_dm</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a DM time-interpolation basis (fixed chromatic index alpha = 2).</span>
+
+<span class="sd">    Time-domain analogue of :func:`make_fourierbasis_dm` used by the FFT-covariance</span>
+<span class="sd">    GPs: it scales the achromatic :func:`make_timeinterpbasis` basis by the</span>
+<span class="sd">    cold-plasma dispersion factor ``(fref / psr.freqs) ** 2``. Used by</span>
+<span class="sd">    :func:`makegp_fftcov_dm`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">timeinterpbasis_achrom</span> <span class="o">=</span> <span class="n">make_timeinterpbasis</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">timeinterpbasis_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">nmodes</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="n">t_coarse</span><span class="p">,</span> <span class="n">dt_coarse</span><span class="p">,</span> <span class="n">Bmat</span> <span class="o">=</span> <span class="n">timeinterpbasis_achrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">nmodes</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">t_coarse</span><span class="p">,</span> <span class="n">dt_coarse</span><span class="p">,</span> <span class="n">scale</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">Bmat</span>
+
+    <span class="k">return</span> <span class="n">timeinterpbasis_dm</span></div>
+
+
+<div class="viewcode-block" id="make_timeinterpbasis_chromatic">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.make_timeinterpbasis_chromatic">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_timeinterpbasis_chromatic</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a chromatic time-interpolation basis with a variable chromatic index.</span>
+
+<span class="sd">    Time-domain analogue of :func:`fourierbasis_chrom` used by the FFT-covariance</span>
+<span class="sd">    GPs. The returned basis yields a callable ``Bmat_func(alpha)`` that scales the</span>
+<span class="sd">    achromatic :func:`make_timeinterpbasis` basis by ``(fref / psr.freqs) ** alpha``,</span>
+<span class="sd">    with ``alpha`` a free parameter. Used by :func:`makegp_fftcov_chrom`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">timeinterpbasis_achrom</span> <span class="o">=</span> <span class="n">make_timeinterpbasis</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">timeinterpbasis_chrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">nmodes</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="n">t_coarse</span><span class="p">,</span> <span class="n">dt_coarse</span><span class="p">,</span> <span class="n">Bmat</span> <span class="o">=</span> <span class="n">timeinterpbasis_achrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">nmodes</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">Bmat_func</span><span class="p">(</span><span class="n">alpha</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">scale</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span><span class="o">**</span><span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">Bmat</span>
+        <span class="k">return</span> <span class="n">t_coarse</span><span class="p">,</span> <span class="n">dt_coarse</span><span class="p">,</span> <span class="n">Bmat_func</span>
+
+    <span class="k">return</span> <span class="n">timeinterpbasis_chrom</span></div>
+
+
 <div class="viewcode-block" id="make_dmtimeinterpbasis">
 <a class="viewcode-back" href="../../api/signals.html#discovery.signals.make_dmtimeinterpbasis">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_dmtimeinterpbasis</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tndm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;make_dmtimeinterpbasis is deprecated; use make_timeinterpbasis_dm &quot;</span>
+                  <span class="s2">&quot;(alpha=2 DM) or make_timeinterpbasis_chromatic (variable alpha) instead.&quot;</span><span class="p">,</span>
+                  <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     <span class="n">basis</span> <span class="o">=</span> <span class="n">make_timeinterpbasis</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">dmbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
@@ -1407,6 +1538,39 @@
     <span class="k">return</span> <span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psd2cov</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">oversample</span><span class="p">,</span> <span class="n">fmax_factor</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">),</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
                           <span class="n">fourierbasis</span><span class="o">=</span><span class="p">(</span><span class="n">make_timeinterpbasis</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">t0</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span> <span class="k">if</span> <span class="n">fourierbasis</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">fourierbasis</span><span class="p">),</span>
                           <span class="n">common</span><span class="o">=</span><span class="n">common</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="makegp_fftcov_dm">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.makegp_fftcov_dm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">makegp_fftcov_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">fmax_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dm_gp&#39;</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;FFT-covariance (time-domain) GP for DM noise (fixed chromatic index alpha = 2).</span>
+
+<span class="sd">    DM counterpart of :func:`makegp_fftcov`: the achromatic time-interpolation basis</span>
+<span class="sd">    is replaced by :func:`make_timeinterpbasis_dm`, scaling each row by the cold-plasma</span>
+<span class="sd">    dispersion factor ``(fref / psr.freqs) ** 2``. ``prior`` is a power-spectral-density</span>
+<span class="sd">    function (e.g. :func:`powerlaw`) that is converted to a time-domain covariance via</span>
+<span class="sd">    :func:`psd2cov`. For a free chromatic index use :func:`makegp_fftcov_chrom`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">getspan</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span> <span class="k">if</span> <span class="n">T</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">T</span>
+    <span class="k">return</span> <span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psd2cov</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">oversample</span><span class="p">,</span> <span class="n">fmax_factor</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">),</span>
+                          <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">fourierbasis</span><span class="o">=</span><span class="n">make_timeinterpbasis_dm</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">t0</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="n">fref</span><span class="p">),</span> <span class="n">common</span><span class="o">=</span><span class="n">common</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="makegp_fftcov_chrom">
+<a class="viewcode-back" href="../../api/signals.html#discovery.signals.makegp_fftcov_chrom">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">makegp_fftcov_chrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">fmax_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;chrom_gp&#39;</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;FFT-covariance (time-domain) GP for chromatic noise with a variable index.</span>
+
+<span class="sd">    Chromatic counterpart of :func:`makegp_fftcov`: the achromatic time-interpolation</span>
+<span class="sd">    basis is replaced by :func:`make_timeinterpbasis_chromatic`, scaling each row by</span>
+<span class="sd">    ``(fref / psr.freqs) ** alpha`` with the chromatic index ``alpha`` a free parameter.</span>
+<span class="sd">    ``prior`` is a power-spectral-density function (e.g. :func:`powerlaw`) converted to a</span>
+<span class="sd">    time-domain covariance via :func:`psd2cov`. For the alpha = 2 (DM) case use</span>
+<span class="sd">    :func:`makegp_fftcov_dm`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">getspan</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span> <span class="k">if</span> <span class="n">T</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">T</span>
+    <span class="k">return</span> <span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psd2cov</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">oversample</span><span class="p">,</span> <span class="n">fmax_factor</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">),</span>
+                          <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">fourierbasis</span><span class="o">=</span><span class="n">make_timeinterpbasis_chromatic</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">t0</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="n">fref</span><span class="p">),</span> <span class="n">common</span><span class="o">=</span><span class="n">common</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="makecommongp_fftcov">
