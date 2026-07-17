@@ -2355,6 +2355,38 @@
         <span class="k">return</span> <span class="n">kernelsolve</span></div>
 
 
+<div class="viewcode-block" id="WoodburyKernel_varP.make_kernelsolve_simple">
+<a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelsolve_simple">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelsolve_simple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="c1"># Conditional mean of GP coefficients for Sigma = N + F P F^T when N is</span>
+        <span class="c1"># a bare fixed NoiseMatrix (no marginalized-out T block on the left).</span>
+        <span class="c1"># Returns (b_mean, cf) with</span>
+        <span class="c1">#   b_mean = (P^-1 + F^T N^-1 F)^-1 F^T N^-1 y</span>
+        <span class="c1">#   cf     = cho_factor(P^-1 + F^T N^-1 F, lower=True)</span>
+        <span class="c1"># lower=True is required: sample_conditional uses cf[0].T as an upper</span>
+        <span class="c1"># triangle (solve_triangular(..., lower=False)). Mirrors</span>
+        <span class="c1"># WoodburyKernel_varNP.make_kernelsolve_simple and the non-simple</span>
+        <span class="c1"># branches in likelihood.conditional. N is fixed → precompute N^-1 F.</span>
+        <span class="n">F</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="n">NmF</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">solve_2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>   <span class="c1"># ConstantKernel API: no params</span>
+        <span class="n">FtNmF</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">NmF</span><span class="p">)</span>
+        <span class="n">FtNmy</span> <span class="o">=</span> <span class="n">jnparray</span><span class="p">(</span><span class="n">NmF</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="n">P_var_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">P_var</span><span class="o">.</span><span class="n">make_inv</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">kernelsolve</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">Pinv</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">P_var_inv</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+            <span class="c1"># Pinv is 2D (NoiseMatrix1D_var.make_inv returns jnp.diag(...)).</span>
+            <span class="n">cf</span> <span class="o">=</span> <span class="n">jsp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cho_factor</span><span class="p">(</span><span class="n">Pinv</span> <span class="o">+</span> <span class="n">FtNmF</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">b_mean</span> <span class="o">=</span> <span class="n">jsp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cho_solve</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">FtNmy</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">b_mean</span><span class="p">,</span> <span class="n">cf</span>
+
+        <span class="n">kernelsolve</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">P_var_inv</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">kernelsolve</span></div>
+
+
 <div class="viewcode-block" id="WoodburyKernel_varP.make_kernelproduct_vary">
 <a class="viewcode-back" href="../../api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_kernelproduct_vary">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">make_kernelproduct_vary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
