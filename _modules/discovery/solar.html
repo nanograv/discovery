@@ -525,26 +525,14 @@
                   
   <h1>Source code for discovery.solar</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">const</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">matrix</span>
 
 <span class="n">AU_light_sec</span> <span class="o">=</span> <span class="n">const</span><span class="o">.</span><span class="n">AU</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">c</span>  <span class="c1"># 1 AU in light seconds</span>
 <span class="n">AU_pc</span> <span class="o">=</span> <span class="n">const</span><span class="o">.</span><span class="n">AU</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">pc</span>        <span class="c1"># 1 AU in parsecs (for DM normalization)</span>
-
-<div class="viewcode-block" id="make_solardmfourierbasis">
-<a class="viewcode-back" href="../../api/solar.html#discovery.solar.make_solardmfourierbasis">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">make_solardmfourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    for a fourier basis for the solar wind gp. this assumes</span>
-<span class="sd">    that you include a deterministic solar wind delay, which samples</span>
-<span class="sd">    n_earth, and here these are stochastic fluctuations on top of that. </span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
-    <span class="n">shape</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">*</span> <span class="n">shape</span><span class="p">(</span><span class="mf">1.</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span></div>
-
 
 <div class="viewcode-block" id="theta_impact">
 <a class="viewcode-back" href="../../api/solar.html#discovery.solar.theta_impact">[docs]</a>
@@ -582,31 +570,192 @@
     <span class="k">return</span> <span class="n">solardm</span></div>
 
 
-
-<div class="viewcode-block" id="chromaticdelay">
-<a class="viewcode-back" href="../../api/solar.html#discovery.solar.chromaticdelay">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">chromaticdelay</span><span class="p">(</span><span class="n">toas</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span> <span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
-    <span class="n">toadays</span><span class="p">,</span> <span class="n">invnormfreqs</span> <span class="o">=</span> <span class="n">toas</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">day</span><span class="p">,</span> <span class="mf">1400.0</span> <span class="o">/</span> <span class="n">freqs</span>
-    <span class="n">dt</span> <span class="o">=</span> <span class="n">toadays</span> <span class="o">-</span> <span class="n">t0</span>
-
-    <span class="k">return</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dt</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">log10_Amp</span><span class="p">)</span> <span class="o">*</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">dt</span> <span class="o">/</span> <span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">log10_tau</span><span class="p">))</span> <span class="o">*</span> <span class="n">invnormfreqs</span><span class="o">**</span><span class="n">idx</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">_dm_solar_close</span><span class="p">(</span><span class="n">n_earth</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">):</span>
+     <span class="k">return</span> <span class="p">(</span><span class="n">n_earth</span> <span class="o">*</span> <span class="n">AU_light_sec</span> <span class="o">*</span> <span class="n">AU_pc</span> <span class="o">/</span> <span class="n">r_earth</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="make_chromaticdelay">
-<a class="viewcode-back" href="../../api/solar.html#discovery.solar.make_chromaticdelay">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;From enterprise_extensions: pre-calculate chromatic exponential-dip delay.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_dm_solar</span><span class="p">(</span><span class="n">n_earth</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)</span> <span class="o">*</span>
+            <span class="p">(</span><span class="n">n_earth</span> <span class="o">*</span> <span class="n">AU_light_sec</span> <span class="o">*</span> <span class="n">AU_pc</span>
+            <span class="o">/</span> <span class="p">(</span><span class="n">r_earth</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">))))</span>
 
-    <span class="n">toadays</span><span class="p">,</span> <span class="n">invnormfreqs</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">day</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="mf">1400.0</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
+<div class="viewcode-block" id="dm_solar">
+<a class="viewcode-back" href="../../api/solar.html#discovery.solar.dm_solar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">dm_solar</span><span class="p">(</span><span class="n">n_earth</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate dispersion measure from a 1/r^2 solar wind density model.</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">decay</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
-        <span class="n">dt</span> <span class="o">=</span> <span class="n">toadays</span> <span class="o">-</span> <span class="n">t0</span>
-        <span class="k">return</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dt</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">log10_Amp</span><span class="p">)</span> <span class="o">*</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">dt</span> <span class="o">/</span> <span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">log10_tau</span><span class="p">))</span> <span class="o">*</span> <span class="n">invnormfreqs</span><span class="o">**</span><span class="n">idx</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+<span class="sd">    This function computes the integrated column density of free electrons</span>
+<span class="sd">    along the line of sight through the solar wind, assuming a spherically</span>
+<span class="sd">    symmetric 1/r^2 density profile. The calculation uses different approximations</span>
+<span class="sd">    depending on the solar elongation angle to avoid numerical issues.</span>
 
-    <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">decay</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">decay</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_earth : float or ndarray</span>
+<span class="sd">        Solar wind proton/electron density at Earth&#39;s orbit (cm^-3).</span>
+<span class="sd">    theta : float or ndarray</span>
+<span class="sd">        Solar elongation angle between the Sun and the line of sight to the</span>
+<span class="sd">        pulsar (radians). theta = 0 corresponds to the Sun directly in the</span>
+<span class="sd">        line of sight, theta = pi/2 is at right angles.</span>
+<span class="sd">    r_earth : float or ndarray</span>
+<span class="sd">        Distance from Earth to Sun (light seconds).</span>
 
-    <span class="k">return</span> <span class="n">decay</span></div>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float or ndarray</span>
+<span class="sd">        Dispersion measure contribution from solar wind (pc cm^-3).</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    For small elongation angles (pi - theta &lt; 1e-5), the function uses a</span>
+<span class="sd">    close approach approximation to avoid numerical instabilities. Otherwise,</span>
+<span class="sd">    it uses the full integral formula from the 1/r^2 density model.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] You, X. P., Hobbs, G., Coles, W. A., et al. 2007, MNRAS, 378, 493</span>
+<span class="sd">           &quot;Dispersion measure variations and their effect on precision pulsar timing&quot;</span>
+<span class="sd">           https://doi.org/10.1111/j.1365-2966.2007.11617.x</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">theta</span> <span class="o">&gt;=</span> <span class="mf">1e-5</span><span class="p">,</span>
+                    <span class="n">_dm_solar</span><span class="p">(</span><span class="n">n_earth</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">),</span>
+                    <span class="n">_dm_solar_close</span><span class="p">(</span><span class="n">n_earth</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="fourierbasis_solar_dm">
+<a class="viewcode-back" href="../../api/solar.html#discovery.solar.fourierbasis_solar_dm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fourierbasis_solar_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span>
+                        <span class="n">components</span><span class="p">,</span>
+                        <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a Fourier design matrix for solar wind dispersion measure variations.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    psr : :class:`pulsar.Pulsar`</span>
+<span class="sd">        Discovery Pulsar object containing TOAs, frequencies, and solar system</span>
+<span class="sd">        ephemeris information.</span>
+<span class="sd">    components : int</span>
+<span class="sd">        Number of Fourier components to include in the model.</span>
+<span class="sd">    T : float, optional</span>
+<span class="sd">        Total timespan of the data in seconds. If None, will be computed from</span>
+<span class="sd">        the pulsar&#39;s TOAs.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f : ndarray</span>
+<span class="sd">        Sampling frequencies for the Fourier components (Hz).</span>
+<span class="sd">    df : float</span>
+<span class="sd">        Frequency spacing between components (Hz).</span>
+<span class="sd">    F : ndarray</span>
+<span class="sd">        Solar wind DM-variation Fourier design matrix with shape (n_toas, 2*components),</span>
+<span class="sd">        where each TOA is weighted by the frequency-dependent solar wind DM delays.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function is adapted from enterprise_extensions. The design matrix is</span>
+<span class="sd">    constructed by first obtaining a standard Fourier basis, then scaling each</span>
+<span class="sd">    TOA by the solar wind DM signature computed from the 1/r^2 solar wind density</span>
+<span class="sd">    model.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Create a Gaussian process model for solar wind DM variations using a powerlaw prior:</span>
+
+<span class="sd">    &gt;&gt;&gt; from discovery import solar, signals</span>
+<span class="sd">    &gt;&gt;&gt; # Create a solar wind DM GP with 30 Fourier components</span>
+<span class="sd">    &gt;&gt;&gt; gp = signals.makegp_fourier(</span>
+<span class="sd">    ...     psr,</span>
+<span class="sd">    ...     signals.powerlaw,</span>
+<span class="sd">    ...     components=30,</span>
+<span class="sd">    ...     fourierbasis=solar.fourierbasis_solar_dm,</span>
+<span class="sd">    ...     name=&#39;solar_wind_dm&#39;</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Lazy import to avoid circular dependency</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">fourierbasis</span>
+
+    <span class="c1"># get base Fourier design matrix and frequencies</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">=</span> <span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+    <span class="n">theta</span><span class="p">,</span> <span class="n">R_earth</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">theta_impact</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
+    <span class="n">dm_sol_wind</span> <span class="o">=</span> <span class="n">dm_solar</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">R_earth</span><span class="p">)</span>
+    <span class="n">dt_DM</span> <span class="o">=</span> <span class="n">dm_sol_wind</span> <span class="o">*</span> <span class="mf">4.148808e3</span> <span class="o">/</span> <span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">*</span> <span class="n">dt_DM</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="makegp_timedomain_solar_dm">
+<a class="viewcode-back" href="../../api/solar.html#discovery.solar.makegp_timedomain_solar_dm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">makegp_timedomain_solar_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">covariance</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;timedomain_sw_gp&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a time-domain Gaussian process for solar wind dispersion measure variations.</span>
+
+<span class="sd">    This function builds a GP model for solar wind-induced DM variations by combining</span>
+<span class="sd">    a covariance function in the time domain with a model for the solar wind geometry.</span>
+<span class="sd">    The TOAs are quantized into time bins, and the GP is constructed using the time separations</span>
+<span class="sd">    between bins weighted by the solar wind DM signature.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    psr : :class:`pulsar.Pulsar`</span>
+<span class="sd">        Discovery Pulsar object containing TOAs, frequencies, and solar system</span>
+<span class="sd">        ephemeris information.</span>
+<span class="sd">    covariance : callable</span>
+<span class="sd">        Function that returns the time domain autocorrelation for a given</span>
+<span class="sd">        separation (tau). Must have signature `covariance(tau, *params)` where</span>
+<span class="sd">        tau is the time separation array.</span>
+<span class="sd">    dt : float, optional</span>
+<span class="sd">        Time bin width in seconds for quantizing TOAs. Default is 1.0.</span>
+<span class="sd">    common : list, optional</span>
+<span class="sd">        List of parameter names that should be treated as common (shared) across</span>
+<span class="sd">        pulsars rather than pulsar-specific. Default is [].</span>
+<span class="sd">    name : str, optional</span>
+<span class="sd">        Base name for the GP parameters. Used as prefix for parameter naming.</span>
+<span class="sd">        Default is &#39;timedomain_sw_gp&#39;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`matrix.VariableGP`</span>
+<span class="sd">        A matrix.VariableGP object containing the noise covariance matrix (as a</span>
+<span class="sd">        NoiseMatrix2D_var) and the design matrix (Umat) that maps the GP</span>
+<span class="sd">        to the TOA residuals via solar wind DM delays. See :class:`matrix.VariableGP`</span>
+<span class="sd">        for details.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The design matrix Umat maps the low-rank GP (evaluated at quantized TOAs)</span>
+<span class="sd">    to the full TOA residuals, scaled by the frequency-dependent solar wind</span>
+<span class="sd">    DM signature.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Lazy import to avoid circular dependency</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">quantize</span>
+
+    <span class="n">argspec</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getfullargspec</span><span class="p">(</span><span class="n">covariance</span><span class="p">)</span>
+    <span class="n">argmap</span> <span class="o">=</span> <span class="p">[(</span><span class="n">arg</span> <span class="k">if</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">common</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">common</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+              <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">argspec</span><span class="o">.</span><span class="n">args</span> <span class="k">if</span> <span class="n">arg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;tau&#39;</span><span class="p">]]</span>
+
+    <span class="c1"># get solar wind ingredients</span>
+    <span class="n">theta</span><span class="p">,</span> <span class="n">R_earth</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">theta_impact</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
+    <span class="n">dm_sol_wind</span> <span class="o">=</span> <span class="n">dm_solar</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">R_earth</span><span class="p">)</span>
+    <span class="n">dt_DM</span> <span class="o">=</span> <span class="n">dm_sol_wind</span> <span class="o">*</span> <span class="mf">4.148808e3</span> <span class="o">/</span> <span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">bins</span> <span class="o">=</span> <span class="n">quantize</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">Umat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">bins</span> <span class="o">==</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+    <span class="n">Umat</span> <span class="o">=</span> <span class="n">Umat</span> <span class="o">*</span> <span class="n">dt_DM</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">toas</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">@</span> <span class="n">Umat</span> <span class="o">/</span> <span class="n">Umat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">get_tmat</span> <span class="o">=</span> <span class="n">covariance</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">toas</span><span class="p">[:,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">-</span> <span class="n">toas</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">getphi</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">get_tmat</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="o">*</span><span class="p">[</span><span class="n">params</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">argmap</span><span class="p">])</span>
+    <span class="n">getphi</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">argmap</span>
+
+    <span class="k">return</span> <span class="n">matrix</span><span class="o">.</span><span class="n">VariableGP</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">NoiseMatrix2D_var</span><span class="p">(</span><span class="n">getphi</span><span class="p">),</span> <span class="n">Umat</span><span class="p">)</span></div>
+
 
 </pre></div>
 

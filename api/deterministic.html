@@ -42,6 +42,7 @@
     <script src="../_static/documentation_options.js?v=db78e746"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/deterministic';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -564,6 +565,119 @@ cos(2pi k t/T), sin(2pi k t/T) for t in [t0, t0+T].</p>
 <span class="sig-prename descclassname"><span class="pre">discovery.deterministic.</span></span><span class="sig-name descname"><span class="pre">makefourier_binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pulsarterm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/deterministic.html#makefourier_binary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.deterministic.makefourier_binary" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.deterministic.chromatic_exponential">
+<span class="sig-prename descclassname"><span class="pre">discovery.deterministic.</span></span><span class="sig-name descname"><span class="pre">chromatic_exponential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/deterministic.html#chromatic_exponential"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.deterministic.chromatic_exponential" title="Link to this definition">#</a></dt>
+<dd><p>Factory function for chromatic exponential delay model.</p>
+<p>Creates a delay function that models chromatic exponential events (e.g., profile
+state changes) with frequency-dependent amplitude scaling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Pulsar object containing toas and freqs attributes</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>delay</strong> – Function with signature (t0, log10_Amp, log10_tau, sign_param, alpha) -&gt; ndarray
+Computes chromatic exponential delay:</p>
+<div class="math notranslate nohighlight">
+\[\Delta(t) = \pm A_0 \exp\left(-\frac{t - t_0}{\tau}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha H(t - t_0)\]</div>
+<p>where <span class="math notranslate nohighlight">\(H(t - t_0)\)</span> is the Heaviside step function.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.deterministic.chromatic_annual">
+<span class="sig-prename descclassname"><span class="pre">discovery.deterministic.</span></span><span class="sig-name descname"><span class="pre">chromatic_annual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/deterministic.html#chromatic_annual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.deterministic.chromatic_annual" title="Link to this definition">#</a></dt>
+<dd><p>Factory function for chromatic annual delay model.</p>
+<p>Creates a delay function that models chromatic annual sinusoidal variations
+(e.g., annual DM or scattering variations) with frequency-dependent amplitude scaling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Pulsar object containing toas and freqs attributes</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>delay</strong> – Function with signature (log10_Amp, phase, alpha) -&gt; ndarray
+Computes chromatic annual delay:</p>
+<div class="math notranslate nohighlight">
+\[\Delta(t) = A_0 \sin(2\pi f_{\text{yr}} t + \phi) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha\]</div>
+<p>where <span class="math notranslate nohighlight">\(f_{\text{yr}}\)</span> is the annual frequency (1/year).</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.deterministic.chromatic_gaussian">
+<span class="sig-prename descclassname"><span class="pre">discovery.deterministic.</span></span><span class="sig-name descname"><span class="pre">chromatic_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/deterministic.html#chromatic_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.deterministic.chromatic_gaussian" title="Link to this definition">#</a></dt>
+<dd><p>Factory function for chromatic Gaussian delay model.</p>
+<p>Creates a delay function that models chromatic Gaussian events (e.g., transient
+DM variations, localized profile events) with frequency-dependent amplitude scaling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Pulsar object containing toas and freqs attributes</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>delay</strong> – Function with signature (t0, log10_Amp, log10_sigma, sign_param, alpha) -&gt; ndarray
+Computes chromatic Gaussian delay:</p>
+<div class="math notranslate nohighlight">
+\[\Delta(t) = \pm A_0 \exp\left(-\frac{(t - t_0)^2}{2\sigma^2}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha\]</div>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.deterministic.orthometric_shapiro">
+<span class="sig-prename descclassname"><span class="pre">discovery.deterministic.</span></span><span class="sig-name descname"><span class="pre">orthometric_shapiro</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binphase</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/deterministic.html#orthometric_shapiro"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.deterministic.orthometric_shapiro" title="Link to this definition">#</a></dt>
+<dd><p>Factory function for orthometric Shapiro delay model.</p>
+<p>Creates a delay function that models Shapiro delay in binary pulsars using
+the orthometric parameterization from Freire &amp; Wex (2010).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Pulsar object containing toas attribute</p></li>
+<li><p><strong>binphase</strong> (<em>array-like</em>) – Binary orbital phase <span class="math notranslate nohighlight">\(\Phi\)</span> at each TOA (same shape as psr.toas)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>delay</strong> – Function with signature (h3, stig) -&gt; ndarray
+Computes orthometric Shapiro delay (Equation 29 in Freire &amp; Wex 2010):</p>
+<div class="math notranslate nohighlight">
+\[\Delta_s = -\frac{2 h_3}{\zeta^3} \log(1 + \zeta^2 - 2 \zeta \sin\Phi)\]</div>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If binphase shape does not match psr.toas shape</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Freire, P. C. C., &amp; Wex, N. (2010). The orthometric parametrization of the
+Shapiro delay and an improved test of general relativity with binary pulsars.
+MNRAS, 409(1), 199-212.</p>
+</dd></dl>
+
 </section>
 
 
@@ -619,6 +733,10 @@ cos(2pi k t/T), sin(2pi k t/T) for t in [t0, t0+T].</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.deterministic.makedelay_binary_coefficients"><code class="docutils literal notranslate"><span class="pre">makedelay_binary_coefficients()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.deterministic.cos2comp"><code class="docutils literal notranslate"><span class="pre">cos2comp()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.deterministic.makefourier_binary"><code class="docutils literal notranslate"><span class="pre">makefourier_binary()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.deterministic.chromatic_exponential"><code class="docutils literal notranslate"><span class="pre">chromatic_exponential()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.deterministic.chromatic_annual"><code class="docutils literal notranslate"><span class="pre">chromatic_annual()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.deterministic.chromatic_gaussian"><code class="docutils literal notranslate"><span class="pre">chromatic_gaussian()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.deterministic.orthometric_shapiro"><code class="docutils literal notranslate"><span class="pre">orthometric_shapiro()</span></code></a></li>
 </ul>
   </nav></div>
 

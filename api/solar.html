@@ -531,14 +531,6 @@
   <section id="module-discovery.solar">
 <span id="solar"></span><h1>solar<a class="headerlink" href="#module-discovery.solar" title="Link to this heading">#</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="discovery.solar.make_solardmfourierbasis">
-<span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">make_solardmfourierbasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#make_solardmfourierbasis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.make_solardmfourierbasis" title="Link to this definition">#</a></dt>
-<dd><p>for a fourier basis for the solar wind gp. this assumes
-that you include a deterministic solar wind delay, which samples
-n_earth, and here these are stochastic fluctuations on top of that.</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="discovery.solar.theta_impact">
 <span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">theta_impact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#theta_impact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.theta_impact" title="Link to this definition">#</a></dt>
 <dd><p>From enterprise_extensions: use the attributes of an Enterprise
@@ -555,14 +547,126 @@ due to 1/r^2 solar wind density model.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="discovery.solar.chromaticdelay">
-<span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">chromaticdelay</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">toas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freqs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_Amp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_tau</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#chromaticdelay"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.chromaticdelay" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="discovery.solar.dm_solar">
+<span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">dm_solar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_earth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_earth</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#dm_solar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.dm_solar" title="Link to this definition">#</a></dt>
+<dd><p>Calculate dispersion measure from a 1/r^2 solar wind density model.</p>
+<p>This function computes the integrated column density of free electrons
+along the line of sight through the solar wind, assuming a spherically
+symmetric 1/r^2 density profile. The calculation uses different approximations
+depending on the solar elongation angle to avoid numerical issues.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_earth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> or </em><em>ndarray</em>) – Solar wind proton/electron density at Earth’s orbit (cm^-3).</p></li>
+<li><p><strong>theta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> or </em><em>ndarray</em>) – Solar elongation angle between the Sun and the line of sight to the
+pulsar (radians). theta = 0 corresponds to the Sun directly in the
+line of sight, theta = pi/2 is at right angles.</p></li>
+<li><p><strong>r_earth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> or </em><em>ndarray</em>) – Distance from Earth to Sun (light seconds).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dispersion measure contribution from solar wind (pc cm^-3).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a> or ndarray</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>For small elongation angles (pi - theta &lt; 1e-5), the function uses a
+close approach approximation to avoid numerical instabilities. Otherwise,
+it uses the full integral formula from the 1/r^2 density model.</p>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="re9ed24ad46e3-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<p>You, X. P., Hobbs, G., Coles, W. A., et al. 2007, MNRAS, 378, 493
+“Dispersion measure variations and their effect on precision pulsar timing”
+<a class="reference external" href="https://doi.org/10.1111/j.1365-2966.2007.11617.x">https://doi.org/10.1111/j.1365-2966.2007.11617.x</a></p>
+</div>
+</div>
+</dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="discovery.solar.make_chromaticdelay">
-<span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">make_chromaticdelay</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#make_chromaticdelay"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.make_chromaticdelay" title="Link to this definition">#</a></dt>
-<dd><p>From enterprise_extensions: pre-calculate chromatic exponential-dip delay.</p>
+<dt class="sig sig-object py" id="discovery.solar.fourierbasis_solar_dm">
+<span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">fourierbasis_solar_dm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#fourierbasis_solar_dm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.fourierbasis_solar_dm" title="Link to this definition">#</a></dt>
+<dd><p>Construct a Fourier design matrix for solar wind dispersion measure variations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs, frequencies, and solar system
+ephemeris information.</p></li>
+<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of Fourier components to include in the model.</p></li>
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Total timespan of the data in seconds. If None, will be computed from
+the pulsar’s TOAs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>f</strong> (<em>ndarray</em>) – Sampling frequencies for the Fourier components (Hz).</p></li>
+<li><p><strong>df</strong> (<em>float</em>) – Frequency spacing between components (Hz).</p></li>
+<li><p><strong>F</strong> (<em>ndarray</em>) – Solar wind DM-variation Fourier design matrix with shape (n_toas, 2*components),
+where each TOA is weighted by the frequency-dependent solar wind DM delays.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function is adapted from enterprise_extensions. The design matrix is
+constructed by first obtaining a standard Fourier basis, then scaling each
+TOA by the solar wind DM signature computed from the 1/r^2 solar wind density
+model.</p>
+<p class="rubric">Examples</p>
+<p>Create a Gaussian process model for solar wind DM variations using a powerlaw prior:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">solar</span><span class="p">,</span> <span class="n">signals</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Create a solar wind DM GP with 30 Fourier components</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gp</span> <span class="o">=</span> <span class="n">signals</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">psr</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">signals</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">fourierbasis</span><span class="o">=</span><span class="n">solar</span><span class="o">.</span><span class="n">fourierbasis_solar_dm</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;solar_wind_dm&#39;</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.solar.makegp_timedomain_solar_dm">
+<span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">makegp_timedomain_solar_dm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'timedomain_sw_gp'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#makegp_timedomain_solar_dm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.makegp_timedomain_solar_dm" title="Link to this definition">#</a></dt>
+<dd><p>Construct a time-domain Gaussian process for solar wind dispersion measure variations.</p>
+<p>This function builds a GP model for solar wind-induced DM variations by combining
+a covariance function in the time domain with a model for the solar wind geometry.
+The TOAs are quantized into time bins, and the GP is constructed using the time separations
+between bins weighted by the solar wind DM signature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs, frequencies, and solar system
+ephemeris information.</p></li>
+<li><p><strong>covariance</strong> (<em>callable</em>) – Function that returns the time domain autocorrelation for a given
+separation (tau). Must have signature <cite>covariance(tau, *params)</cite> where
+tau is the time separation array.</p></li>
+<li><p><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Time bin width in seconds for quantizing TOAs. Default is 1.0.</p></li>
+<li><p><strong>common</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – List of parameter names that should be treated as common (shared) across
+pulsars rather than pulsar-specific. Default is [].</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Base name for the GP parameters. Used as prefix for parameter naming.
+Default is ‘timedomain_sw_gp’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A matrix.VariableGP object containing the noise covariance matrix (as a
+NoiseMatrix2D_var) and the design matrix (Umat) that maps the GP
+to the TOA residuals via solar wind DM delays. See <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code>
+for details.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The design matrix Umat maps the low-rank GP (evaluated at quantized TOAs)
+to the full TOA residuals, scaled by the frequency-dependent solar wind
+DM signature.</p>
 </dd></dl>
 
 </section>
@@ -614,11 +718,11 @@ due to 1/r^2 solar wind density model.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.solar.make_solardmfourierbasis"><code class="docutils literal notranslate"><span class="pre">make_solardmfourierbasis()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.solar.theta_impact"><code class="docutils literal notranslate"><span class="pre">theta_impact()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.solar.make_solardm"><code class="docutils literal notranslate"><span class="pre">make_solardm()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.solar.chromaticdelay"><code class="docutils literal notranslate"><span class="pre">chromaticdelay()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.solar.make_chromaticdelay"><code class="docutils literal notranslate"><span class="pre">make_chromaticdelay()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.solar.dm_solar"><code class="docutils literal notranslate"><span class="pre">dm_solar()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.solar.fourierbasis_solar_dm"><code class="docutils literal notranslate"><span class="pre">fourierbasis_solar_dm()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.solar.makegp_timedomain_solar_dm"><code class="docutils literal notranslate"><span class="pre">makegp_timedomain_solar_dm()</span></code></a></li>
 </ul>
   </nav></div>
 

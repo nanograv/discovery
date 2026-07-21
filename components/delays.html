@@ -617,7 +617,7 @@ variable parameters.</p>
                            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;sw_gp&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="../api/solar.html#discovery.solar.make_solardmfourierbasis" title="discovery.solar.make_solardmfourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_solardmfourierbasis()</span></code></a>, <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a>,
+<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">make_solardmfourierbasis()</span></code>, <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a>,
 and <a class="reference internal" href="../api/signals.html#discovery.signals.powerlaw" title="discovery.signals.powerlaw"><code class="xref py py-func docutils literal notranslate"><span class="pre">powerlaw()</span></code></a>.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">make_solardmfourierbasis</span></code> function creates a Fourier basis scaled by the solar wind
 geometry, so the GP represents fluctuations in <span class="math notranslate nohighlight">\(n_{\mathrm{Earth}}\)</span> around the mean.</p>
@@ -633,7 +633,7 @@ These events can impact measurements of time-correlated signals (see <a class="r
 <span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;chromatic&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="../api/solar.html#discovery.solar.make_chromaticdelay" title="discovery.solar.make_chromaticdelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_chromaticdelay()</span></code></a> and <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>.</p>
+<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">make_chromaticdelay()</span></code> and <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>.</p>
 <p>The delay function has signature:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decay_func</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
 </pre></div>
@@ -665,7 +665,7 @@ These events can impact measurements of time-correlated signals (see <a class="r
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decay_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>  <span class="c1"># Fix to DM scaling</span>
 </pre></div>
 </div>
-<p>This removes <code class="docutils literal notranslate"><span class="pre">idx</span></code> from the parameter list. See also <a class="reference internal" href="../api/solar.html#discovery.solar.chromaticdelay" title="discovery.solar.chromaticdelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromaticdelay()</span></code></a>
+<p>This removes <code class="docutils literal notranslate"><span class="pre">idx</span></code> from the parameter list. See also <code class="xref py py-func docutils literal notranslate"><span class="pre">chromaticdelay()</span></code>
 for the underlying delay function.</p>
 </section>
 </section>

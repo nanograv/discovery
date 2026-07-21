@@ -822,6 +822,262 @@
 
     <span class="k">return</span> <span class="n">fourier_binary</span></div>
 
+
+
+<div class="viewcode-block" id="chromatic_exponential">
+<a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.chromatic_exponential">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Factory function for chromatic exponential delay model.</span>
+
+<span class="sd">    Creates a delay function that models chromatic exponential events (e.g., profile</span>
+<span class="sd">    state changes) with frequency-dependent amplitude scaling.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    psr : Pulsar</span>
+<span class="sd">        Pulsar object containing toas and freqs attributes</span>
+<span class="sd">    fref : float, optional</span>
+<span class="sd">        Reference frequency in MHz for normalization (default: 1400.0)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    delay : callable</span>
+<span class="sd">        Function with signature (t0, log10_Amp, log10_tau, sign_param, alpha) -&gt; ndarray</span>
+<span class="sd">        Computes chromatic exponential delay:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \Delta(t) = \pm A_0 \exp\left(-\frac{t - t_0}{\tau}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha H(t - t_0)</span>
+
+<span class="sd">        where :math:`H(t - t_0)` is the Heaviside step function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">toas</span><span class="p">,</span> <span class="n">fnorm</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">day</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">delay</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">sign_param</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute chromatic exponential delay.</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \Delta(t) = \pm A_0 \exp\left(-\frac{t - t_0}{\tau}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha H(t - t_0)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        t0 : float</span>
+<span class="sd">            Event epoch :math:`t_0` in days (MJD)</span>
+<span class="sd">        log10_Amp : float</span>
+<span class="sd">            Log10 of amplitude :math:`A_0` in seconds</span>
+<span class="sd">        log10_tau : float</span>
+<span class="sd">            Log10 of exponential decay timescale :math:`\tau` in days</span>
+<span class="sd">        sign_param : float</span>
+<span class="sd">            Sign of the delay (positive or negative)</span>
+<span class="sd">        alpha : float</span>
+<span class="sd">            Chromatic index :math:`\alpha` (spectral index for frequency dependence)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        delay : ndarray</span>
+<span class="sd">            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">toas</span> <span class="o">-</span> <span class="n">t0</span>
+        <span class="n">tau</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_tau</span>
+        <span class="n">amp</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_Amp</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">sign_param</span><span class="p">)</span> <span class="o">*</span> <span class="n">amp</span> <span class="o">*</span> <span class="n">fnorm</span><span class="o">**</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dt</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">dt</span> <span class="o">/</span> <span class="n">tau</span><span class="p">),</span> <span class="mf">0.0</span> <span class="p">)</span>
+
+    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">&quot;chromatic_exponential_delay&quot;</span>
+    <span class="k">return</span> <span class="n">delay</span></div>
+
+
+
+<div class="viewcode-block" id="chromatic_annual">
+<a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.chromatic_annual">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">chromatic_annual</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Factory function for chromatic annual delay model.</span>
+
+<span class="sd">    Creates a delay function that models chromatic annual sinusoidal variations</span>
+<span class="sd">    (e.g., annual DM or scattering variations) with frequency-dependent amplitude scaling.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    psr : Pulsar</span>
+<span class="sd">        Pulsar object containing toas and freqs attributes</span>
+<span class="sd">    fref : float, optional</span>
+<span class="sd">        Reference frequency in MHz for normalization (default: 1400.0)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    delay : callable</span>
+<span class="sd">        Function with signature (log10_Amp, phase, alpha) -&gt; ndarray</span>
+<span class="sd">        Computes chromatic annual delay:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \Delta(t) = A_0 \sin(2\pi f_{\text{yr}} t + \phi) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha</span>
+
+<span class="sd">        where :math:`f_{\text{yr}}` is the annual frequency (1/year).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">toas</span><span class="p">,</span> <span class="n">fnorm</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">delay</span><span class="p">(</span><span class="n">log10_Amp</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute chromatic annual delay.</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \Delta(t) = A_0 \sin(2\pi f_{\text{yr}} t + \phi) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        log10_Amp : float</span>
+<span class="sd">            Log10 of amplitude :math:`A_0` in seconds</span>
+<span class="sd">        phase : float</span>
+<span class="sd">            Phase offset :math:`\phi` in radians</span>
+<span class="sd">        alpha : float</span>
+<span class="sd">            Chromatic index :math:`\alpha` (spectral index for frequency dependence)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        delay : ndarray</span>
+<span class="sd">            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_Amp</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">fyr</span> <span class="o">*</span> <span class="n">toas</span> <span class="o">+</span> <span class="n">phase</span><span class="p">)</span> <span class="o">*</span> <span class="n">fnorm</span><span class="o">**</span><span class="n">alpha</span>
+
+    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">&quot;chromatic_annual_delay&quot;</span>
+    <span class="k">return</span> <span class="n">delay</span></div>
+
+
+
+<div class="viewcode-block" id="chromatic_gaussian">
+<a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.chromatic_gaussian">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">chromatic_gaussian</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Factory function for chromatic Gaussian delay model.</span>
+
+<span class="sd">    Creates a delay function that models chromatic Gaussian events (e.g., transient</span>
+<span class="sd">    DM variations, localized profile events) with frequency-dependent amplitude scaling.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    psr : Pulsar</span>
+<span class="sd">        Pulsar object containing toas and freqs attributes</span>
+<span class="sd">    fref : float, optional</span>
+<span class="sd">        Reference frequency in MHz for normalization (default: 1400.0)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    delay : callable</span>
+<span class="sd">        Function with signature (t0, log10_Amp, log10_sigma, sign_param, alpha) -&gt; ndarray</span>
+<span class="sd">        Computes chromatic Gaussian delay:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \Delta(t) = \pm A_0 \exp\left(-\frac{(t - t_0)^2}{2\sigma^2}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">toas</span><span class="p">,</span> <span class="n">fnorm</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">day</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">delay</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_sigma</span><span class="p">,</span> <span class="n">sign_param</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute chromatic Gaussian delay.</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \Delta(t) = \pm A_0 \exp\left(-\frac{(t - t_0)^2}{2\sigma^2}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        t0 : float</span>
+<span class="sd">            Event epoch :math:`t_0` in days (MJD)</span>
+<span class="sd">        log10_Amp : float</span>
+<span class="sd">            Log10 of amplitude :math:`A_0` in seconds</span>
+<span class="sd">        log10_sigma : float</span>
+<span class="sd">            Log10 of Gaussian width :math:`\sigma` in days</span>
+<span class="sd">        sign_param : float</span>
+<span class="sd">            Sign of the delay (positive or negative)</span>
+<span class="sd">        alpha : float</span>
+<span class="sd">            Chromatic index :math:`\alpha` (spectral index for frequency dependence)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        delay : ndarray</span>
+<span class="sd">            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">sign_param</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_Amp</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">toas</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">log10_sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="n">fnorm</span><span class="o">**</span><span class="n">alpha</span>
+
+    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">&quot;chromatic_gaussian_delay&quot;</span>
+    <span class="k">return</span> <span class="n">delay</span></div>
+
+
+
+<div class="viewcode-block" id="orthometric_shapiro">
+<a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.orthometric_shapiro">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">orthometric_shapiro</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">binphase</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Factory function for orthometric Shapiro delay model.</span>
+
+<span class="sd">    Creates a delay function that models Shapiro delay in binary pulsars using</span>
+<span class="sd">    the orthometric parameterization from Freire &amp; Wex (2010).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    psr : Pulsar</span>
+<span class="sd">        Pulsar object containing toas attribute</span>
+<span class="sd">    binphase : array-like</span>
+<span class="sd">        Binary orbital phase :math:`\Phi` at each TOA (same shape as psr.toas)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    delay : callable</span>
+<span class="sd">        Function with signature (h3, stig) -&gt; ndarray</span>
+<span class="sd">        Computes orthometric Shapiro delay (Equation 29 in Freire &amp; Wex 2010):</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \Delta_s = -\frac{2 h_3}{\zeta^3} \log(1 + \zeta^2 - 2 \zeta \sin\Phi)</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If binphase shape does not match psr.toas shape</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Freire, P. C. C., &amp; Wex, N. (2010). The orthometric parametrization of the</span>
+<span class="sd">    Shapiro delay and an improved test of general relativity with binary pulsars.</span>
+<span class="sd">    MNRAS, 409(1), 199-212.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">toas</span><span class="p">,</span> <span class="n">binphase</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">day</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">binphase</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">binphase</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">toas</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input binphase must have the same shape as toas&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">delay</span><span class="p">(</span><span class="n">h3</span><span class="p">,</span> <span class="n">stig</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute orthometric Shapiro delay.</span>
+
+<span class="sd">        Implements Equation (29) from Freire &amp; Wex (2010):</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \Delta_s = -\frac{2 h_3}{\zeta^3} \log(1 + \zeta^2 - 2 \zeta \sin\Phi)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        h3 : float</span>
+<span class="sd">            Orthometric amplitude parameter :math:`h_3` (related to companion mass and inclination)</span>
+<span class="sd">        stig : float</span>
+<span class="sd">            Orthometric shape parameter :math:`\zeta` (related to orbital inclination)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        delay : ndarray</span>
+<span class="sd">            Shapiro timing delay :math:`\Delta_s` in seconds with shape matching psr.toas</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">h3</span> <span class="o">/</span> <span class="n">stig</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">stig</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">stig</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">binphase</span><span class="p">))</span>
+
+    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">&quot;orthometric_shapiro_delay&quot;</span>
+    <span class="k">return</span> <span class="n">delay</span></div>
+
 </pre></div>
 
                 </article>
