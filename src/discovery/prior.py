@@ -29,6 +29,11 @@ priordict_standard = {
     "(.*_)?red_noise_log10_fb": [-9, -6],
     "(.*_)?sw_gp_log10_A": [-10, -2],
     "(.*_)?sw_gp_gamma": [0, 4],
+    # time-domain SW kernels (squared_exponential / quasi_periodic)
+    "(.*_)?sw_gp_log10_sigma": [-2, 1.3],   # log10 rms electron density (cm^-3): 0.01-20
+    "(.*_)?sw_gp_log10_ell": [1, 4],        # log10 correlation timescale (days): 10 - ~30 yr
+    "(.*_)?sw_gp_log10_Gamma": [-3, 2],     # QP periodicity weight (dimensionless)
+    "(.*_)?sw_gp_log10_p": [-2, 1.3],       # QP period (log10 years): 0.01-20
     "crn_log10_A.*": [-18, -11],
     "crn_gamma.*": [0, 7],
     "crn_log10_fb": [-9, -6],

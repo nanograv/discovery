@@ -1194,3 +1194,57 @@ def makedelay(psr, delay, components=None, common=[], name='delay'):
 # use with makedelay to set residuals dynamically from arrays
 def getresiduals(y):
     return -y
+
+
+# Time-domain covariance kernels matching the NANOGrav 12.5yr CNM paper
+# (Hazboun+ 2025). Pass one as the `covariance` argument of a time-domain GP
+# such as solar.makegp_timedomain_solar_dm.
+#
+# Both kernels operate on tau given in SECONDS (matching psr.toas units),
+# while the kernel hyperparameters are in physically natural log10 units:
+#   log10_sigma  -- log10 of amplitude in seconds
+#   log10_ell    -- log10 of correlation timescale in DAYS
+#   log10_Gamma  -- log10 of periodicity weight (dimensionless, QP only)
+#   log10_p      -- log10 of period in YEARS (QP only)
+# These match the priors in Table A1 of the paper.
+def squared_exponential(tau, log10_sigma, log10_ell):
+    """Squared-exponential kernel (Eq. 4 of Hazboun+ 2025).
+
+    k_SE(tau) = sigma^2 * exp(-tau^2 / (2*ell^2))
+              + (sigma/500)^2 * delta(tau)
+
+    The (sigma/500)^2 diagonal regulariser stabilises the inversion of phi
+    for large ell, exactly as in the paper.
+    """
+    sigma  = 10.0 ** log10_sigma
+    ell_s  = (10.0 ** log10_ell) * 86400.0   # days -> seconds
+
+    smooth = (sigma ** 2) * jnp.exp(-0.5 * (tau / ell_s) ** 2)
+
+    # Kronecker delta on tau == 0 (tau is |t_k - t_l| so only diagonal hits 0).
+    diag   = (sigma / 500.0) ** 2 * (tau == 0.0)
+
+    return smooth + diag
+
+
+def quasi_periodic(tau, log10_sigma, log10_ell, log10_Gamma, log10_p):
+    """Quasi-periodic kernel (Eq. 6 of Hazboun+ 2025).
+
+    k_QP(tau) = (sigma/500)^2 * delta(tau)
+              + sigma^2 * exp(-tau^2 / (2*ell^2))
+                       * exp(-Gamma * sin^2(pi*tau/p))
+
+    Reduces to k_SE in the limit Gamma -> 0.
+    """
+    sigma  = 10.0 ** log10_sigma
+    ell_s  = (10.0 ** log10_ell) * 86400.0   # days -> seconds
+    Gamma  = 10.0 ** log10_Gamma
+    p_s    = (10.0 ** log10_p) * const.yr     # years -> seconds
+
+    se_part  = jnp.exp(-0.5 * (tau / ell_s) ** 2)
+    per_part = jnp.exp(-Gamma * jnp.sin(jnp.pi * tau / p_s) ** 2)
+
+    smooth = (sigma ** 2) * se_part * per_part
+    diag   = (sigma / 500.0) ** 2 * (tau == 0.0)
+
+    return smooth + diag
