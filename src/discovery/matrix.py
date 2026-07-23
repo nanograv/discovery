@@ -538,6 +538,10 @@ class NoiseMatrixSM_novar(NoiseMatrix, ConstantKernel):
     def __init__(self, N, F, P):
         self.N, self.F, self.P = N, F, P
 
+        # precompute the index table once on the concrete F, so make_solve_*
+        # never calls make_uind on a (possibly traced) array inside the likelihood
+        self.Uind = make_uind(F)
+
     def solve_1d(self, y):
         Kmy, logK = SM_1d_fused(y, self.N, self.F, self.P)
         return Kmy, logK
@@ -547,7 +551,7 @@ class NoiseMatrixSM_novar(NoiseMatrix, ConstantKernel):
         return KmT.T, logK
 
     def make_solve_1d(self):
-        Nmat, Uind, Pmat = jnp.array(self.N), jnp.array(make_uind(self.F)), jnp.array(self.P)
+        Nmat, Uind, Pmat = jnp.array(self.N), jnp.array(self.Uind), jnp.array(self.P)
 
         def solve_1d(y):
             Kmy, logK = SM_1d_indexed(y, Nmat, Uind, Pmat)
@@ -556,7 +560,7 @@ class NoiseMatrixSM_novar(NoiseMatrix, ConstantKernel):
         return solve_1d
 
     def make_solve_2d(self):
-        Nmat, Uind, Pmat = jnp.array(self.N), jnp.array(make_uind(self.F)), jnp.array(self.P)
+        Nmat, Uind, Pmat = jnp.array(self.N), jnp.array(self.Uind), jnp.array(self.P)
 
         def solve_2d(T):
             KmT, logK = SM_2d_indexed(T.T, Nmat, Uind, Pmat)
