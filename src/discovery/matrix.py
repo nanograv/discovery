@@ -10,148 +10,44 @@ import jax.numpy
 import jax.scipy
 import jax.tree_util
 
-def config(**kwargs):
-    global jnp, jsp, jnparray, jnpzeros, intarray, jnpkey, jnpsplit, jnpnormal
-    global matrix_factor, matrix_solve, matrix_norm, partial, SM_algorithm, regularize_FtNmF
+# Backend configuration and shared kernel primitives now live in `utils.py`.
+# They are re-exported here so legacy callers (signals.py, likelihood.py) that
+# reach them as `matrix.<name>` keep working until those modules are migrated.
+from .utils import (
+    config,
+    rngkey,
+    jnp, jsp,
+    jnparray, jnpzeros, intarray,
+    jnpkey, jnpsplit, jnpnormal,
+    matrix_factor, matrix_solve, matrix_norm,
+    partial, SM_algorithm, regularize_FtNmF, single_precision,
+    Kernel,
+    ConstantKernel,
+    VariableKernel,
+    ConstantMatrix,
+    VariableMatrix,
+    NoiseMatrix,
+    GP,
+    ConstantGP,
+    VariableGP,
+    GlobalVariableGP,
+    ExtSignal,
+    make_uind,
+    smup_ind,
+    smdp_ind,
+    vsmup_ind,
+    vsmdp_ind,
+    smup_ind_correct,
+    vsmup_ind_correct,
+)
 
-    np.logdet = lambda a: np.sum(np.log(np.abs(a)))
-    jax.numpy.logdet = lambda a: jax.numpy.sum(jax.numpy.log(jax.numpy.abs(a)))
-
-    np.make2d = lambda a: a if a.ndim == 2 else np.diag(a)
-    jax.numpy.make2d = lambda a: a if a.ndim == 2 else jax.numpy.diag(a)
-
-    np.makearray = lambda a: np.array(a) if hasattr(a, '__len__') else a
-    jax.numpy.makearray = lambda a: jax.numpy.array(a) if hasattr(a, '__len__') else a
-
-    backend = kwargs.get('backend')
-
-    if backend == 'numpy':
-        jnp, jsp = np, sp
-
-        jnparray = lambda a: np.array(a, dtype=np.float64)
-        jnpzeros = lambda a: np.zeros(a, dtype=np.float64)
-        intarray = lambda a: np.array(a, dtype=np.int64)
-
-        jnpkey    = lambda seed: np.random.default_rng(seed)
-        jnpsplit  = lambda gen: (gen, gen)
-        jnpnormal = lambda gen, shape: gen.normal(size=shape)
-        single_precision = False
-        partial = functools.partial
-    elif backend == 'jax':
-        jnp, jsp = jax.numpy, jax.scipy
-        single_precision = not jax.config.x64_enabled
-        jnparray = lambda a: jnp.array(a, dtype=jnp.float64 if jax.config.x64_enabled else jnp.float32)
-        jnpzeros = lambda a: jnp.zeros(a, dtype=jnp.float64 if jax.config.x64_enabled else jnp.float32)
-        intarray = lambda a: jnp.array(a, dtype=jnp.int64)
-
-        jnpkey    = lambda seed: jax.random.PRNGKey(seed)
-        jnpsplit  = jax.random.split
-        jnpnormal = jax.random.normal
-
-        partial = jax.tree_util.Partial
-
-    regularize_FtNmF = kwargs.get('regularize_FtNmF', single_precision)
-    factor = kwargs.get('factor')
-
-    if factor == 'cholesky':
-        matrix_factor = jsp.linalg.cho_factor
-        matrix_solve  = jsp.linalg.cho_solve
-        matrix_norm   = 2.0
-    elif factor == 'lu':
-        matrix_factor = jsp.linalg.lu_factor
-        matrix_solve  = jsp.linalg.lu_solve
-        matrix_norm   = 1.0
-
-    SM_algorithm = 'indexed'
-
-config(backend='jax', factor='cholesky')
-
-def rngkey(seed):
-    return jnpkey(seed)
-
-# CG solver and Lanczos-Hutchinson logdet estimator, need matfree and jaxopt
+# CG solver / Lanczos-Hutchinson logdet estimator are optional (need matfree
+# and jaxopt). Re-export them only if utils managed to define them.
 try:
-    import jaxopt
-    from matfree import decomp, funm, stochtrace
-
-    cgsolve = jaxopt.linear_solve.solve_cg
-
-    def dense_funm_sym_eigh(matfun, clip=None):
-        def fun(dense_matrix):
-            eigvals, eigvecs = funm.linalg.eigh(dense_matrix)
-            # optional clipping
-            if clip:
-                eigvals = jnp.clip(eigvals, a_min=1e-6)
-            fx_eigvals = funm.func.vmap(matfun)(eigvals)
-            return eigvecs @ funm.linalg.diagonal(fx_eigvals) @ eigvecs.T
-
-        return fun
-
-    def integrand_funm_sym_logdet(tridiag_sym, clip=None):
-        dense_funm = dense_funm_sym_eigh(jnp.log, clip=clip)
-        return funm.integrand_funm_sym(dense_funm, tridiag_sym)
-
-    def make_logdet_estimator(ndim, num_matvecs=40, samples=1000, clip=None):
-        #
-        # log det A = tr log A = (1/S) \sum_i^S z_i^T (log A) z_i
-
-        # set up Lanczos tridiagonalization interface, uses num_matvecs applications of A
-        tridiag_sym = decomp.tridiag_sym(num_matvecs)
-
-        # set up integrand for Lanczos quadrature
-        problem = integrand_funm_sym_logdet(tridiag_sym, clip=clip)
-
-        # generate `samples` random probes of shape
-        sampler = stochtrace.sampler_normal(jnpzeros(ndim), num=samples)
-
-        # combine problem and sampler into Hutchinson trace estimator
-        estimator = stochtrace.estimator(problem, sampler=sampler)
-
-        return estimator
-
+    from .utils import cgsolve, make_logdet_estimator
 except ImportError:
     pass
 
-
-
-class ConstantMatrix:
-    pass
-
-class VariableMatrix:
-    pass
-
-class Kernel:
-    pass
-
-class ConstantKernel(Kernel):
-    pass
-
-class VariableKernel(Kernel):
-    pass
-
-class GP:
-    pass
-
-class NoiseMatrix:
-    pass
-
-class ConstantGP:
-    def __init__(self, Phi, F):
-        self.Phi, self.F = Phi, F
-
-class VariableGP:
-    def __init__(self, Phi, F):
-        self.Phi, self.F = Phi, F
-
-
-# note that all factories that return a GlobalVariableGP should define its `index`
-# as a dictionary of component vector names to slices within the Fs matrix, which
-# is used by GlobalLikelihood.sample_conditional to parse out the vectors
-
-class GlobalVariableGP:
-    def __init__(self, Phi, Fs):
-        self.Phi, self.Fs = Phi, Fs
-        self.Phi_inv = None
 
 def CompoundGlobalGP(gplist):
     if all(isinstance(gp, GlobalVariableGP) for gp in gplist):
@@ -470,47 +366,11 @@ def SM_2d_fused(Y, N, F, P):
 
     return AmB - delta, jnp.sum(jnp.log(N)) + jnp.sum(jnp.log1p(vtAmu))
 
-# indexed, carefully handwritten
-
-def make_uind(U):
-    U = np.asarray(U)
-
-    # No epochs (e.g. an ECORR selection that matches no TOAs): return an
-    # empty index table instead of taking the max of an empty array.
-    if U.shape[1] == 0:
-        return np.zeros((0, 1), 'i')
-
-    maxcount = int(np.max(np.sum(U, axis=0)))
-    Uind = np.zeros((U.shape[1], maxcount + 1), 'i')
-
-    for i in range(U.shape[1]):
-        ind = np.where(U[:,i])[0]
-        Uind[i,0:len(ind)] = ind + 1
-
-    return Uind
-
-def smup_ind(A, l, Amb, ind):
-    Amu = 1.0 / A[ind]
-
-    vtAmb = l * jnp.sum(Amb[ind])
-    vtAmu = l * jnp.sum(Amu)
-
-    return Amu * (vtAmb / (1.0 + vtAmu))
-
-def smdp_ind(A, l, ind):
-    Amu = 1.0 / A[ind]
-    vtAmu = l * jnp.sum(Amu)
-
-    return jnp.log1p(vtAmu)
-
-vsmup_ind = jax.vmap(smup_ind, in_axes=(None, 0, None, 0))
-vsmdp_ind = jax.vmap(smdp_ind, in_axes=(None, 0, 0))
-
-def smup_ind_correct(yp, Np, Uind, P):
-    corrections = vsmup_ind(Np, P, yp / Np, Uind)
-    return (yp / Np).at[Uind.reshape(-1)].add(-corrections.reshape(-1))[1:]
-
-vsmup_ind_correct = jax.vmap(smup_ind_correct, in_axes=(0, None, None, None))
+# indexed, carefully handwritten —
+# `make_uind`, `smup_ind`, `smdp_ind`, `vsmup_ind`, `vsmdp_ind`,
+# `smup_ind_correct`, `vsmup_ind_correct` now live in `utils.py`
+# and are imported at the top of this module so the matrix.* names still
+# resolve. `SM_*_indexed` (below) compose them.
 
 def SM_1d_indexed(y, N, Uind, P):
     yp = jnp.pad(y, ((1,0),), constant_values=0.0)
@@ -891,7 +751,12 @@ class WoodburyKernel_novar(ConstantKernel):
         FtNmF = F.T @ self.NmF
 
         Pinv, ldP = P.inv()
-        self.cf = sp.linalg.cho_factor(Pinv + FtNmF)
+        # JAX's cho_solve treats `lower` as a static arg and requires a
+        # hashable Python bool. SciPy (esp. the batched _apply_over_batch
+        # wrapper) can return a 0-d/1-d numpy bool array — coerce here so
+        # every downstream jax.scipy.linalg.cho_solve call stays valid.
+        c, lower = sp.linalg.cho_factor(Pinv + FtNmF)
+        self.cf = (c, bool(np.asarray(lower).item()))
         self.ld = ldN + ldP + 2.0 * np.logdet(np.diag(self.cf[0]))
 
         self.params = []
@@ -914,7 +779,7 @@ class WoodburyKernel_novar(ConstantKernel):
     def make_kernelproduct(self, y):
         if callable(y):
             y_var, N_solve_1d = y, self.N.make_solve_1d()
-            NmF, cf, ld = jnparray(self.NmF), (jnparray(self.cf[0]), self.cf[1]), self.ld
+            NmF, cf, ld = jnparray(self.NmF), (jnparray(self.cf[0]), bool(self.cf[1])), self.ld
 
             def kernelproduct(params):
                 yp = y_var(params)
@@ -984,7 +849,7 @@ class WoodburyKernel_novar(ConstantKernel):
         if callable(T):
             Nmy, Nmf = jnparray(Nmy), jnparray(NmF)
             N_solve_2d = self.N.make_solve_2d()
-            cf = (jnparray(self.cf[0]), self.cf[1])
+            cf = (jnparray(self.cf[0]), bool(self.cf[1]))
             F, FtNmy, FtNmF = jnparray(self.F), jnparray(FtNmy), jnparray(FtNmF)
 
             def kernelsolve(params):
@@ -1028,7 +893,7 @@ class WoodburyKernel_novar(ConstantKernel):
     def make_solve_1d(self):
         N_solve_1d = self.N.make_solve_1d()
         NmF = jnparray(self.NmF)
-        cf = (jnparray(self.cf[0]), self.cf[1])
+        cf = (jnparray(self.cf[0]), bool(self.cf[1]))
         ld = jnp.array(self.ld)
 
         # closes on N_solve_1d, NmF, cf, ld
@@ -1043,7 +908,7 @@ class WoodburyKernel_novar(ConstantKernel):
     def make_solve_2d(self):
         N_solve_2d = self.N.make_solve_2d()
         NmF = jnparray(self.NmF)
-        cf = (jnparray(self.cf[0]), self.cf[1])
+        cf = (jnparray(self.cf[0]), bool(self.cf[1]))
         ld = jnp.array(self.ld)
 
         def solve_2d(F):
@@ -1504,6 +1369,34 @@ class WoodburyKernel_varP(VariableKernel):
 
         kernelsolve.params = sorted(set(y.params + P_var_inv.params))
 
+        return kernelsolve
+
+    def make_kernelsolve_simple(self, y):
+        # GP-coefficient conditional mean for Sigma = N + F P F^T, with no
+        # marginalized-out block: b = (P^-1 + F^t N^-1 F)^-1 F^t N^-1 y,
+        # returned with the lower-Cholesky factor of (P^-1 + F^t N^-1 F).
+        # Mirrors WoodburyKernel_varNP.make_kernelsolve_simple; here N is fixed,
+        # so the N^-1 F products are precomputed once (no params).
+        #
+        # cho_factor/cho_solve are called directly rather than through the
+        # configurable matrix_factor/matrix_solve aliases: `cf` is handed to the
+        # caller under a lower-Cholesky contract (likelihood.sample_conditional
+        # solves cf[0].T with lower=False), which an LU configuration -- or
+        # cho_factor's own lower=False default -- would silently violate.
+        NmF, _ = self.N.solve_2d(self.F)          # N fixed -> no params
+        FtNmF = jnparray(self.F.T @ NmF)
+        FtNmy = jnparray(NmF.T @ jnparray(y))
+
+        P_var_inv = self.P_var.make_inv()
+
+        def kernelsolve(params):
+            Pinv, _ = P_var_inv(params)
+            cf = jsp.linalg.cho_factor(Pinv + FtNmF, lower=True)
+            b_mean = jsp.linalg.cho_solve(cf, FtNmy)
+
+            return b_mean, cf
+
+        kernelsolve.params = P_var_inv.params
         return kernelsolve
 
     def make_kernelsolve(self, y, T):
@@ -2283,8 +2176,25 @@ class VectorWoodburyKernel_varP(VariableKernel):
 
         return kernelproduct
 
-    def make_kernelproduct_gpcomponent(self, ys, transform=None):
+    def make_kernelproduct_gpcomponent(self, ys, transform=None, extsignals=None):
         # -0.5 yt Nm y + yt Nm F a - 0.5 ct Ft Nm F c - 0.5 log |2 pi N| - 0.5 cT Pm c - 0.5 log |2 pi P|
+        #
+        # The coefficient pipeline:
+        #
+        #   xi --[reparams]--> c_gp  --(prior barrier)--  data uses c_gp
+        #
+        # * ``transform`` -- single callable or list of reparams. Each is
+        #   ``rp(params, c) -> (c, ldL)`` and contributes a log-Jacobian ldL.
+        #   Decentering is a reparam. The prior sees the reparam *output*.
+        # * ``self.means`` (from the underlying commongp) -- centers the GP
+        #   prior on a0: c ~ N(a0, Phi). The prior penalizes c - a0; the data
+        #   still uses c.
+        # * ``extsignals`` (a list of ExtSignal) -- deterministic signals on
+        #   their OWN basis F_cw (e.g. a CW). The data quadratic form picks up
+        #   three extra terms: + c_cw . (F_cw^T N^-1 y)
+        #                      - c . (F^T N^-1 F_cw) . c_cw
+        #                      - 0.5 c_cw . (F_cw^T N^-1 F_cw) . c_cw
+        #   No prior, no Jacobian; CW parameters never enter the GP prior.
 
         NmFs, ldNs = zip(*[N.solve_2d(F) for N, F in zip(self.Ns, self.Fs)])
         if regularize_FtNmF:
@@ -2299,17 +2209,50 @@ class VectorWoodburyKernel_varP(VariableKernel):
         FtNmF, NmFty = jnparray(FtNmFs), jnparray(NmFtys)
         ytNmy, ldN = float(sum(ytNmys)), float(sum(ldNs))
 
+        # normalize ``transform``: may be a single callable or a list of reparams.
+        if transform is None:
+            reparams = []
+        elif isinstance(transform, (list, tuple)):
+            reparams = list(transform)
+        else:
+            reparams = [transform]
+        staged = bool(reparams)
+
+        # ``self.means`` (from the underlying commongp) centers the GP prior on a0
+        kmeans = getattr(self, 'means', None)
+        kmeans_params = list(kmeans.params) if kmeans is not None else []
+
+        # extsignal cross-terms: precompute the trace-time constants for each
+        # ExtSignal carried on its own basis F_cw. N is fixed for this whole
+        # route (ytNmy / ldN are baked above), so these are constants too.
+        extterms = []
+        for es in (extsignals or []):
+            NmFcws = [N.solve_2d(Fcw)[0] for N, Fcw in zip(self.Ns, es.Fs)]
+            FcwNmy = jnparray([NmFcw.T @ y for NmFcw, y in zip(NmFcws, ys)])
+            FtNmFcw = jnparray([F.T @ NmFcw for F, NmFcw in zip(self.Fs, NmFcws)])
+            FcwtNmFcw = jnparray([Fcw.T @ NmFcw for Fcw, NmFcw in zip(es.Fs, NmFcws)])
+            extterms.append((es.coeffs, FcwNmy, FtNmFcw, FcwtNmFcw))
+
+        def extcontrib(params, c):
+            tot = 0.0
+            for coeffs, FcwNmy, FtNmFcw, FcwtNmFcw in extterms:
+                ccw = coeffs(params)
+                tot = tot + (jnp.sum(ccw * FcwNmy)
+                             - jnp.einsum('ij,ijk,ik', c, FtNmFcw, ccw)
+                             - 0.5 * jnp.einsum('ij,ijk,ik', ccw, FcwtNmFcw, ccw))
+            return tot
+
+        extparams = sum([list(es.params) for es in (extsignals or [])], [])
+
         if isinstance(self.index, list):
             cvarsall = self.index
         else:
             cvarsall = [{par: sl} for par, sl in self.index.items()]
 
-        # cvarsall is a list over pulsars; each cvars is a dict over GPs
-        # make an npsr x nbasis array from a dictionary of parameter vectors
         def fold(params):
-            return jnp.array([jnp.concatenate([params[cvar] for cvar in cvars]) for cvars in cvarsall])
+            return jnp.array([jnp.concatenate([params[cvar] for cvar in cvars])
+                              for cvars in cvarsall])
 
-        # make a dictionary back from the array
         def unfold(c):
             cv, cnt = c.flatten(), 0
             return {cvar: cv[cnt:(cnt := cnt + sl.stop - sl.start)]
@@ -2320,43 +2263,53 @@ class VectorWoodburyKernel_varP(VariableKernel):
 
             def kernelproduct(params):
                 c = fold(params)
+                ldL = 0.0
+                for rp in reparams:
+                    c, tmp_ldL = rp(params, c)
+                    ldL = ldL + tmp_ldL
 
-                if transform is not None:
-                    c, ldL = transform(params, c)
-                    params = {**params, **unfold(c)}
-                else:
-                    ldL = 0.0
+                c_for_prior = c - kmeans(params) if kmeans is not None else c
+                logpr = P_var_prior(
+                    {**params, **unfold(c_for_prior)}
+                    if (reparams or kmeans is not None) else params)
 
-                logpr = P_var_prior(params)
+                ret = (-0.5 * ytNmy + jnp.sum(c * NmFty)
+                       - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
+                       - 0.5 * ldN + logpr + ldL
+                       + extcontrib(params, c))
+                return (ret, c) if staged else ret
 
-                ret = (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
-                       -0.5 * ldN - logpr + ldL)
-                return (ret, c) if transform is not None else ret
-
-            kernelproduct.params = sorted(set(P_var_prior.params +
-                                              sum([list(cvars) for cvars in cvarsall], []) +
-                                              ([] if transform is None else transform.params)))
+            kernelproduct.params = sorted(set(
+                P_var_prior.params +
+                sum([list(cvars) for cvars in cvarsall], []) +
+                sum([list(rp.params) for rp in reparams], []) +
+                kmeans_params + extparams))
         else:
             P_var_inv = self.P_var.make_inv()
 
             def kernelproduct(params):
                 c = fold(params)
+                ldL = 0.0
+                for rp in reparams:
+                    c, tmp_ldL = rp(params, c)
+                    ldL = ldL + tmp_ldL
 
-                if transform is not None:
-                    c, ldL = transform(params, c)
-                else:
-                    ldL = 0.0
-
-                # P_var_inv does not use the coefficients
                 Pm, ldP = P_var_inv(params)
+                c_for_prior = c - kmeans(params) if kmeans is not None else c
+                prior_term = (-0.5 * jnp.sum(c_for_prior * Pm * c_for_prior)
+                              - 0.5 * jnp.sum(ldP))
 
-                ret = (-0.5 * ytNmy + jnp.sum(c * NmFty) - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
-                       -0.5 * ldN - 0.5 * jnp.sum(c * Pm * c) - 0.5 * jnp.sum(ldP) + ldL) # note Pm is 1D
-                return (ret, c) if transform is not None else ret
+                ret = (-0.5 * ytNmy + jnp.sum(c * NmFty)
+                       - 0.5 * jnp.einsum('ij,ijk,ik', c, FtNmF, c)
+                       - 0.5 * ldN + prior_term + ldL
+                       + extcontrib(params, c))  # note Pm is 1D
+                return (ret, c) if staged else ret
 
-            kernelproduct.params = sorted(set(P_var_inv.params +
-                                              sum([list(cvars) for cvars in cvarsall], []) +
-                                              ([] if transform is None else transform.params)))
+            kernelproduct.params = sorted(set(
+                P_var_inv.params +
+                sum([list(cvars) for cvars in cvarsall], []) +
+                sum([list(rp.params) for rp in reparams], []) +
+                kmeans_params + extparams))
 
         return kernelproduct
 

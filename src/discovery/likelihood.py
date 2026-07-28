@@ -7,6 +7,9 @@ import jax
 
 from . import matrix
 from . import signals
+from . import metamatrix
+from . import metamath
+from . import summary
 
 # import jax
 
@@ -36,8 +39,31 @@ from . import signals
 #                                              common=['crn_log10_A', 'crn_gamma']),
 #                            concat=True)
 
-class PulsarLikelihood:
-    def __init__(self, args, concat=True):
+def ffunc(graph):
+    if callable(graph):
+        return graph
+
+    func = metamatrix.func(graph)
+
+    def outfunc(params):
+        return func(params=params)
+    outfunc.params = func.params
+
+    if hasattr(func, 'graph'):
+        outfunc.graph = func.graph
+
+    return outfunc
+
+
+class PulsarLikelihood(summary.SummaryMixin):
+    def __init__(self, args, concat=True, marginalize_all_but_last=None):
+        # retain the original components so the model can describe itself
+        # (see discovery.summary); the math path uses only y, delay, N below.
+        # `concat` is kept too so the kernel-tree view knows whether GPs were
+        # fused into one Woodbury layer or chained.
+        self.signals = list(args)
+        self.concat = concat
+
         y     = [arg for arg in args if isinstance(arg, np.ndarray) or isinstance(arg, jax.Array)]
         delay = [arg for arg in args if callable(arg)]
         noise = [arg for arg in args if isinstance(arg, matrix.Kernel)]
@@ -72,6 +98,22 @@ class PulsarLikelihood:
             for vgp in vgps:
                 if hasattr(vgp, 'gpname') and vgp.gpname == 'gw':
                     self.gw = vgp
+
+            # The chained (concat=False) construction below overwrites `.index`
+            # per iteration, so only the LAST variable GP keeps sampled
+            # coefficients; the rest are silently marginalized. Make that
+            # explicit rather than accidental. The matrix route has the
+            # same overwrite behavior and stays user-reachable until the
+            # legacy path is removed, so the ambiguity is rejected on both routes.
+            if len(vgps) > 1 and not concat and marginalize_all_but_last is not True:
+                shadowed = [getattr(g, 'gpname', '<unnamed>') for g in vgps[:-1]]
+                last = getattr(vgps[-1], 'gpname', '<unnamed>')
+                raise ValueError(
+                    f"PulsarLikelihood(concat=False) with multiple variable GPs "
+                    f"analytically marginalizes all but the LAST one: only "
+                    f"'{last}' keeps sampled coefficients; {shadowed} are shadowed. "
+                    f"Pass marginalize_all_but_last=True to confirm this, or use "
+                    f"concat=True to sample all coefficient blocks.")
 
             if len(vgps) > 1 and concat:
                 vgp = matrix.CompoundGP(vgps)
@@ -128,6 +170,9 @@ class PulsarLikelihood:
 
     @functools.cached_property
     def conditional(self):
+        if hasattr(self.N, 'make_conditional'):
+            return ffunc(self.N.make_conditional(self.y))
+
         if self.delay:
             raise NotImplementedError('No PulsarLikelihood.conditional with delays so far.')
         # if there's only one woodbury to do (N + T Phi T)
@@ -177,6 +222,9 @@ class PulsarLikelihood:
 
     @functools.cached_property
     def clogL(self):
+        if hasattr(self.N, 'make_coefficientproduct'):
+            return ffunc(self.N.make_coefficientproduct(self.y))
+
         if self.delay:
             raise NotImplementedError('No PulsarLikelihood.clogL with delays so far.')
         else:
@@ -184,7 +232,8 @@ class PulsarLikelihood:
 
     @functools.cached_property
     def logL(self):
-        return self.N.make_kernelproduct(self.y)
+        return ffunc(self.N.make_kernelproduct(self.y))
+
 
     @functools.cached_property
     def sample(self):
@@ -227,10 +276,10 @@ class PulsarLikelihood:
             obj = _return_next_layer_or_wn(obj)
         return obj
 
-class GlobalLikelihood:
+class GlobalLikelihood(summary.SummaryMixin):
     def __init__(self, psls, globalgp=None):
         self.psls = psls
-        self.globalgp = matrix.CompoundGlobalGP(globalgp) if isinstance(globalgp, list) else globalgp
+        self.globalgp = signals.CompoundGlobalGP(globalgp) if isinstance(globalgp, list) else globalgp
 
     # allow replacement of residuals
     def __setattr__(self, name, value):
@@ -307,51 +356,58 @@ class GlobalLikelihood:
 
             loglike.params = sorted(set.union(*[set(logl.params) for logl in logls]))
         else:
-            P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
-            kterms = [psl.N.make_kernelterms(psl.y, Fmat) for psl, Fmat in zip(self.psls, self.globalgp.Fs)]
+            if isinstance(self.globalgp.Phi, metamath.NoiseMatrix):
+                Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+                self.globalgp.Phi.inv = getattr(self.globalgp, 'Phi_inv', None)
+                self.gsm = metamath.GlobalWoodburyKernel(Ns, self.globalgp.Fs, self.globalgp.Phi)
 
-            if len(kterms) == 0:
-                raise ValueError('No PulsarLikelihoods in GlobalLikelihood: ' +
-                    'if you provided them using a generator, it may have been consumed already. ' +
-                    'In that case you can use a list.')
+                loglike = ffunc(self.gsm.make_kernelproduct(self.ys))
+            else:
+                P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
+                kterms = [psl.N.make_kernelterms(psl.y, Fmat) for psl, Fmat in zip(self.psls, self.globalgp.Fs)]
 
-            # npsr = len(self.globalgp.Fs)
-            # ngp = self.globalgp.Fs[0].shape[1]
+                if len(kterms) == 0:
+                    raise ValueError('No PulsarLikelihoods in GlobalLikelihood: ' +
+                        'if you provided them using a generator, it may have been consumed already. ' +
+                        'In that case you can use a list.')
 
-            kmeans = getattr(self.globalgp, 'means', None)
+                # npsr = len(self.globalgp.Fs)
+                # ngp = self.globalgp.Fs[0].shape[1]
 
-            def loglike(params):
-                terms = [kterm(params) for kterm in kterms]
+                kmeans = getattr(self.globalgp, 'means', None)
 
-                p0 = sum([term[0] for term in terms])
-                FtNmy = matrix.jnp.concatenate([term[1] for term in terms])
+                def loglike(params):
+                    terms = [kterm(params) for kterm in kterms]
 
-                Pinv, ldP = P_var_inv(params)
+                    p0 = sum([term[0] for term in terms])
+                    FtNmy = matrix.jnp.concatenate([term[1] for term in terms])
 
-                # for i, term in enumerate(terms):
-                #     Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(term[2])
-                # cf = matrix.jsp.linalg.cho_factor(Pinv)
+                    Pinv, ldP = P_var_inv(params)
 
-                # this seems a bit slower than the .at/.set scheme in plogL below
-                FtNmF = matrix.jsp.linalg.block_diag(*[term[2] for term in terms])
-                cf = matrix.jsp.linalg.cho_factor(Pinv + FtNmF)
+                    # for i, term in enumerate(terms):
+                    #     Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(term[2])
+                    # cf = matrix.jsp.linalg.cho_factor(Pinv)
 
-                logp = p0 + 0.5 * (FtNmy.T @ matrix.jsp.linalg.cho_solve(cf, FtNmy) - ldP - 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
+                    # this seems a bit slower than the .at/.set scheme in plogL below
+                    FtNmF = matrix.jsp.linalg.block_diag(*[term[2] for term in terms])
+                    cf = matrix.jsp.linalg.cho_factor(Pinv + FtNmF)
 
-                if kmeans is not None:
-                    # -0.5 a0t.FtNmF.a0 + 0.5 a0t.FtNmF.Sm.FtNmF.a0 + a0t.FtNmy - a0t.FtNmF.Sm.FtNmy
-                    # -0.5 (a0t.FtNmF).a0 + (FtNmy)t.a0 + 0.5 (a0t.FtNmF).Sm.FtNmF.a0 - (FtNmy)t.Sm.FtNmF.a0
-                    # -0.5 (a0t.FtNmF).(a0 - Sm.FtNmF.a0) + (FtNmy)t.(a0 - Sm.FtNmF.a0)
+                    logp = p0 + 0.5 * (FtNmy.T @ matrix.jsp.linalg.cho_solve(cf, FtNmy) - ldP - 2.0 * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
 
-                    a0 = kmeans(params)
-                    FtNmFa0 = FtNmF @ a0
-                    logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
+                    if kmeans is not None:
+                        # -0.5 a0t.FtNmF.a0 + 0.5 a0t.FtNmF.Sm.FtNmF.a0 + a0t.FtNmy - a0t.FtNmF.Sm.FtNmy
+                        # -0.5 (a0t.FtNmF).a0 + (FtNmy)t.a0 + 0.5 (a0t.FtNmF).Sm.FtNmF.a0 - (FtNmy)t.Sm.FtNmF.a0
+                        # -0.5 (a0t.FtNmF).(a0 - Sm.FtNmF.a0) + (FtNmy)t.(a0 - Sm.FtNmF.a0)
 
-                return logp
+                        a0 = kmeans(params)
+                        FtNmFa0 = FtNmF @ a0
+                        logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
 
-            params_kterms = list(set.union(*[set(kterm.params) for kterm in kterms]))
-            params_kmeans = kmeans.params if kmeans is not None else []
-            loglike.params = sorted(set(params_kterms + params_kmeans + P_var_inv.params))
+                    return logp
+
+                params_kterms = list(set.union(*[set(kterm.params) for kterm in kterms]))
+                params_kmeans = kmeans.params if kmeans is not None else []
+                loglike.params = sorted(set(params_kterms + params_kmeans + P_var_inv.params))
 
         return loglike
 
@@ -523,28 +579,57 @@ class GlobalLikelihood:
         return cond
 
 
-class ArrayLikelihood:
-    def __init__(self, psls, *, commongp=None, globalgp=None, transform=None):
+class ArrayLikelihood(summary.SummaryMixin):
+    def __init__(self, psls, *, commongp=None, globalgp=None, transform=None,
+                 decenter=False, extsignals=None):
         self.psls = psls
         self.commongp = commongp
         self.globalgp = globalgp
         self.transform = transform
+        self.decenter = decenter
+        # extsignals: deterministic signals on their OWN basis (matrix.ExtSignal),
+        # for signals needing higher frequencies than the GP bases reach (e.g. a
+        # CW); see discovery.deterministic.makecw_extsignal. For same-basis
+        # deterministic Fourier signals, use makecommongp_fourier(..., means=...)
+        # instead.
+        self.extsignals = extsignals
 
-    # @functools.cached_property
-    # def cloglast(self):
-    #     commongp = matrix.VectorCompoundGP(self.commongp[:-1])
-    #     lastgp = self.commongp[-1]
+    @functools.cached_property
+    def conditional(self):
+        # eventually move to constructor
+        if self.commongp is None or self.globalgp is not None:
+            raise ValueError("ArrayLikelihood.conditional currently only works with commongp.")
 
-    #     Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
-    #     csm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
+        if not hasattr(self, 'vsm'):
+            commongp = matrix.VectorCompoundGP(self.commongp)
+            Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+            self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
+            self.vsm.index = getattr(commongp, 'index', None)
+            self.vsm.means = getattr(commongp, 'means', None)
 
-    #     vsm = matrix.VectorWoodburyKernel_varP(Ns, lastgp.F, lastgp.Phi)
-    #     if hasattr(lastgp, 'prior'):
-    #         vsm.prior = lastgp.prior
-    #     if hasattr(lastgp, 'index'):
-    #         vsm.index = lastgp.index
+        if hasattr(self.vsm, 'make_conditional'):
+            return ffunc(self.vsm.make_conditional(self.ys))
+        else:
+            raise NotImplementedError('No ArrayLikelihood.conditional with this setup so far.')
 
-    #     return vsm.make_kernelproduct_gpcomponent(self.ys)
+    @functools.cached_property
+    def sample_conditional(self):
+        cond = self.conditional
+        index = self.vsm.index
+
+        def sample_cond(key, params):
+            mu, cf = cond(params)
+
+            key, subkey = matrix.jnpsplit(key)
+            c = mu + matrix.jsp.linalg.solve_triangular(jax.numpy.transpose(cf[0], axes=(0,2,1)),
+                                                        matrix.jnpnormal(subkey, mu.shape), lower=False)
+
+            # TODO: handling of indices is not consistent with GlobalLikelihood, returning only pulsars here
+            return key, {psl.name: ci for psl, ci in zip(self.psls, c)}
+
+        sample_cond.params = cond.params
+
+        return sample_cond
 
     @functools.cached_property
     def clogL(self):
@@ -555,34 +640,102 @@ class ArrayLikelihood:
 
             return loglike
         elif self.commongp is None:
-            # commongp = matrix.VectorCompoundGP(self.globalgp)
             raise NotImplementedError("ArrayLikelihood does not support a globalgp without a commongp")
         elif self.globalgp is None:
-            # merge common GPs if necessary
             commongp = matrix.VectorCompoundGP(self.commongp)
         else:
-            # merge common GPs and global GP
             cgp = self.commongp if isinstance(self.commongp, list) else [self.commongp]
             commongp = matrix.VectorCompoundGP(cgp + [self.globalgp])
 
         Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+
+        # Both this line and the decentering code below assume N and F are constants.
         self.vsm = matrix.VectorWoodburyKernel_varP(Ns, commongp.F, commongp.Phi)
+
+        if self.decenter:
+            # build a decentering reparam closure. Precomputes per-pulsar
+            # NmF / FtNmF / NmFty at trace time (constant N assumption).
+            #
+            # Bridge between matrix.py kernels (have .solve_2d) and metamath
+            # kernels (have .make_solve as a graph). Same for Fs — under the
+            # monkeypatch, mh.CompoundGP.F can produce metamath graphs which
+            # we materialize once at trace time.
+            def _solve_2d(N, F):
+                if hasattr(N, 'solve_2d'):
+                    return N.solve_2d(F)
+                f = metamatrix.func(N.make_solve)
+                return f(F, params={})
+
+            def _eval_F(F):
+                if isinstance(F, dict):
+                    return matrix.jnp.asarray(metamatrix.func(F)(params={}))
+                return matrix.jnp.asarray(F)
+
+            vsm_Fs = [_eval_F(F) for F in self.vsm.Fs]
+            NmFs, ldNs = zip(*[_solve_2d(N, F) for N, F in zip(self.vsm.Ns, vsm_Fs)])
+            FtNmFs = [F.T @ NmF for F, NmF in zip(vsm_Fs, NmFs)]
+            NmFtys = [NmF.T @ y for NmF, y in zip(NmFs, self.ys)]
+            FtNmF, NmFty = matrix.jnparray(FtNmFs), matrix.jnparray(NmFtys)
+
+            def decenter_transform(params, c):
+                cgp_list = (self.commongp if isinstance(self.commongp, list)
+                            else [self.commongp])
+                phis_invs_commongp = [gp.Phi.getN(params)**-1 for gp in cgp_list]
+                if self.globalgp is not None:
+                    # decenter using CURN: just the diagonal of the globalgp Phi
+                    phis_invs_globalgp = (matrix.jnp.diag(
+                        self.globalgp.Phi.getN(params)**-1
+                    ).reshape((len(self.psls), -1)))
+                    phis_invs = matrix.jnp.concatenate(
+                        [*phis_invs_commongp, phis_invs_globalgp], axis=1)
+                else:
+                    phis_invs = matrix.jnp.concatenate([*phis_invs_commongp], axis=1)
+                i1, i2 = matrix.jnp.diag_indices(phis_invs.shape[1], ndim=2)
+
+                cf = matrix.matrix_factor(FtNmF.at[:, i1, i2].add(phis_invs), lower=True)
+                am = matrix.jsp.linalg.solve_triangular(
+                    cf[0], c, trans=1, lower=cf[1])
+                mus = matrix.matrix_solve(cf, NmFty)
+                # Jacobian of f^-1 wrt xi: |L|; cf[0] is L^-1.
+                ldL = -matrix.jnp.logdet(cf[0][:, i1, i2])
+
+                return am + mus, ldL
+            decenter_transform.params = []
+
         if hasattr(commongp, 'prior'):
             self.vsm.prior = commongp.prior
         if hasattr(commongp, 'index'):
             self.vsm.index = commongp.index
+        # propagate commongp.means so the GP prior is centered on a0 when set
+        self.vsm.means = getattr(commongp, 'means', None)
 
-        loglike = self.vsm.make_kernelproduct_gpcomponent(self.ys, transform=self.transform)
+        # reparam stage: bijections on the GP coefficients; Jacobians compose.
+        reparams = []
+        if self.decenter:
+            reparams.append(decenter_transform)
+        if self.transform is not None:
+            reparams.extend(self.transform if isinstance(self.transform, (list, tuple))
+                            else [self.transform])
 
-        return loglike
+        loglike = self.vsm.make_kernelproduct_gpcomponent(
+            self.ys, transform=reparams, extsignals=self.extsignals)
+
+        # metamath.VectorWoodburyKernel returns a graph; matrix.py still
+        # returns a callable. ffunc converts a graph to a `(params) -> ...`
+        # callable at the outer boundary; for an already-callable result it's
+        # a no-op.
+        return ffunc(loglike)
 
     @functools.cached_property
     def logL(self):
         if self.commongp is None:
             if self.globalgp is None:
+                logls = [psl.logL for psl in self.psls]
+
                 def loglike(params):
-                    return sum(psl.logL(params) for psl in self.psls)
-                loglike.params = sorted(set.union(*[set(psl.logL.params) for psl in self.psls]))
+                    return sum(logl(params) for logl in logls)
+                loglike.params = sorted(set.union(*[set(logl.params) for logl in logls]))
+                loglike.graphs = [logl.graph for logl in logls if hasattr(logl, 'graph')]
 
                 return loglike
             else:
@@ -596,51 +749,57 @@ class ArrayLikelihood:
         self.vsm.means = getattr(commongp, 'means', None)
 
         if self.globalgp is None:
-            loglike = self.vsm.make_kernelproduct(self.ys)
+            loglike = ffunc(self.vsm.make_kernelproduct(self.ys))
         else:
-            P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
-            kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs)
+            if isinstance(self.globalgp.Phi, metamath.NoiseMatrix):
+                Ns, self.ys = zip(*[(psl.N, psl.y) for psl in self.psls])
+                self.gsm = metamath.GlobalWoodburyKernel(self.vsm, self.globalgp.Fs, self.globalgp.Phi)
 
-            npsr = len(self.globalgp.Fs)
-            ngp = self.globalgp.Fs[0].shape[1]
+                loglike = ffunc(self.gsm.make_kernelproduct(self.ys))
+            else:
+                P_var_inv = self.globalgp.Phi_inv or self.globalgp.Phi.make_inv()
+                kterms = self.vsm.make_kernelterms(self.ys, self.globalgp.Fs)
 
-            kmeans = getattr(self.globalgp, 'means', None)
+                npsr = len(self.globalgp.Fs)
+                ngp = self.globalgp.Fs[0].shape[1]
 
-            def loglike(params):
-                terms = kterms(params)
+                kmeans = getattr(self.globalgp, 'means', None)
 
-                p0 = matrix.jnp.sum(terms[0])
-                FtNmy = terms[1].reshape(npsr * ngp)
+                def loglike(params):
+                    terms = kterms(params)
 
-                Pinv, ldP = P_var_inv(params)
+                    p0 = matrix.jnp.sum(terms[0])
+                    FtNmy = terms[1].reshape(npsr * ngp)
 
-                # alternatives to block_diag (with similar runtimes on CPU, slower on GPU)
-                # for i in range(npsr):
-                #    Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(terms[2][i,:,:])
-                #    cf = matrix.jsp.linalg.cho_factor(Pinv)
-                #
-                #    Pinv = jax.lax.fori_loop(0, npsr,
-                #               lambda i, Pinv: jax.lax.dynamic_update_slice(Pinv,
-                #                   jax.lax.dynamic_slice(Pinv, (i*ngp,i*ngp), (ngp,ngp)) +
-                #                   jax.lax.squeeze(jax.lax.dynamic_slice(terms[2], (i,0,0), (1,ngp,ngp)), [0]),
-                #                   (i*ngp,i*ngp)),
-                #               Pinv)
-                #    cf = matrix.jsp.linalg.cho_factor(Pinv)
+                    Pinv, ldP = P_var_inv(params)
 
-                FtNmF = matrix.jsp.linalg.block_diag(*terms[2])
-                cf = matrix.matrix_factor(Pinv + FtNmF)
+                    # alternatives to block_diag (with similar runtimes on CPU, slower on GPU)
+                    # for i in range(npsr):
+                    #    Pinv = Pinv.at[i*ngp:(i+1)*ngp,i*ngp:(i+1)*ngp].add(terms[2][i,:,:])
+                    #    cf = matrix.jsp.linalg.cho_factor(Pinv)
+                    #
+                    #    Pinv = jax.lax.fori_loop(0, npsr,
+                    #               lambda i, Pinv: jax.lax.dynamic_update_slice(Pinv,
+                    #                   jax.lax.dynamic_slice(Pinv, (i*ngp,i*ngp), (ngp,ngp)) +
+                    #                   jax.lax.squeeze(jax.lax.dynamic_slice(terms[2], (i,0,0), (1,ngp,ngp)), [0]),
+                    #                   (i*ngp,i*ngp)),
+                    #               Pinv)
+                    #    cf = matrix.jsp.linalg.cho_factor(Pinv)
 
-                logp = p0 + 0.5 * (FtNmy.T @ matrix.matrix_solve(cf, FtNmy) - ldP - matrix.matrix_norm * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
+                    FtNmF = matrix.jsp.linalg.block_diag(*terms[2])
+                    cf = matrix.matrix_factor(Pinv + FtNmF)
 
-                if kmeans is not None:
-                    a0 = kmeans(params)
-                    FtNmFa0 = FtNmF @ a0
-                    logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
+                    logp = p0 + 0.5 * (FtNmy.T @ matrix.matrix_solve(cf, FtNmy) - ldP - matrix.matrix_norm * matrix.jnp.sum(matrix.jnp.log(matrix.jnp.diag(cf[0]))))
 
-                return logp
+                    if kmeans is not None:
+                        a0 = kmeans(params)
+                        FtNmFa0 = FtNmF @ a0
+                        logp = logp - (0.5 * FtNmFa0.T - FtNmy.T) @ (a0 - matrix.jsp.linalg.cho_solve(cf, FtNmFa0))
 
-            params_kmeans = kmeans.params if kmeans is not None else []
-            loglike.params = sorted(set(kterms.params + params_kmeans + P_var_inv.params))
+                    return logp
+
+                params_kmeans = kmeans.params if kmeans is not None else []
+                loglike.params = sorted(set(kterms.params + params_kmeans + P_var_inv.params))
 
         return loglike
 

@@ -17,6 +17,16 @@ from discovery import matrix
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
+@pytest.fixture(autouse=True)
+def _matrix_mode():
+    """This file tests `matrix.py` kernels directly (concrete Woodbury classes,
+    solve_1d/solve_2d). The factory only returns them under matrix mode, which
+    is no longer the default after the metamath default flip -- pin it. The root conftest
+    autouse fixture restores the module default afterward."""
+    ds.config(kernels="matrix")
+    yield
+
+
 class TestWoodburyKernel:
     def test_WoodburyKernel_varNP_vs_varP(self):
         """
@@ -376,6 +386,36 @@ class TestPulsarLikelihoodWithDelay:
             f"kernelsolve TtSy should agree. Max diff={np.max(np.abs(TtSy_no_rn - TtSy_rn))}"
         assert np.allclose(TtST_no_rn, TtST_rn, rtol=1e-12), \
             f"kernelsolve TtST should agree. Max diff={np.max(np.abs(TtST_no_rn - TtST_rn))}"
+
+
+class TestWoodburyKernelNovarChoLower:
+    """JAX cho_solve requires a hashable Python bool for the SciPy `lower` flag."""
+
+    def _novar_kernel(self):
+        np.random.seed(0)
+        n_data, n_basis = 32, 4
+        y0 = np.random.randn(n_data)
+        F = np.random.randn(n_data, n_basis)
+        N = matrix.NoiseMatrix1D_novar(np.full(n_data, 0.25))
+        P = matrix.NoiseMatrix1D_novar(np.full(n_basis, 1.0))
+        return matrix.WoodburyKernel_novar(N, F, P), y0
+
+    def test_cf_lower_is_python_bool(self):
+        kernel, _ = self._novar_kernel()
+        assert type(kernel.cf[1]) is bool
+
+    def test_callable_y_kernelproduct_tolerates_ndarray_lower(self):
+        """Regression for CI: SciPy can hand back array(False) as `lower`."""
+        kernel, y0 = self._novar_kernel()
+        kernel.cf = (kernel.cf[0], np.array(False))
+
+        def y_var(params):
+            return y0
+
+        y_var.params = []
+        kp = kernel.make_kernelproduct(y_var)
+        val = float(kp({}))
+        assert np.isfinite(val)
 
 
 class TestMakeUind:

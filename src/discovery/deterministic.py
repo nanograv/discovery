@@ -280,6 +280,29 @@ def makefourier_binary(pulsarterm=True):
     return fourier_binary
 
 
+def makecw_extsignal(psrs, components, T=None, *, pulsarterm=True, common=None,
+                     name='cw'):
+    """Continuous-wave (CW) signal on its OWN Fourier basis.
+
+    Returns a ``utils.ExtSignal`` for ``ArrayLikelihood(extsignals=[...])``.
+    Gets its own ``components`` -- typically more than the red-noise / GWB GPs --
+    so the basis reaches the higher frequencies a CW search needs. The
+    likelihood folds it in via GP-CW cross-terms; the CW parameters never enter
+    the GP prior.
+
+    Thin wrapper over ``signals.make_extsignal_fourier`` with the analytic
+    monochromatic projection ``makefourier_binary`` as the coefficient map.
+    """
+    from .signals import make_extsignal_fourier
+
+    if common is None:
+        common = [f'{name}_{p}' for p in ('log10_h0', 'log10_f0', 'ra',
+                  'sindec', 'cosinc', 'psi', 'phi_earth')]
+    coefffunc = makefourier_binary(pulsarterm=pulsarterm)
+    return make_extsignal_fourier(psrs, coefffunc, components, T=T,
+                                  common=common, name=name)
+
+
 def chromatic_exponential(psr, fref=1400.0):
     r"""
     Factory function for chromatic exponential delay model.

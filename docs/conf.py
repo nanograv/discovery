@@ -53,6 +53,10 @@ numpydoc_class_members_toctree = False
 # MyST-NB settings
 nb_execution_mode = 'off'
 
+# MyST parser extensions. dollarmath enables $...$ / $$...$$ math in markdown
+# (off by default); amsmath enables LaTeX align/gather environments.
+myst_enable_extensions = ['dollarmath', 'amsmath']
+
 # Autodoc settings
 autodoc_typehints = 'description'
 autodoc_member_order = 'bysource'

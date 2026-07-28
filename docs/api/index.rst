@@ -9,6 +9,7 @@ Complete API documentation auto-generated from source code.
    :maxdepth: 2
 
    signals
+   measurement_noise
    matrix
    pulsar
    solar
@@ -16,3 +17,5 @@ Complete API documentation auto-generated from source code.
    likelihood
    prior
    const
+   recipes
+   summary

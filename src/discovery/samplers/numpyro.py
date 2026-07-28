@@ -41,7 +41,12 @@ def makemodel(mylogl, priordict={}):
 
 
 def makesampler_nuts(numpyro_model, num_warmup=512, num_samples=1024, num_chains=1, **kwargs):
-    nuts_argnames = set(inspect.signature(infer.NUTS).parameters) - {"model"}
+    # A positional model is always supplied below, so potential_fn is not a
+    # legal override even though it appears in the NUTS signature.
+    nuts_argnames = (
+        set(inspect.signature(infer.NUTS).parameters)
+        - {"model", "potential_fn"}
+    )
     mcmc_argnames = set(inspect.signature(infer.MCMC).parameters) - {"sampler"}
 
     unknown = set(kwargs) - nuts_argnames - mcmc_argnames
@@ -136,6 +141,7 @@ def run_nuts_with_checkpoints(
     - Runs the MCMC sampler for the number of iterations required to reach the total sample number.
     - Saves samples data to feather files after each iteration.
     - Writes the NumPyro sampler state to a pickle file after each iteration.
+    - Creates `outdir` (including missing parents) if it does not exist.
 
     Example
     -------
@@ -148,7 +154,7 @@ def run_nuts_with_checkpoints(
     _ensure_sampler_to_df(sampler)
 
     outdir = Path(outdir)
-    outdir.mkdir(exist_ok=True, parents=True)
+    outdir.mkdir(parents=True, exist_ok=True)
 
     samples_file = outdir / "numpyro-samples.feather"
     checkpoint_file = outdir / "numpyro-checkpoint.pickle"

@@ -33,6 +33,18 @@ def psr(data_dir):
     return ds.Pulsar.read_feather(data_dir / "multi_backend_pulsar.feather")
 
 
+@pytest.fixture
+def matrix_kernels():
+    """Force the legacy matrix route for assertions that name matrix.py classes."""
+    if not HAVE_DISCOVERY:
+        pytest.skip("discovery package not installed")
+    ds.config(kernels="matrix")
+    try:
+        yield
+    finally:
+        ds.config(kernels="metamath")
+
+
 # ---------------------------------------------------------------------------
 # Fourier basis correctness
 # ---------------------------------------------------------------------------
@@ -159,7 +171,7 @@ def test_make_dmtimeinterpbasis_deprecated(psr):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.unit
-def test_makegp_fftcov_dm(psr):
+def test_makegp_fftcov_dm(psr, matrix_kernels):
     """makegp_fftcov_dm builds a DM GP with the expected name and parameters."""
     gp = signals.makegp_fftcov_dm(psr, signals.powerlaw, components=5)
     assert gp.gpname == "dm_gp"
@@ -211,7 +223,7 @@ def test_chromatic_default_priors(par, expected):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.unit
-def test_measurement_simple_default_params(psr):
+def test_measurement_simple_default_params(psr, matrix_kernels):
     """Default model uses one efac and a t2equad."""
     noise = signals.makenoise_measurement_simple(psr, noisedict={})
     assert isinstance(noise, matrix.NoiseMatrix1D_var)
@@ -219,21 +231,21 @@ def test_measurement_simple_default_params(psr):
 
 
 @pytest.mark.unit
-def test_measurement_simple_tnequad(psr):
+def test_measurement_simple_tnequad(psr, matrix_kernels):
     """tnequad=True switches the EQUAD parameter name/convention."""
     noise = signals.makenoise_measurement_simple(psr, noisedict={}, tnequad=True)
     assert noise.params == [f"{psr.name}_efac", f"{psr.name}_log10_tnequad"]
 
 
 @pytest.mark.unit
-def test_measurement_simple_no_equad(psr):
+def test_measurement_simple_no_equad(psr, matrix_kernels):
     """add_equad=False yields an EFAC-only model."""
     noise = signals.makenoise_measurement_simple(psr, noisedict={}, add_equad=False)
     assert noise.params == [f"{psr.name}_efac"]
 
 
 @pytest.mark.unit
-def test_measurement_simple_fixed_is_constant(psr):
+def test_measurement_simple_fixed_is_constant(psr, matrix_kernels):
     """A fully specified noisedict returns a constant (novar) matrix with correct values."""
     efac, log10_t2equad = 1.3, -6.0
     noisedict = {

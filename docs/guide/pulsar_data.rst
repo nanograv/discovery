@@ -8,19 +8,6 @@ Data Format
 
 Pulsar data is stored in the `Apache Arrow Feather format <https://arrow.apache.org/docs/python/feather.html>`_, which provides:
 
-- Fast read/write performance
-- Efficient columnar storage
-- Cross-language compatibility
-- Minimal memory overhead
-
-Each Feather file contains:
-
-- Time-of-arrival (TOA) data
-- Observing frequencies
-- Measurement uncertainties
-- Design matrix (timing model)
-- Pulsar position and metadata
-- Optional: noise parameter defaults
 
 Converting from Enterprise
 --------------------------

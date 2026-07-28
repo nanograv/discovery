@@ -1,6 +1,7 @@
 import os
 import re
 import inspect
+import math as _math
 import types
 import typing
 import warnings
@@ -11,7 +12,8 @@ import scipy.interpolate as si
 import jax
 import jax.numpy as jnp
 
-from . import matrix
+from . import utils
+from . import _kernels as kernels
 from . import const
 from . import solar
 
@@ -22,144 +24,16 @@ def residuals(psr):
 
 
 # EFAC/EQUAD/ECORR noise
-
-# no backends
-def makenoise_measurement_simple(psr, noisedict={}, add_equad=True, tnequad=False):
-    """Single-EFAC (optionally single-EQUAD) white-noise model for a pulsar.
-
-    Builds a diagonal measurement-noise matrix using one ``efac`` for the whole
-    pulsar. When ``add_equad`` is True an EQUAD term is included: ``tnequad=True``
-    uses the TempoNest convention (EQUAD added outside the EFAC scaling), while the
-    default (``tnequad=False``) uses the tempo2/``t2equad`` convention (EQUAD added
-    in quadrature with the TOA errors, inside the EFAC scaling). Set
-    ``add_equad=False`` for an EFAC-only model. If all required parameters are present
-    in ``noisedict`` a constant matrix is returned, otherwise a variable one.
-    """
-    efac = f'{psr.name}_efac'
-    if tnequad and add_equad:
-        log10_tnequad = f'{psr.name}_log10_tnequad'
-        params = [efac, log10_tnequad]
-    elif add_equad:
-        log10_t2equad = f'{psr.name}_log10_t2equad'
-        params = [efac, log10_t2equad]
-    else:
-        params = [efac]
-
-    if all(par in noisedict for par in params):
-        if tnequad and add_equad:
-            noise = noisedict[efac]**2 * psr.toaerrs**2 + (10.0**(2.0 * noisedict[log10_tnequad]))
-        elif add_equad:
-            noise = noisedict[efac]**2 * (psr.toaerrs**2 + 10.0**(2.0 * noisedict[log10_t2equad]))
-        else:
-            noise = noisedict[efac]**2 * psr.toaerrs**2
-        return matrix.NoiseMatrix1D_novar(noise)
-    else:
-        toaerrs = matrix.jnparray(psr.toaerrs)
-        def getnoise(params, tnequad=tnequad):
-            if tnequad and add_equad:
-                return params[efac]**2 * toaerrs**2 + 10.0**(2.0 * params[log10_tnequad])
-            elif add_equad:
-                return params[efac]**2 * (toaerrs**2 + 10.0**(2.0 * params[log10_t2equad]))
-            else:
-                return params[efac]**2 * toaerrs**2
-        getnoise.params = params
-
-        return matrix.NoiseMatrix1D_var(getnoise)
-
+#
+# The measurement-noise constructors `makenoise_measurement` and
+# `makenoise_measurement_simple` now live in `measurement_noise.py` (collapsed
+# form -- no _novar/_var class enumeration; the variant is chosen by the
+# `_kernels` factory). They are re-exported at the bottom of this module so
+# `signals.makenoise_measurement` and `ds.makenoise_measurement` keep resolving.
 
 # nanograv backends
 def selection_backend_flags(psr):
     return psr.backend_flags
-
-
-def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, ecorr=False, selection=selection_backend_flags, vectorize=True,
-                          outliers=False, enterprise=False):
-    backend_flags = selection(psr)
-    backends = [b for b in sorted(set(backend_flags)) if b != '']
-
-    efacs = [f'{psr.name}_{backend}_efac' for backend in backends]
-    if tnequad:
-        log10_tnequads = [f'{psr.name}_{backend}_log10_tnequad' for backend in backends]
-        params = efacs + log10_tnequads
-    else:
-        log10_t2equads = [f'{psr.name}_{backend}_log10_t2equad' for backend in backends]
-        params = efacs + log10_t2equads
-
-    masks = [(backend_flags == backend) for backend in backends]
-    logscale = np.log10(scale)
-
-    # scale each toa individually. register scales as a parameter
-    if outliers:
-        toaerr_scaling = f'{psr.name}_alpha_scaling({psr.toas.size})'
-        params.append(toaerr_scaling)
-
-    if all(par in noisedict for par in params):
-        if outliers:
-            raise ValueError("No outlier scaling if white noise is fixed.")
-        if tnequad:
-            noise = sum(mask * (noisedict[efac]**2 * (scale * psr.toaerrs)**2 + 10.0**(2 * (logscale + noisedict[log10_tnequad])))
-                        for mask, efac, log10_tnequad in zip(masks, efacs, log10_tnequads))
-        else:
-            noise = sum(mask * noisedict[efac]**2 * ((scale * psr.toaerrs)**2 + 10.0**(2 * (logscale + noisedict[log10_t2equad])))
-                        for mask, efac, log10_t2equad in zip(masks, efacs, log10_t2equads))
-
-        if ecorr:
-            egp = makegp_ecorr(psr, noisedict=noisedict, enterprise=enterprise, scale=scale, selection=selection)
-            return matrix.NoiseMatrixSM_novar(noise, egp.F, egp.Phi.N)
-        else:
-            return matrix.NoiseMatrix1D_novar(noise)
-    else:
-        if vectorize:
-            toaerrs2, masks = matrix.jnparray(scale**2 * psr.toaerrs**2), matrix.jnparray([mask for mask in masks])
-
-            if tnequad:
-                def getnoise(params):
-                    if outliers:
-                        alpha_scaling = params[toaerr_scaling]
-                    else:
-                        alpha_scaling = 1.0
-                    efac2  = matrix.jnparray([params[efac]**2 for efac in efacs])
-                    equad2 = matrix.jnparray([10.0**(2 * (logscale + params[log10_tnequad])) for log10_tnequad in log10_tnequads])
-
-                    return (masks * (efac2[:,jnp.newaxis] * (alpha_scaling*toaerrs2)[jnp.newaxis,:] + equad2[:,jnp.newaxis])).sum(axis=0)
-            else:
-
-                def getnoise(params):
-                    if outliers:
-                        alpha_scaling = params[toaerr_scaling]
-                    else:
-                        alpha_scaling = 1.0
-                    efac2  = matrix.jnparray([params[efac]**2 for efac in efacs])
-                    equad2 = matrix.jnparray([10.0**(2 * (logscale + params[log10_t2equad])) for log10_t2equad in log10_t2equads])
-
-                    return (masks * efac2[:,jnp.newaxis] * ((alpha_scaling*toaerrs2)[jnp.newaxis,:] + equad2[:,jnp.newaxis])).sum(axis=0)
-        else:
-            toaerrs, masks = matrix.jnparray(scale * psr.toaerrs), [matrix.jnparray(mask) for mask in masks]
-            if tnequad:
-                def getnoise(params):
-                    if outliers:
-                        alpha_scaling = params[toaerr_scaling]
-                    else:
-                        alpha_scaling = 1.0
-
-                    return sum(mask * (params[efac]**2 * (alpha_scaling * toaerrs**2) + 10.0**(2 * (logscale + params[log10_tnequad])))
-                               for mask, efac, log10_tnequad in zip(masks, efacs, log10_tnequads))
-            else:
-                def getnoise(params):
-                    if outliers:
-                        alpha_scaling = params[toaerr_scaling]
-                    else:
-                        alpha_scaling = 1.0
-                    return sum(mask * params[efac]**2 * (alpha_scaling * toaerrs**2 + 10.0**(2 * (logscale + params[log10_t2equad])))
-                               for mask, efac, log10_t2equad in zip(masks, efacs, log10_t2equads))
-
-        getnoise.params = params
-
-        if ecorr:
-            egp = makegp_ecorr(psr, noisedict={}, enterprise=enterprise, scale=scale, selection=selection)
-            return matrix.NoiseMatrixSM_var(getnoise, egp.F, egp.Phi.getN)
-        else:
-            return matrix.NoiseMatrix1D_var(getnoise)
 
 
 # ECORR
@@ -198,14 +72,14 @@ def makegp_ecorr_simple(psr, noisedict={}):
     if all(par in noisedict for par in params):
         phi = (10.0**(2.0 * noisedict[log10_ecorr])) * ones
 
-        return matrix.ConstantGP(matrix.NoiseMatrix1D_novar(phi), Umat)
+        return utils.ConstantGP(kernels.NoiseMatrix1D_novar(phi), Umat)
     else:
-        ones = matrix.jnparray(ones)
+        ones = utils.jnparray(ones)
         def getphi(params):
             return (10.0**(2.0 * params[log10_ecorr])) * ones
         getphi.params = params
 
-        return matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), Umat)
+        return utils.VariableGP(kernels.NoiseMatrix1D_var(getphi), Umat)
 
 # nanograv backends
 def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selection_backend_flags, variable=False, name='ecorrGP'):
@@ -265,21 +139,25 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
                 return phi
             getphi.params = []
 
-            gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), Umatall)
+            gp = utils.VariableGP(kernels.NoiseMatrix1D_var(getphi), Umatall)
             gp.index = {f'{psr.name}_{name}_coefficients({Umatall.shape[1]})': slice(0,Umatall.shape[1])} # better for cosine
             gp.name, gp.pos = psr.name, psr.pos
             gp.gpname, gp.gpcommon = name, []
 
             return gp
         else:
-            return matrix.ConstantGP(matrix.NoiseMatrix1D_novar(phi), Umatall)
+            gp = utils.ConstantGP(kernels.NoiseMatrix1D_novar(phi), Umatall)
+            gp.index = {f'{psr.name}_{name}_coefficients({Umatall.shape[1]})': slice(0, Umatall.shape[1])}
+            gp.name, gp.pos = psr.name, psr.pos
+            gp.gpname, gp.gpcommon = name, []
+            return gp
     else:
-        pmasks = [matrix.jnparray(pmask) for pmask in pmasks]
+        pmasks = [utils.jnparray(pmask) for pmask in pmasks]
         def getphi(params):
             return sum(10.0**(2 * (logscale + params[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(log10_ecorrs, pmasks))
         getphi.params = params
 
-        gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), Umatall)
+        gp = utils.VariableGP(kernels.NoiseMatrix1D_var(getphi), Umatall)
         gp.index = {f'{psr.name}_{name}_coefficients({Umatall.shape[1]})': slice(0,Umatall.shape[1])} # better for cosine
         gp.name, gp.pos = psr.name, psr.pos
         gp.gpname, gp.gpcommon = name, []
@@ -289,25 +167,32 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
 
 # timing model
 
-def makegp_improper(psr, fmat, constant=1.0e40, name='improperGP', variable=False):
+def makegp_improper(psr, fmat, constant=1.0e40, name='improperGP', variable=False, project=False):
     if variable:
-        phi = matrix.jnparray(constant * np.ones(fmat.shape[1]))
+        phi = utils.jnparray(constant * np.ones(fmat.shape[1]))
 
         def getphi(params):
             return phi
         getphi.params = []
 
-        gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
+        gp = utils.VariableGP(kernels.NoiseMatrix1D_var(getphi), fmat)
         gp.index = {f'{psr.name}_{name}_coefficients({fmat.shape[1]})': slice(0, fmat.shape[1])}
     else:
-        gp = matrix.ConstantGP(matrix.NoiseMatrix1D_novar(constant * np.ones(fmat.shape[1])), fmat)
+        gp = utils.ConstantGP(kernels.NoiseMatrix1D_novar(constant * np.ones(fmat.shape[1])), fmat)
+        gp.index = {f'{psr.name}_{name}_coefficients({fmat.shape[1]})': slice(0, fmat.shape[1])}
 
     gp.name = psr.name
     gp.gpname = name
+    # `project=True` marks this improper GP to be marginalized by orthogonal
+    # projection (the exact flat-prior limit) rather than by feeding its huge
+    # prior variance through the Woodbury solve -- the float32-safe path. See
+    # See docs/design/single_precision/ (timing-model projection).
+    # Off by default, so existing models are byte-identical.
+    gp.project = project
 
     return gp
 
-def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, variable=False):
+def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, variable=False, project=False):
     if svd:
         fmat, _, _ = np.linalg.svd(scale * psr.Mmat, full_matrices=False)
     else:
@@ -320,11 +205,32 @@ def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, varia
     else:
         if constant is None:
             constant = variance * psr.Mmat.shape[0] / psr.Mmat.shape[1]
-            return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
+            return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable, project=project)
         else:
             raise ValueError("signals.makegp_timing() can take a specification of _either_ `constant` or `variance`.")
 
-    return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
+    return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable, project=project)
+
+def makegp_standard_normal(psr, basis, name='standardnormalGP'):
+    """Proper GP with an identity (unit-normal) coefficient prior on `basis`.
+
+    Unlike makegp_improper (constant=1e40 improper/flat), this is a genuinely
+    proper ConstantGP whose coefficient covariance is exactly ones(k): its
+    coefficients c ~ Normal(0, I), and its log-determinant is retained. No
+    projection and no column normalization -- the caller passes the unnormalized
+    basis (e.g. a prior-normal z Jacobian) whose unit coefficient variance is the
+    physical prior.
+    """
+    fmat = np.asarray(basis, dtype=np.float64)
+    if fmat.ndim != 2:
+        raise ValueError("makegp_standard_normal basis must be 2-D (n_toa, k)")
+    k = fmat.shape[1]
+    gp = utils.ConstantGP(kernels.NoiseMatrix1D_novar(np.ones(k)), fmat)
+    gp.index = {f'{psr.name}_{name}_coefficients({k})': slice(0, k)}
+    gp.name = psr.name
+    gp.gpname = name
+    gp.project = False
+    return gp
 
 
 # Fourier GP
@@ -381,7 +287,7 @@ def fourierbasis_chrom(psr, components, T=None, fref=1400.0):
     """
     f, df, fmat = fourierbasis(psr, components, T)
 
-    fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
+    fmat, fnorm = utils.jnparray(fmat), utils.jnparray(fref / psr.freqs)
     def fmatfunc(alpha):
         return fmat * fnorm[:, None]**alpha
 
@@ -451,7 +357,7 @@ def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fouri
 
     f, df, fmat = fourierbasis(psr, components, T)
 
-    # f, df = matrix.jnparray(f), matrix.jnparray(df)
+    # f, df = utils.jnparray(f), utils.jnparray(df)
     def priorfunc(params):
         return prior(f, df, *[params[arg] for arg in argmap])
     priorfunc.params = argmap
@@ -467,7 +373,7 @@ def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fouri
             return fmat(*[params[arg] for arg in fargmap])
         fmatfunc.params = fargmap
 
-    gp = matrix.VariableGP(matrix.NoiseMatrix12D_var(priorfunc), fmatfunc if callable(fmat) else fmat)
+    gp = utils.VariableGP(kernels.NoiseMatrix12D_var(priorfunc), fmatfunc if callable(fmat) else fmat)
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})': slice(0,len(f))} # better for cosine
     gp.name, gp.pos = psr.name, psr.pos
     gp.gpname, gp.gpcommon = name, common
@@ -525,16 +431,17 @@ def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, 
                                          [0 if isinstance(argmap, list) else None for argmap in argmaps])
 
         def priorfunc(params):
-            vpars = [matrix.jnparray([params[arg] for arg in argmap]) if isinstance(argmap, list) else params[argmap]
+            vpars = [utils.jnparray([params[arg] for arg in argmap]) if isinstance(argmap, list) else params[argmap]
                     for argmap in argmaps]
             return vprior(f, df, *vpars)
 
         priorfunc.params = sorted(set(sum([argmap if isinstance(argmap, list) else [argmap] for argmap in argmaps], [])))
         priorfunc.type = getattr(prior, 'type', None)
 
-    gp = matrix.VariableGP(matrix.VectorNoiseMatrix12D_var(priorfunc), fmats)
+    gp = utils.VariableGP(kernels.VectorNoiseMatrix12D_var(priorfunc), fmats)
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})': slice(len(f)*i,len(f)*(i+1))
                 for i, psr in enumerate(psrs)}
+    gp.gpname, gp.gpcommon = name, common
 
     if means is not None:
         margspec = inspect.getfullargspec(means)
@@ -549,7 +456,7 @@ def makecommongp_fourier(psrs, prior, components, T, fourierbasis=fourierbasis, 
                      for arg in margs if not hasattr(psr, arg) and arg not in exclude} for psr in psrs]
 
         def meanfunc(params):
-            return matrix.jnparray([means(f, df, *psrpar.values(), **{arg: params[argname] for arg, argname in margmap.items()})
+            return utils.jnparray([means(f, df, *psrpar.values(), **{arg: params[argname] for arg, argname in margmap.items()})
                                     for psrpar, margmap in zip(psrpars, margmaps)])
         meanfunc.params = sorted(set.union(*[set(margmap.values()) for margmap in margmaps]))
 
@@ -564,10 +471,10 @@ def makegp_fourier_delay(psr, components, T=None, name='fourierGP'):
     argname = f'{psr.name}_{name}_mean({components*2})'
 
     _, _, fmat = fourierbasis(psr, components, T)
-    Fmat = matrix.jnparray(fmat)
+    Fmat = utils.jnparray(fmat)
 
     def delayfunc(params):
-        return matrix.jnp.dot(Fmat, params[argname])
+        return utils.jnp.dot(Fmat, params[argname])
     delayfunc.params = [argname]
 
     return delayfunc
@@ -578,13 +485,13 @@ def makegp_fourier_variance(psr, components, T=None, name='fourierGP', noisedict
     _, _, fmat = fourierbasis(psr, components, T)
 
     if argname in noisedict:
-        return matrix.ConstantGP(matrix.NoiseMatrix2D_novar(noisedict[argname]), fmat)
+        return utils.ConstantGP(kernels.NoiseMatrix2D_novar(noisedict[argname]), fmat)
     else:
         def priorfunc(params):
             return params[argname]
         priorfunc.params = [argname]
 
-        return matrix.VariableGP(matrix.NoiseMatrix2D_var(priorfunc), fmat)
+        return utils.VariableGP(kernels.NoiseMatrix2D_var(priorfunc), fmat)
 
 # Global Fourier GP
 
@@ -598,7 +505,7 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
                 for arg in argspec.args if arg not in ['f', 'df']] for psr in psrs]
 
     fs, dfs, fmats = zip(*[fourierbasis(psr, components, T) for psr in psrs])
-    f, df = matrix.jnparray(fs[0]), matrix.jnparray(dfs[0])
+    f, df = utils.jnparray(fs[0]), utils.jnparray(dfs[0])
 
     def priorfunc(params):
         return jnp.concatenate([prior(f, df, *[params[arg] for arg in argmap]) for argmap in argmaps])
@@ -609,7 +516,7 @@ def makegp_fourier_allpsr(psrs, prior, components, T=None, fourierbasis=fourierb
         return 1.0 / p, jnp.sum(jnp.log(p))
     invprior.params = priorfunc.params
 
-    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix1D_var(priorfunc), fmats)
+    gp = utils.GlobalVariableGP(kernels.NoiseMatrix1D_var(priorfunc), fmats)
     gp.Phi_inv = invprior
 
     gp.index = {f'{psr.name}_{name}_coefficients({2*components})':
@@ -633,9 +540,9 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
                         for arg in argspec.args if arg not in exclude])
 
     fs, dfs, fmats = zip(*[fourierbasis(psr, components, T) for psr in psrs])
-    f, df = matrix.jnparray(fs[0]), matrix.jnparray(dfs[0])
+    f, df = utils.jnparray(fs[0]), utils.jnparray(dfs[0])
 
-    orfmats = [matrix.jnparray([[orf(p1.pos, p2.pos) for p1 in psrs] for p2 in psrs]) for orf in orfs]
+    orfmats = [utils.jnparray([[orf(p1.pos, p2.pos) for p1 in psrs] for p2 in psrs]) for orf in orfs]
 
     if len(priors) == 1 and len(orfs) == 1:
         prior, orfmat, argmap = priors[0], orfmats[0], argmaps[0]
@@ -651,7 +558,7 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
 
         # if we're not in the pixel-basis case we can take a shortcut in making the inverse
         if orfmat.ndim == 2:
-            invorf, orflogdet = matrix.jnparray(np.linalg.inv(orfmat)), np.linalg.slogdet(orfmat)[1]
+            invorf, orflogdet = utils.jnparray(np.linalg.inv(orfmat)), np.linalg.slogdet(orfmat)[1]
             def invprior(params):
                 phi = prior(f, df, *[params[arg] for arg in argmap])
                 invphi = 1.0 / phi if phi.ndim == 1 else jnp.linalg.inv(phi)
@@ -666,10 +573,10 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
             invprior.params = argmap
             invprior.type = jax.Array
 
-            orfcf = matrix.jsp.linalg.cho_factor(orfmat)
+            orfcf = utils.jsp.linalg.cho_factor(orfmat)
             def factors(params):
                 phi = prior(f, df, *[params[arg] for arg in argmap])
-                phicf = matrix.jsp.linalg.cho_factor(phi)
+                phicf = utils.jsp.linalg.cho_factor(phi)
 
                 return orfcf, phicf
             factors.params = argmap
@@ -685,14 +592,20 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
         priorfunc.type = jax.Array
 
         invprior, factors = None, None
-
-    gp = matrix.GlobalVariableGP(matrix.NoiseMatrix12D_var(priorfunc), fmats)
+    # hack for metamath to properly
+    # set phiinv
+    nm =kernels.NoiseMatrix12D_var(priorfunc)
+    nm.inv =invprior
+    gp = utils.GlobalVariableGP(nm, fmats)
     gp.Phi_inv, gp.factors = invprior, factors
 
     gp.index = {f'{psr.name}_{name}_coefficients({len(f)})':
                 slice(len(f)*i, len(f)*(i+1)) for i, psr in enumerate(psrs)}
     gp.pos = [psr.pos for psr in psrs]
     gp.name = [psr.name for psr in psrs]
+    # introspection tags read by discovery.summary
+    gp.gpname, gp.gpcommon = name, common
+    gp.orfnames = [orf.__name__ for orf in orfs]
 
     if means is not None:
         margspec = inspect.getfullargspec(means)
@@ -716,6 +629,97 @@ def makeglobalgp_fourier(psrs, priors, orfs, components, T, fourierbasis=fourier
     return gp
 
 makegp_fourier_global = makeglobalgp_fourier
+
+
+def CompoundGlobalGP(gplist):
+    """Combine multiple GlobalVariableGPs (e.g. HD + monopole) into one.
+
+    Backend-agnostic replacement for the legacy ``matrix.CompoundGlobalGP``:
+    builds the combined block-structured prior through the ``_kernels`` factory
+    and ``utils.GlobalVariableGP``, so it yields matrix.py classes in matrix
+    mode and metamath classes in metamath mode. Reads only mode-neutral GP
+    attributes (``gp.Phi.getN``, ``gp.Phi.getN.params``, ``gp.Phi_inv``) -- the
+    same surface ``makeglobalgp_fourier`` populates in either mode.
+    """
+    if not all(isinstance(gp, utils.GlobalVariableGP) for gp in gplist):
+        raise NotImplementedError("Cannot concatenate these types of GlobalGPs.")
+
+    fmats = [np.hstack(F) for F in zip(*[gp.Fs for gp in gplist])]
+    npsr = len(fmats)
+    ngps = [gp.Fs[0].shape[1] for gp in gplist]
+    allgp = sum(ngps)
+    offsets = [0] + list(np.cumsum(ngps))[:-1]
+
+    def _phi_params(gp):
+        return list(getattr(gp.Phi.getN, 'params', []))
+
+    def _is_2d(gp):
+        return getattr(gp.Phi.getN, 'type', None) is jax.Array
+
+    allparams = sorted(set().union(*[set(_phi_params(gp)) for gp in gplist])) if gplist else []
+
+    if all(not _is_2d(gp) for gp in gplist):
+        # all-diagonal global priors: interleave per-pulsar diagonal blocks
+        def priorfunc(params):
+            ret = jnp.zeros(npsr * allgp, 'd')
+            for gp, ngp, offset in zip(gplist, ngps, offsets):
+                phi = gp.Phi.getN(params)
+                for i in range(npsr):
+                    ret = ret.at[i*allgp+offset:i*allgp+offset+ngp].set(phi[i*ngp:(i+1)*ngp])
+            return ret
+        priorfunc.params = allparams
+
+        multigp = utils.GlobalVariableGP(kernels.NoiseMatrix1D_var(priorfunc), fmats)
+    else:
+        # dense (cross-pulsar) global priors, e.g. HD: place each gp's
+        # (npsr*ngp)^2 block matrix into the combined block-diagonal-by-gp layout.
+        def priorfunc(params):
+            ret = jnp.zeros((npsr*allgp, npsr*allgp), 'd')
+            for gp, ngp, offset in zip(gplist, ngps, offsets):
+                phi = gp.Phi.getN(params)
+                if phi.ndim == 1:
+                    phi = jnp.diag(phi)
+                for i in range(npsr):
+                    for j in range(npsr):
+                        ret = ret.at[i*allgp+offset:i*allgp+offset+ngp,
+                                     j*allgp+offset:j*allgp+offset+ngp].set(
+                            phi[i*ngp:(i+1)*ngp, j*ngp:(j+1)*ngp])
+            return ret
+        priorfunc.params = allparams
+        priorfunc.type = jax.Array
+
+        phiinvs = [gp.Phi_inv for gp in gplist]
+        if all(pi is not None for pi in phiinvs):
+            def invprior(params):
+                ret = jnp.zeros((npsr*allgp, npsr*allgp), 'd')
+                ps, ls = zip(*[pi(params) for pi in phiinvs])
+                for p, ngp, offset in zip(ps, ngps, offsets):
+                    pinv = jnp.diag(p) if p.ndim == 1 else p
+                    for i in range(npsr):
+                        for j in range(npsr):
+                            ret = ret.at[i*allgp+offset:i*allgp+offset+ngp,
+                                         j*allgp+offset:j*allgp+offset+ngp].set(
+                                pinv[i*ngp:(i+1)*ngp, j*ngp:(j+1)*ngp])
+                return ret, sum(ls)
+            invprior.params = allparams
+            invprior.type = jax.Array
+        else:
+            invprior = None
+
+        nm = kernels.NoiseMatrix2D_var(priorfunc)
+        nm.inv = invprior
+        multigp = utils.GlobalVariableGP(nm, fmats)
+        multigp.Phi_inv = invprior
+
+    index, cnt = {}, 0
+    for vars in zip(*[gp.index.items() for gp in gplist]):
+        for var, sli in vars:
+            width = sli.stop - sli.start
+            index[var] = slice(cnt, cnt + width)
+            cnt = cnt + width
+    multigp.index = index
+
+    return multigp
 
 
 # epoch-averaged covariance matrix from covfunc(t1, t2, *args)
@@ -874,9 +878,9 @@ def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
 
     if cutoff is not None:
         i_cutoff = int(np.ceil(oversample / cutoff))
-        fs, zs = matrix.jnparray(freqs[i_cutoff:]), jnp.zeros(i_cutoff)
+        fs, zs = utils.jnparray(freqs[i_cutoff:]), jnp.zeros(i_cutoff)
     else:
-        fs = matrix.jnparray(freqs)
+        fs = utils.jnparray(freqs)
 
     def covmat(*args):
         if cutoff is not None:
@@ -888,7 +892,7 @@ def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
         Cfreq = jnp.fft.ifft(fullpsd, norm='backward')
         Ctau = Cfreq.real * len(fullpsd) * df / 2
 
-        return matrix.jsp.linalg.toeplitz(Ctau[:scaled_components:fmax_factor])
+        return utils.jsp.linalg.toeplitz(Ctau[:scaled_components:fmax_factor])
     covmat.__signature__ = inspect.signature(psdfunc)
     covmat.type = jax.Array
 
@@ -954,19 +958,296 @@ def makeglobalgp_intcov(psr, prior, orf, components, T, timeinterpbasis=timeinte
                                 components, T, fourierbasis=timeinterpbasis, exclude=['t1', 't2', 'tau'], name=name)
 
 
-# single powerlaws
+# log-space PSD constants (computed once at module load)
+_LOG10_FYR  = _math.log10(const.fyr)
+_LOG10_NORM = -_math.log10(12.0) - 2.0 * _math.log10(_math.pi)
+_LN10       = _math.log(10.0)
+_KAPPA      = 0.1  # fixed transition smoothness of the broken power-law model form
 
-def powerlaw(f, df, log10_A, gamma):
-    return (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma) * df
 
-def brokenpowerlaw(f, df, log10_A, gamma, log10_fb):
-    kappa = 0.1 # smoothness of transition
+# single power laws
 
-    return (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma) * df * \
-        (1.0 + (f / 10.0**log10_fb) ** (1.0 / kappa)) ** (kappa * gamma)
+def make_powerlaw(*, gamma=None, scale=1.0, low_clip=-18.0, high_clip=-9.0):
+    r"""Power-law PSD factory.
 
-def freespectrum(f, df, log10_rho: typing.Sequence):
-    return jnp.repeat(10.0**(2.0 * log10_rho), 2)
+    Returns a function evaluating
+
+    .. math::
+
+        \Phi(f) = \frac{A^2}{12\pi^2}\, f_{\rm yr}^{\gamma-3}\, f^{-\gamma}\, \Delta f
+
+    where :math:`A = 10^{\log_{10}A}`.  Evaluated in log-space; output
+    clipped to :math:`[10^{\rm low\_clip},\, 10^{\rm high\_clip}]` s\ :sup:`2`.
+
+    Parameters
+    ----------
+    gamma : float or None
+        Fixed spectral index.  If None (default), ``gamma`` is a sampled
+        parameter of the returned function.
+    scale : float
+        Multiplies :math:`\Phi` by ``scale**2``.
+    low_clip : float
+        Log10 floor of output in s\ :sup:`2` (default -18).
+    high_clip : float
+        Log10 ceiling of output in s\ :sup:`2` (default -9).
+
+    Returns
+    -------
+    callable
+        ``powerlaw(f, df, log10_A[, gamma])``
+    """
+    _s2 = 2.0 * _math.log10(scale)
+
+    if gamma is None:
+        def powerlaw(f, df, log10_A, gamma):
+            log10_phi = (2.0 * log10_A + (gamma - 3.0) * _LOG10_FYR
+                         - gamma * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM + _s2)
+            return utils.to_working(10.0 ** jnp.clip(log10_phi, low_clip, high_clip))
+    else:
+        _g = float(gamma)
+        _g_term = (_g - 3.0) * _LOG10_FYR
+        def powerlaw(f, df, log10_A):
+            log10_phi = (2.0 * log10_A + _g_term
+                         - _g * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM + _s2)
+            return utils.to_working(10.0 ** jnp.clip(log10_phi, low_clip, high_clip))
+
+    return powerlaw
+
+
+powerlaw = make_powerlaw()
+
+
+# ---------------------------------------------------------------------------
+# Pivot-amplitude power-law parameterization
+# ---------------------------------------------------------------------------
+
+import dataclasses as _dataclasses  # noqa: E402
+
+
+@_dataclasses.dataclass(frozen=True)
+class PowerLawParameterization:
+    r"""Amplitude/slope parameterization for a power-law GP.
+
+    The standard ``make_powerlaw`` samples ``log10_A`` at the fixed reference
+    frequency ``f_ref = 1/yr``, where the amplitude and slope ``gamma`` are
+    strongly correlated. Sampling the amplitude at a *pivot* frequency
+    ``f_pivot`` near the data's sensitivity peak decorrelates them:
+
+    .. math::
+
+        \log_{10} A_{\rm ref} = \log_{10} A_{\rm pivot}
+            + \tfrac12\, \gamma\, \log_{10}(f_{\rm pivot} / f_{\rm ref}).
+
+    The map ``(log10_A_pivot, gamma) -> (log10_A_ref, gamma)`` is affine with unit
+    Jacobian determinant, so it needs no density correction. ``amplitude_reference_frequency``
+    is where the decoded/displayed ``log10_A`` is reported (``1/yr``, matching the
+    PSD's internal reference). ``slope_pivot_frequency`` is either an explicit
+    frequency in Hz or ``"sensitivity_weighted"`` (resolved once from the fixed
+    reference-noise metric via :func:`sensitivity_weighted_pivot_frequency`).
+    """
+
+    amplitude_reference_frequency: float = const.fyr
+    slope_pivot_frequency: "float | typing.Literal['sensitivity_weighted']" = (
+        "sensitivity_weighted"
+    )
+
+    def resolve_pivot_frequency(self, *, freqs=None, weights=None) -> float:
+        """Return the concrete pivot frequency in Hz.
+
+        For ``"sensitivity_weighted"`` the per-frequency ``freqs`` (Hz) and their
+        sensitivity ``weights`` are required; an explicit numeric pivot is
+        returned as-is.
+        """
+        spf = self.slope_pivot_frequency
+        if isinstance(spf, str):
+            if spf != "sensitivity_weighted":
+                raise ValueError(
+                    f"slope_pivot_frequency must be a float or "
+                    f"'sensitivity_weighted'; got {spf!r}")
+            if freqs is None or weights is None:
+                raise ValueError(
+                    "the 'sensitivity_weighted' pivot needs freqs and weights "
+                    "from the fixed reference-noise metric")
+            return sensitivity_weighted_pivot_frequency(freqs, weights)
+        return float(spf)
+
+
+def sensitivity_weighted_pivot_frequency(freqs, weights) -> float:
+    r"""Sensitivity-weighted geometric-mean pivot frequency.
+
+    .. math:: \log f_{\rm pivot} = \frac{\sum_j w_j \log f_j}{\sum_j w_j}
+
+    ``freqs`` (Hz) and ``weights`` are per-frequency (one entry per sine/cosine
+    pair). Weights come from :func:`fourier_sensitivity_weights`.
+    """
+    f = np.asarray(freqs, dtype=np.float64)
+    w = np.asarray(weights, dtype=np.float64)
+    if f.shape != w.shape or f.ndim != 1:
+        raise ValueError("freqs and weights must be 1-D arrays of equal length")
+    wsum = float(np.sum(w))
+    if not wsum > 0.0:
+        raise ValueError("sensitivity weights must sum to a positive value")
+    return float(np.exp(np.sum(w * np.log(f)) / wsum))
+
+
+def fourier_sensitivity_weights(fmat, reference_noise) -> np.ndarray:
+    r"""Per-frequency sensitivity weights ``w_j = tr(F_j^T N0^-1 F_j)``.
+
+    ``fmat`` is a discovery Fourier basis ``(n_toa, 2C)`` with sine/cosine pairs
+    ordered ``[sin f1, cos f1, sin f2, cos f2, ...]``; ``F_j`` is columns
+    ``[2j, 2j+1]``. ``reference_noise`` is a frozen reference-noise operator
+    (``.solve(rhs) -> (N0^-1 rhs, logdet)``), so the weights use the exact frozen
+    ``N0`` rather than live noise parameters.
+    """
+    F = np.asarray(fmat, dtype=np.float64)
+    if F.ndim != 2 or F.shape[1] % 2 != 0:
+        raise ValueError("fmat must be (n_toa, 2C) with sine/cosine pairs")
+    N0invF, _ = reference_noise.solve(F)
+    per_col = np.einsum("ij,ij->j", F, np.asarray(N0invF, dtype=np.float64))
+    return per_col[0::2] + per_col[1::2]
+
+
+def reference_log10_amplitude(log10_A_pivot, gamma, *, f_pivot,
+                              parameterization=None):
+    """Convert a sampled ``log10_A_pivot`` to ``log10_A`` at the reference
+    frequency; used to decode/display amplitudes at ``1/yr``."""
+    if parameterization is None:
+        parameterization = PowerLawParameterization()
+    f_ref = float(parameterization.amplitude_reference_frequency)
+    shift = 0.5 * _math.log10(float(f_pivot) / f_ref)
+    return log10_A_pivot + gamma * shift
+
+
+def make_powerlaw_pivot(*, f_pivot, parameterization=None, gamma=None,
+                        scale=1.0, low_clip=-18.0, high_clip=-9.0):
+    r"""Pivot-amplitude power-law PSD factory.
+
+    Identical spectral form to :func:`make_powerlaw`, but the sampled amplitude
+    ``log10_A_pivot`` is defined at ``f_pivot`` rather than the reference
+    frequency. The returned function's amplitude argument is named
+    ``log10_A_pivot`` (unambiguous public parameter name); decode the reference
+    amplitude with :func:`reference_log10_amplitude`.
+
+    Returns ``powerlaw(f, df, log10_A_pivot[, gamma])``.
+    """
+    if parameterization is None:
+        parameterization = PowerLawParameterization()
+    f_ref = float(parameterization.amplitude_reference_frequency)
+    shift = 0.5 * _math.log10(float(f_pivot) / f_ref)  # log10_A_ref = A_pivot + gamma*shift
+    _s2 = 2.0 * _math.log10(scale)
+
+    if gamma is None:
+        def powerlaw(f, df, log10_A_pivot, gamma):
+            log10_A = log10_A_pivot + gamma * shift
+            log10_phi = (2.0 * log10_A + (gamma - 3.0) * _LOG10_FYR
+                         - gamma * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM + _s2)
+            return utils.to_working(10.0 ** jnp.clip(log10_phi, low_clip, high_clip))
+    else:
+        _g = float(gamma)
+        _shift_g = _g * shift
+        _g_term = (_g - 3.0) * _LOG10_FYR
+        def powerlaw(f, df, log10_A_pivot):
+            log10_A = log10_A_pivot + _shift_g
+            log10_phi = (2.0 * log10_A + _g_term
+                         - _g * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM + _s2)
+            return utils.to_working(10.0 ** jnp.clip(log10_phi, low_clip, high_clip))
+
+    return powerlaw
+
+
+def make_brokenpowerlaw(*, gamma=None, scale=1.0, low_clip=-18.0, high_clip=-9.0):
+    r"""Broken power-law PSD factory.
+
+    Returns a function evaluating
+
+    .. math::
+
+        \Phi(f) = \frac{A^2}{12\pi^2}\, f_{\rm yr}^{\gamma-3}\, f^{-\gamma}
+                  \left(1 + \left(\frac{f}{f_b}\right)^{1/\kappa}\right)^{\kappa\gamma}
+                  \Delta f
+
+    where :math:`f_b = 10^{\log_{10}f_b}` and :math:`\kappa = 0.1`.
+    The broken factor is computed via ``logaddexp`` to avoid float32 overflow.
+    Output clipped to :math:`[10^{\rm low\_clip},\, 10^{\rm high\_clip}]` s\ :sup:`2`.
+
+    Parameters
+    ----------
+    gamma : float or None
+        Fixed spectral index.  If None (default), ``gamma`` is sampled.
+    scale : float
+        Multiplies :math:`\Phi` by ``scale**2``.
+    low_clip : float
+        Log10 floor in s\ :sup:`2` (default -18).
+    high_clip : float
+        Log10 ceiling in s\ :sup:`2` (default -9).
+
+    Returns
+    -------
+    callable
+        ``brokenpowerlaw(f, df, log10_A[, gamma], log10_fb)``
+    """
+    _s2 = 2.0 * _math.log10(scale)
+
+    if gamma is None:
+        def brokenpowerlaw(f, df, log10_A, gamma, log10_fb):
+            z = (jnp.log(f) - log10_fb * _LN10) / _KAPPA
+            log10_phi = (2.0 * log10_A + (gamma - 3.0) * _LOG10_FYR
+                         - gamma * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM
+                         + _KAPPA * gamma * jnp.logaddexp(0.0, z) / _LN10 + _s2)
+            return utils.to_working(10.0 ** jnp.clip(log10_phi, low_clip, high_clip))
+    else:
+        _g = float(gamma)
+        _g_term = (_g - 3.0) * _LOG10_FYR
+        _kg = _KAPPA * _g
+        def brokenpowerlaw(f, df, log10_A, log10_fb):
+            z = (jnp.log(f) - log10_fb * _LN10) / _KAPPA
+            log10_phi = (2.0 * log10_A + _g_term
+                         - _g * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM
+                         + _kg * jnp.logaddexp(0.0, z) / _LN10 + _s2)
+            return utils.to_working(10.0 ** jnp.clip(log10_phi, low_clip, high_clip))
+
+    return brokenpowerlaw
+
+
+brokenpowerlaw = make_brokenpowerlaw()
+
+
+def make_freespectrum(*, scale=1.0, low_clip=-18.0, high_clip=-9.0):
+    r"""Free-spectrum PSD factory.
+
+    Returns a function evaluating
+
+    .. math::
+
+        \Phi_i = 10^{2\rho_i}
+
+    repeated for sine/cosine pairs.  Output clipped to
+    :math:`[10^{\rm low\_clip},\, 10^{\rm high\_clip}]` s\ :sup:`2`.
+
+    Parameters
+    ----------
+    scale : float
+        Multiplies :math:`\Phi` by ``scale**2``.
+    low_clip : float
+        Log10 floor in s\ :sup:`2` (default -18).
+    high_clip : float
+        Log10 ceiling in s\ :sup:`2` (default -9).
+
+    Returns
+    -------
+    callable
+        ``freespectrum(f, df, log10_rho)``
+    """
+    _s2 = 2.0 * _math.log10(scale)
+
+    def freespectrum(f, df, log10_rho: typing.Sequence):
+        log10_phi = 2.0 * log10_rho + _s2
+        return utils.to_working(jnp.repeat(10.0 ** jnp.clip(log10_phi, low_clip, high_clip), 2))
+
+    return freespectrum
+
+
+freespectrum = make_freespectrum()
 
 
 def make_combined_crn(components, irn_psd, crn_psd, crn_prefix: typing.Optional[str] = 'crn_'):
@@ -1024,7 +1305,6 @@ def make_combined_crn(components, irn_psd, crn_psd, crn_prefix: typing.Optional[
             combined, crn_params = make_combined_crn(14, ds.powerlaw, ds.powerlaw)
             gp = makegp_fourier(psr, combined, components=30, common=crn_params)
     """
-    from discovery import matrix
     irn_spec = inspect.getfullargspec(irn_psd)
     crn_spec = inspect.getfullargspec(crn_psd)
 
@@ -1067,7 +1347,7 @@ def make_combined_crn(components, irn_psd, crn_psd, crn_prefix: typing.Optional[
     def _impl(f, df, kw):
         irn_kw = {k: kw[k] for k in irn_names}
         crn_kw = {k: kw[crn_rename[k]] for k in crn_names}
-        if matrix.jnp == jnp:
+        if utils.jnp == jnp:
             phi = irn_psd(f, df, **irn_kw)
             phi = phi.at[:2 * components].add(
                 crn_psd(f[:2 * components], df[:2 * components], **crn_kw)
@@ -1098,52 +1378,193 @@ def make_combined_crn(components, irn_psd, crn_psd, crn_prefix: typing.Optional[
 
 # combined red_noise + crn
 
-# this is a factory because it needs to specify a different number of components for the CRN
-# note that the preferred way to fix gamma is for the user to use matrix.partial directly
-def makepowerlaw_crn(components, crn_gamma='variable'):
-    if matrix.jnp == jnp:
+def makepowerlaw_crn(components, crn_gamma='variable', *, scale=1.0, low_clip=-18.0, high_clip=-9.0):
+    r"""Combined IRN + CRN power-law PSD factory.
+
+    Returns a function evaluating
+
+    .. math::
+
+        \Phi(f) = \Phi_{\rm pl}(f;\, A, \gamma)
+                  + \Phi_{\rm pl}(f_{1:2N_c};\, A_{\rm crn}, \gamma_{\rm crn})
+
+    where :math:`N_c` = ``components`` and both terms use the standard
+    power-law form.
+
+    Parameters
+    ----------
+    components : int
+        Number of CRN Fourier components; CRN is added to the first
+        ``2 * components`` frequency bins.
+    crn_gamma : float, 'variable', or None
+        Fixed CRN spectral index.  ``'variable'`` or ``None`` makes it a
+        sampled parameter of the returned function.
+    scale : float
+        Multiplies :math:`\Phi` by ``scale**2`` for both components.
+    low_clip : float
+        Log10 floor in s\ :sup:`2` (default -18).
+    high_clip : float
+        Log10 ceiling in s\ :sup:`2` (default -9).
+
+    Returns
+    -------
+    callable
+        ``powerlaw_crn(f, df, log10_A, gamma, crn_log10_A[, crn_gamma])``
+    """
+    _s2 = 2.0 * _math.log10(scale)
+
+    if utils.jnp == jnp:
         def powerlaw_crn(f, df, log10_A, gamma, crn_log10_A, crn_gamma):
-            phi = (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma) * df
-            phi = phi.at[:2*components].add((10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 *
-                                            const.fyr ** (crn_gamma - 3.0) * f[:2*components] ** (-crn_gamma) * df[:2*components])
-            return phi
-    elif matrix.jnp == np:
+            log10_phi = (2.0 * log10_A + (gamma - 3.0) * _LOG10_FYR
+                         - gamma * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM + _s2)
+            phi = 10.0 ** jnp.clip(log10_phi, low_clip, high_clip)
+            log10_crn = (2.0 * crn_log10_A + (crn_gamma - 3.0) * _LOG10_FYR
+                         - crn_gamma * jnp.log10(f[:2*components])
+                         + jnp.log10(df[:2*components]) + _LOG10_NORM + _s2)
+            return utils.to_working(phi.at[:2*components].add(10.0 ** jnp.clip(log10_crn, low_clip, high_clip)))
+    elif utils.jnp == np:
         def powerlaw_crn(f, df, log10_A, gamma, crn_log10_A, crn_gamma):
             phi = (10.0**(2.0 * log10_A)) / 12.0 / np.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma) * df
             phi[:2*components] += ((10.0**(2.0 * crn_log10_A)) / 12.0 / np.pi**2 *
                                    const.fyr ** (crn_gamma - 3.0) * f[:2*components] ** (-crn_gamma) * df[:2*components])
             return phi
 
-    if crn_gamma != 'variable':
-        return matrix.partial(powerlaw_crn, crn_gamma=crn_gamma)
+    if crn_gamma not in ('variable', None):
+        return utils.partial(powerlaw_crn, crn_gamma=crn_gamma)
     else:
         return powerlaw_crn
 
-def powerlaw_brokencrn(f, df, log10_A, gamma, crn_log10_A, crn_gamma, crn_log10_fb):
-    kappa = 0.1 # smoothness of transition
 
-    phi = (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma) * df
-    return phi + (10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (crn_gamma - 3.0) * f ** (-crn_gamma) * df * \
-        (1 + (f / 10**crn_log10_fb) ** (1 / kappa)) ** (kappa * crn_gamma)
+def make_powerlaw_brokencrn(*, scale=1.0, low_clip=-18.0, high_clip=-9.0):
+    r"""IRN power-law + CRN broken power-law PSD factory.
 
-def brokenpowerlaw_brokencrn(f, df, log10_A, gamma, log10_fb, crn_log10_A, crn_gamma, crn_log10_fb):
-    kappa = 0.1 # smoothness of transition
+    Returns a function evaluating
 
-    phi = (10.0**(2.0 * log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (gamma - 3.0) * f ** (-gamma) * df * \
-        (1 + (f / 10**log10_fb) ** (1 / kappa)) ** (kappa * gamma)
-    return phi + (10.0**(2.0 * crn_log10_A)) / 12.0 / jnp.pi**2 * const.fyr ** (crn_gamma - 3.0) * f ** (-crn_gamma) * df * \
-        (1 + (f / 10**crn_log10_fb) ** (1 / kappa)) ** (kappa * crn_gamma)
+    .. math::
 
-def makefreespectrum_crn(components):
-    if matrix.jnp == jnp:
+        \Phi(f) = \Phi_{\rm pl}(f;\, A, \gamma)
+                  + \Phi_{\rm bpl}(f;\, A_{\rm crn}, \gamma_{\rm crn}, f_{b,{\rm crn}})
+
+    Clip applied per-component before summing.
+
+    Parameters
+    ----------
+    scale : float
+        Multiplies :math:`\Phi` by ``scale**2`` for both components.
+    low_clip : float
+        Log10 floor in s\ :sup:`2` (default -18).
+    high_clip : float
+        Log10 ceiling in s\ :sup:`2` (default -9).
+
+    Returns
+    -------
+    callable
+        ``powerlaw_brokencrn(f, df, log10_A, gamma, crn_log10_A, crn_gamma, crn_log10_fb)``
+    """
+    _s2 = 2.0 * _math.log10(scale)
+
+    def powerlaw_brokencrn(f, df, log10_A, gamma, crn_log10_A, crn_gamma, crn_log10_fb):
+        log10_irn = (2.0 * log10_A + (gamma - 3.0) * _LOG10_FYR
+                     - gamma * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM + _s2)
+        z_crn = (jnp.log(f) - crn_log10_fb * _LN10) / _KAPPA
+        log10_crn = (2.0 * crn_log10_A + (crn_gamma - 3.0) * _LOG10_FYR
+                     - crn_gamma * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM
+                     + _KAPPA * crn_gamma * jnp.logaddexp(0.0, z_crn) / _LN10 + _s2)
+        return utils.to_working(10.0 ** jnp.clip(log10_irn, low_clip, high_clip)
+                                + 10.0 ** jnp.clip(log10_crn, low_clip, high_clip))
+
+    return powerlaw_brokencrn
+
+
+powerlaw_brokencrn = make_powerlaw_brokencrn()
+
+
+def make_brokenpowerlaw_brokencrn(*, scale=1.0, low_clip=-18.0, high_clip=-9.0):
+    r"""IRN broken power-law + CRN broken power-law PSD factory.
+
+    Returns a function evaluating
+
+    .. math::
+
+        \Phi(f) = \Phi_{\rm bpl}(f;\, A, \gamma, f_b)
+                  + \Phi_{\rm bpl}(f;\, A_{\rm crn}, \gamma_{\rm crn}, f_{b,{\rm crn}})
+
+    Clip applied per-component before summing.
+
+    Parameters
+    ----------
+    scale : float
+        Multiplies :math:`\Phi` by ``scale**2`` for both components.
+    low_clip : float
+        Log10 floor in s\ :sup:`2` (default -18).
+    high_clip : float
+        Log10 ceiling in s\ :sup:`2` (default -9).
+
+    Returns
+    -------
+    callable
+        ``brokenpowerlaw_brokencrn(f, df, log10_A, gamma, log10_fb, crn_log10_A, crn_gamma, crn_log10_fb)``
+    """
+    _s2 = 2.0 * _math.log10(scale)
+
+    def brokenpowerlaw_brokencrn(f, df, log10_A, gamma, log10_fb,
+                                 crn_log10_A, crn_gamma, crn_log10_fb):
+        z_irn = (jnp.log(f) - log10_fb * _LN10) / _KAPPA
+        log10_irn = (2.0 * log10_A + (gamma - 3.0) * _LOG10_FYR
+                     - gamma * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM
+                     + _KAPPA * gamma * jnp.logaddexp(0.0, z_irn) / _LN10 + _s2)
+        z_crn = (jnp.log(f) - crn_log10_fb * _LN10) / _KAPPA
+        log10_crn = (2.0 * crn_log10_A + (crn_gamma - 3.0) * _LOG10_FYR
+                     - crn_gamma * jnp.log10(f) + jnp.log10(df) + _LOG10_NORM
+                     + _KAPPA * crn_gamma * jnp.logaddexp(0.0, z_crn) / _LN10 + _s2)
+        return utils.to_working(10.0 ** jnp.clip(log10_irn, low_clip, high_clip)
+                                + 10.0 ** jnp.clip(log10_crn, low_clip, high_clip))
+
+    return brokenpowerlaw_brokencrn
+
+
+brokenpowerlaw_brokencrn = make_brokenpowerlaw_brokencrn()
+
+
+def makefreespectrum_crn(components, *, scale=1.0, low_clip=-18.0, high_clip=-9.0):
+    r"""Combined IRN + CRN free-spectrum PSD factory.
+
+    Returns a function evaluating
+
+    .. math::
+
+        \Phi(f) = \Phi_{\rm fs}(f;\, \boldsymbol{\rho})
+                  + \Phi_{\rm fs}(f_{1:2N_c};\, \boldsymbol{\rho}_{\rm crn})
+
+    where :math:`N_c` = ``components``.
+
+    Parameters
+    ----------
+    components : int
+        Number of CRN components; CRN added to first ``2 * components`` bins.
+    scale : float
+        Multiplies :math:`\Phi` by ``scale**2`` for both components.
+    low_clip : float
+        Log10 floor in s\ :sup:`2` (default -18).
+    high_clip : float
+        Log10 ceiling in s\ :sup:`2` (default -9).
+
+    Returns
+    -------
+    callable
+        ``freespectrum_crn(f, df, log10_rho, crn_log10_rho)``
+    """
+    _s2 = 2.0 * _math.log10(scale)
+
+    if utils.jnp == jnp:
         def freespectrum_crn(f, df, log10_rho: typing.Sequence, crn_log10_rho: typing.Sequence):
-            phi = jnp.repeat(10.0**(2.0 * log10_rho), 2)
-            phi = phi.at[:2*components].add(jnp.repeat(10.0**(2.0 * crn_log10_rho), 2))
-            return phi
-    elif matrix.jnp == np:
+            phi = jnp.repeat(10.0 ** jnp.clip(2.0 * log10_rho + _s2, low_clip, high_clip), 2)
+            crn = jnp.repeat(10.0 ** jnp.clip(2.0 * crn_log10_rho + _s2, low_clip, high_clip), 2)
+            return utils.to_working(phi.at[:2*components].add(crn))
+    elif utils.jnp == np:
         def freespectrum_crn(f, df, log10_rho: typing.Sequence, crn_log10_rho: typing.Sequence):
-            phi = jnp.repeat(10.0**(2.0 * log10_rho), 2)
-            phi[:2*components] += jnp.repeat(10.0**(2.0 * crn_log10_rho), 2)
+            phi = np.repeat(10.0**(2.0 * log10_rho), 2)
+            phi[:2*components] += np.repeat(10.0**(2.0 * crn_log10_rho), 2)
             return phi
 
     return freespectrum_crn
@@ -1183,14 +1604,109 @@ def makedelay(psr, delay, components=None, common=[], name='delay'):
                    (f'({components})' if (argspec.annotations.get(arg) == typing.Sequence and components is not None) else '')
               for arg in args if not hasattr(psr, arg)}
 
-    psrpars = {arg: matrix.jnparray(getattr(psr, arg)) for arg in args if hasattr(psr, arg)}
+    psrpars = {arg: utils.jnparray(getattr(psr, arg)) for arg in args if hasattr(psr, arg)}
 
     def delayfunc(params):
         return delay(**psrpars, **{arg: params[argname] for arg,argname in argmap.items()})
     delayfunc.params = sorted(argmap.values())
+    delayfunc.name = name
 
     return delayfunc
 
 # use with makedelay to set residuals dynamically from arrays
 def getresiduals(y):
     return -y
+
+
+def make_extsignal_fourier(psrs, coefffunc, components, T=None, common=[],
+                           name='extsignal'):
+    """Build a deterministic signal carried on its OWN Fourier basis.
+
+    Returns a ``utils.ExtSignal`` for use as ``ArrayLikelihood(extsignals=[...])``.
+    Unlike a GP it has no prior: its Fourier coefficients are a deterministic
+    function of a few physical parameters (``coefffunc``). The likelihood folds
+    it in via cross-terms with the GP basis -- see
+    ``VectorWoodburyKernel_varP.make_kernelproduct_gpcomponent``.
+
+    Parameters
+    ----------
+    psrs : list of `discover.Pulsar` objects
+        Same order as the ArrayLikelihood's pulsar list.
+    coefffunc : callable
+        Per-pulsar map from physical parameters to a length-``2*components``
+        Fourier-coefficient vector. Its first two positional arguments must be
+        ``f, df`` (bound here to the basis); any argument that is a pulsar
+        attribute (``pos``, ``mintoa``, ...) is bound from the pulsar; the rest
+        become sampled parameters. Example: ``deterministic.makefourier_binary()``.
+        If they are in `common` then they are common to the array. Otherwise one parameter
+        per pulsar is created.
+    components : int
+        Number of frequency bins for this signal's basis.
+    T : float, optional
+        Total baseline time (in seconds) for the Fourier basis (default: per-pulsar span).
+    common : list of str
+        Parameter names shared across pulsars (e.g. CW earth-term parameters).
+    name : str
+        Parameter-name prefix and ExtSignal name.
+    """
+    fs, dfs, Fs = [], [], []
+    for psr in psrs:
+        f, df, fmat = fourierbasis(psr, components, T)
+        fs.append(np.asarray(f))
+        dfs.append(np.asarray(df))
+        # keep Fs host-side: TOA-scale, only consumed by host-side trace-time
+        # collapse in make_kernelproduct_gpcomponent.
+        Fs.append(np.asarray(fmat))
+    f_arr = utils.jnparray(np.stack(fs))      # (npsr, 2*components)
+    df_arr = utils.jnparray(np.stack(dfs))
+
+    # inspect coefffunc: arguments after the leading f, df
+    argspec = inspect.getfullargspec(coefffunc)
+    args = argspec.args + [a for a in argspec.kwonlyargs
+                           if a not in (argspec.kwonlydefaults or {})]
+    sig_args = [a for a in args if a not in ('f', 'df')]
+
+    is_attr = {a: hasattr(psrs[0], a) for a in sig_args}
+    is_common = {a: (not is_attr[a]) and (a in common or f'{name}_{a}' in common)
+                 for a in sig_args}
+
+    def pname(psr, a):
+        if a in common:
+            return a
+        if f'{name}_{a}' in common:
+            return f'{name}_{a}'
+        return f'{psr.name}_{name}_{a}'
+
+    attr_arr = {a: utils.jnparray(np.stack([np.asarray(getattr(p, a))
+                                             for p in psrs]))
+                for a in sig_args if is_attr[a]}
+
+    in_axes = (0, 0) + tuple(None if is_common[a] else 0 for a in sig_args)
+    vfunc = jax.vmap(coefffunc, in_axes=in_axes)
+
+    params_list = sorted(set(
+        [pname(psrs[0], a) for a in sig_args if is_common[a]] +
+        [pname(p, a) for p in psrs for a in sig_args
+         if not is_attr[a] and not is_common[a]]))
+
+    def coeffs(params):
+        callargs = [f_arr, df_arr]
+        for a in sig_args:
+            if is_attr[a]:
+                callargs.append(attr_arr[a])
+            elif is_common[a]:
+                callargs.append(params[pname(psrs[0], a)])
+            else:
+                callargs.append(utils.jnparray(
+                    [params[pname(p, a)] for p in psrs]))
+        return vfunc(*callargs)                 # (npsr, 2*components)
+    coeffs.params = params_list
+
+    return utils.ExtSignal(Fs, coeffs, name=name)
+
+
+# Measurement-noise constructors live in measurement_noise.py (collapsed form);
+# re-exported here so `signals.makenoise_measurement` / `ds.makenoise_measurement`
+# resolve. Import at module end to avoid a circular import (measurement_noise
+# imports signals for `makegp_ecorr` / `selection_backend_flags`).
+from .measurement_noise import makenoise_measurement, makenoise_measurement_simple  # noqa: E402

@@ -12,8 +12,8 @@ array. It is a read-only ``Mapping``, so a dict-based ``logL`` can index it
 unchanged, and it registers as a single-leaf JAX pytree, so jit/grad/vmap see
 one buffer instead of N.
 
-Backend follows discovery's own switch: arrays are built with ``matrix.jnp``
-(JAX or NumPy, as configured by ``matrix.config``), and the JAX pytree
+Backend follows discovery's own switch: arrays are built with ``utils.jnp``
+(JAX or NumPy, as configured by ``utils.config``), and the JAX pytree
 registration runs only when the JAX backend is active.
 """
 
@@ -22,7 +22,7 @@ import collections.abc
 
 import numpy as np
 
-from . import matrix
+from . import utils
 
 __all__ = ['Params', 'make_layout']
 
@@ -91,15 +91,15 @@ class Params(collections.abc.Mapping):
         if names is None:
             names = list(d)
         layout, _ = make_layout(names, template=d)
-        raw = matrix.jnp.concatenate(
-            [matrix.jnp.asarray(d[n]).reshape(-1) for (n, _, _, _) in layout])
+        raw = utils.jnp.concatenate(
+            [utils.jnp.asarray(d[n]).reshape(-1) for (n, _, _, _) in layout])
         return cls(raw, layout)
 
     @classmethod
     def zeros(cls, names):
         """A ``Params`` of zeros with the layout implied by ``names``."""
         layout, size = make_layout(names)
-        return cls(matrix.jnp.zeros(size), layout)
+        return cls(utils.jnp.zeros(size), layout)
 
     # --- Mapping interface (read-only) -------------------------------------
 
@@ -126,16 +126,16 @@ class Params(collections.abc.Mapping):
         ``mapping`` is a {name: value} dict (use a dict, not kwargs -- some
         parameter names contain '(' and are not valid identifiers).
         """
-        numpy_backend = matrix.jnp is np
+        numpy_backend = utils.jnp is np
 
         if numpy_backend:
             new_raw = np.array(self.raw)              # copy; the original stays intact
         else:
-            new_raw = matrix.jnp.asarray(self.raw)    # ensure a JAX array to scatter into
+            new_raw = utils.jnp.asarray(self.raw)    # ensure a JAX array to scatter into
 
         for name, value in mapping.items():
             _, s0, s1, _ = self._index[name]
-            v = matrix.jnp.asarray(value).reshape(-1)
+            v = utils.jnp.asarray(value).reshape(-1)
             if numpy_backend:
                 new_raw[s0:s1] = v
             else:
@@ -173,7 +173,7 @@ class Params(collections.abc.Mapping):
 
 
 # register as a single-leaf pytree when discovery is on the JAX backend
-if matrix.jnp is not np:
+if utils.jnp is not np:
     import jax
     jax.tree_util.register_pytree_node(
         Params, Params.tree_flatten, Params.tree_unflatten)

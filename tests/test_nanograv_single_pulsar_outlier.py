@@ -41,6 +41,24 @@ J0437_FEATHER = (pathlib.Path(ds.__path__[0]) / ".." / ".." / "data" /
                  "v1p1_de440_pint_bipm2019-J0437-4715.feather").resolve()
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _matrix_mode():
+    """The outlier model (`discovery.models.nanograv_single_pulsar_outlier`)
+    builds on `likelihood.PulsarLikelihood` directly and reaches into matrix-only
+    kernel APIs (`psrl.N.F`, `psrl.N.index`, `make_kernelsolve_simple`). The
+    `signals` factory must therefore produce matrix kernels, which it only does
+    under matrix mode -- no longer the default after the metamath default flip.
+
+    Module-scoped and autouse so it runs BEFORE the module-scoped fixtures that
+    build the likelihood (a function-scoped fixture would run too late). Saves
+    and restores the module default so no state leaks to later test modules.
+    Porting this analysis model to the graph path is a separate task."""
+    saved = ds.config()
+    ds.config(kernels="matrix")
+    yield
+    ds.config(kernels=saved)
+
+
 @pytest.fixture(scope="module")
 def j0437_psr():
     """J0437 Pulsar from the in-package data dir; skip cleanly if absent.
