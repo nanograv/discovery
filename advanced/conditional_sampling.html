@@ -567,13 +567,13 @@ while <span class="math notranslate nohighlight">\(\Sigma_a\)</span> quantifies 
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
 
 <span class="c1"># Build likelihood</span>
-<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">&#39;data/v1p1_de440_pint_bipm2019-B1855+09.feather&#39;</span><span class="p">)</span>
+<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">'data/v1p1_de440_pint_bipm2019-B1855+09.feather'</span><span class="p">)</span>
 
 <span class="n">signals</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">,</span> <span class="n">ecorr</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rn&#39;</span><span class="p">)</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rn'</span><span class="p">)</span>
 <span class="p">]</span>
 
 <span class="n">logl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">(</span><span class="n">signals</span><span class="p">)</span>
@@ -615,7 +615,7 @@ conditional distribution (it uses an improper prior by default).</p>
 </ul>
 <p><strong>Example coefficient dictionary:</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s1">&#39;B1855+09_rn_coefficients&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (60,) for 30 components</span>
+    <span class="s1">'B1855+09_rn_coefficients'</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (60,) for 30 components</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -629,7 +629,7 @@ conditional distribution (it uses an improper prior by default).</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
 
 <span class="c1"># Load pulsars</span>
-<span class="n">files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;data/v1p1_de440_pint_bipm2019-*.feather&#39;</span><span class="p">))</span>
+<span class="n">files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">'data/v1p1_de440_pint_bipm2019-*.feather'</span><span class="p">))</span>
 <span class="n">psrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">]</span>
 <span class="n">Tspan</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psrs</span><span class="p">)</span>
 
@@ -640,7 +640,7 @@ conditional distribution (it uses an improper prior by default).</p>
         <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">,</span> <span class="n">ecorr</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-        <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rn&#39;</span><span class="p">)</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rn'</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="n">pulsarlikelihoods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">(</span><span class="n">signals</span><span class="p">))</span>
 
@@ -648,7 +648,7 @@ conditional distribution (it uses an improper prior by default).</p>
 <span class="n">gbl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">GlobalLikelihood</span><span class="p">(</span>
     <span class="n">pulsarlikelihoods</span><span class="p">,</span>
     <span class="n">globalgp</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span>
-        <span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span>
+        <span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span>
     <span class="p">)</span>
 <span class="p">)</span>
 
@@ -665,12 +665,12 @@ conditional distribution (it uses an improper prior by default).</p>
 separate entries for each pulsar’s red noise GP and for each pulsar’s contribution to the
 global GW signal:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s1">&#39;B1855+09_rn_coefficients&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (60,) - pulsar 1 red noise</span>
-    <span class="s1">&#39;B1937+21_rn_coefficients&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (60,) - pulsar 2 red noise</span>
-    <span class="c1"># ... other pulsars&#39; red noise</span>
-    <span class="s1">&#39;B1855+09_gw_coefficients&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (28,) - pulsar 1 GW contribution</span>
-    <span class="s1">&#39;B1937+21_gw_coefficients&#39;</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (28,) - pulsar 2 GW contribution</span>
-    <span class="c1"># ... other pulsars&#39; GW contributions</span>
+    <span class="s1">'B1855+09_rn_coefficients'</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (60,) - pulsar 1 red noise</span>
+    <span class="s1">'B1937+21_rn_coefficients'</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (60,) - pulsar 2 red noise</span>
+    <span class="c1"># ... other pulsars' red noise</span>
+    <span class="s1">'B1855+09_gw_coefficients'</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (28,) - pulsar 1 GW contribution</span>
+    <span class="s1">'B1937+21_gw_coefficients'</span><span class="p">:</span> <span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">]),</span>  <span class="c1"># shape (28,) - pulsar 2 GW contribution</span>
+    <span class="c1"># ... other pulsars' GW contributions</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -711,8 +711,8 @@ signals and perform posterior predictive checks. See <a class="reference externa
     <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">,</span> <span class="n">ecorr</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rn&#39;</span><span class="p">),</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">delay_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;delay&#39;</span><span class="p">)</span>  <span class="c1"># Not supported</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rn'</span><span class="p">),</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">delay_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'delay'</span><span class="p">)</span>  <span class="c1"># Not supported</span>
 <span class="p">]</span>
 
 <span class="n">logl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">(</span><span class="n">signals</span><span class="p">)</span>

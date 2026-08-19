@@ -538,11 +538,11 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="c1"># Find data directory</span>
-<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'..'</span><span class="p">,</span> <span class="s1">'..'</span><span class="p">,</span> <span class="s1">'data'</span><span class="p">)</span>
 
 <span class="c1"># Load a real pulsar to use its TOAs and observing setup</span>
 <span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">&#39;v1p1_de440_pint_bipm2019-B1855+09.feather&#39;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">'v1p1_de440_pint_bipm2019-B1855+09.feather'</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Build likelihood with desired noise model</span>
@@ -551,7 +551,7 @@
     <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">),</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 <span class="p">])</span>
 </pre></div>
 </div>
@@ -566,15 +566,15 @@
 
 <span class="c1"># Or fix parameters to specific values</span>
 <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;B1855+09_rednoise_log10_A&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">14.0</span><span class="p">,</span>
-    <span class="s1">&#39;B1855+09_rednoise_gamma&#39;</span><span class="p">:</span> <span class="mf">4.33</span>
+    <span class="s1">'B1855+09_rednoise_log10_A'</span><span class="p">:</span> <span class="o">-</span><span class="mf">14.0</span><span class="p">,</span>
+    <span class="s1">'B1855+09_rednoise_gamma'</span><span class="p">:</span> <span class="mf">4.33</span>
 <span class="p">}</span>
 
 <span class="c1"># Generate residuals</span>
 <span class="n">key</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">rngkey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 <span class="n">key</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span><span class="si">}</span><span class="s2"> residuals&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Generated </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span><span class="si">}</span><span class="s2"> residuals"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -590,7 +590,7 @@
     <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">),</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 <span class="p">])</span>
 
 <span class="c1"># Evaluate likelihood at true parameters</span>
@@ -608,7 +608,7 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
 
 <span class="c1"># Load pulsars</span>
-<span class="n">data_pattern</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">&#39;v1p1_de440_pint_bipm2019-*.feather&#39;</span><span class="p">)</span>
+<span class="n">data_pattern</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">'v1p1_de440_pint_bipm2019-*.feather'</span><span class="p">)</span>
 <span class="n">psrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">data_pattern</span><span class="p">)]</span>
 
 <span class="n">Tspan</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psrs</span><span class="p">)</span>
@@ -622,7 +622,7 @@
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                         <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                         <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
     <span class="p">])</span>
     <span class="n">pulsarlikelihoods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">psl</span><span class="p">)</span>
 
@@ -631,7 +631,7 @@
     <span class="n">pulsarlikelihoods</span><span class="p">,</span>
     <span class="n">globalgp</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span>
         <span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span>
     <span class="p">)</span>
 <span class="p">)</span>
 </pre></div>
@@ -646,14 +646,14 @@
 <span class="n">params</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sample_uniform</span><span class="p">(</span><span class="n">sampler</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
 
 <span class="c1"># Optionally override specific parameters</span>
-<span class="n">params</span><span class="p">[</span><span class="s1">&#39;gw_gamma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">13</span><span class="o">/</span><span class="mi">3</span>
-<span class="n">params</span><span class="p">[</span><span class="s1">&#39;gw_log10_A&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">14.5</span>
+<span class="n">params</span><span class="p">[</span><span class="s1">'gw_gamma'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">13</span><span class="o">/</span><span class="mi">3</span>
+<span class="n">params</span><span class="p">[</span><span class="s1">'gw_log10_A'</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">14.5</span>
 
 <span class="c1"># Generate residuals for all pulsars</span>
 <span class="n">key</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">rngkey</span><span class="p">(</span><span class="mi">43</span><span class="p">)</span>
 <span class="n">key</span><span class="p">,</span> <span class="n">residuals</span> <span class="o">=</span> <span class="n">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated residuals for </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span><span class="si">}</span><span class="s2"> pulsars&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Generated residuals for </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">residuals</span><span class="p">)</span><span class="si">}</span><span class="s2"> pulsars"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">residuals</span></code> returned by <code class="docutils literal notranslate"><span class="pre">gbl.sample</span></code> is a list of arrays, one for each pulsar.</p>
@@ -673,17 +673,17 @@
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                         <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                         <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
     <span class="p">])</span> <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">],</span>
     <span class="n">globalgp</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span>
         <span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span>
     <span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Evaluate at true parameters</span>
 <span class="n">logl</span> <span class="o">=</span> <span class="n">new_gbl</span><span class="o">.</span><span class="n">logL</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Log-likelihood: </span><span class="si">{</span><span class="n">logl</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Log-likelihood: </span><span class="si">{</span><span class="n">logl</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -721,8 +721,8 @@
 <span class="c1"># Generate 100 realizations at once</span>
 <span class="n">keys</span><span class="p">,</span> <span class="n">residuals_batch</span> <span class="o">=</span> <span class="n">sampler_vmap</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">params_batch</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">residuals_batch</span><span class="p">)</span><span class="si">}</span><span class="s2"> realizations&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Each realization has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">residuals_batch</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2"> pulsars&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Generated </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">residuals_batch</span><span class="p">)</span><span class="si">}</span><span class="s2"> realizations"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Each realization has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">residuals_batch</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2"> pulsars"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -734,9 +734,9 @@
 <span class="n">key</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">rngkey</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">key</span><span class="p">,</span> <span class="n">coeffs</span> <span class="o">=</span> <span class="n">gbl</span><span class="o">.</span><span class="n">sample_conditional</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sampled coefficients:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Sampled coefficients:"</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">coeffs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: shape </span><span class="si">{</span><span class="n">coeff</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: shape </span><span class="si">{</span><span class="n">coeff</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="../advanced/conditional_sampling.html"><span class="doc">Conditional Sampling of GP Coefficients</span></a> for more details on conditional sampling.</p>
@@ -751,8 +751,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="c1"># Find data</span>
-<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
-<span class="n">data_pattern</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">&#39;v1p1_de440_pint_bipm2019-*.feather&#39;</span><span class="p">)</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'..'</span><span class="p">,</span> <span class="s1">'..'</span><span class="p">,</span> <span class="s1">'data'</span><span class="p">)</span>
+<span class="n">data_pattern</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">'v1p1_de440_pint_bipm2019-*.feather'</span><span class="p">)</span>
 
 <span class="c1"># Load pulsars</span>
 <span class="n">psrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">data_pattern</span><span class="p">)[:</span><span class="mi">5</span><span class="p">]]</span>
@@ -766,11 +766,11 @@
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                         <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                         <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
     <span class="p">])</span> <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">],</span>
     <span class="n">globalgp</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span>
         <span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span>
     <span class="p">)</span>
 <span class="p">)</span>
 
@@ -778,8 +778,8 @@
 <span class="n">params</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sample_uniform</span><span class="p">(</span><span class="n">gbl</span><span class="o">.</span><span class="n">sample</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
 
 <span class="c1"># Override GW parameters</span>
-<span class="n">params</span><span class="p">[</span><span class="s1">&#39;gw_gamma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">13</span><span class="o">/</span><span class="mi">3</span>
-<span class="n">params</span><span class="p">[</span><span class="s1">&#39;gw_log10_A&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">14.5</span>
+<span class="n">params</span><span class="p">[</span><span class="s1">'gw_gamma'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">13</span><span class="o">/</span><span class="mi">3</span>
+<span class="n">params</span><span class="p">[</span><span class="s1">'gw_log10_A'</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">14.5</span>
 
 <span class="c1"># Generate data</span>
 <span class="n">key</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">rngkey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
@@ -797,16 +797,16 @@
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">variance</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                         <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                         <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
     <span class="p">])</span> <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">],</span>
     <span class="n">globalgp</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span>
         <span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-        <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span>
+        <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span>
     <span class="p">)</span>
 <span class="p">)</span>
 
 <span class="n">logl</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">new_gbl</span><span class="o">.</span><span class="n">logL</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Log-likelihood at true params: </span><span class="si">{</span><span class="n">logl</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Log-likelihood at true params: </span><span class="si">{</span><span class="n">logl</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>

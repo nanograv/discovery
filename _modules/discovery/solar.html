@@ -537,17 +537,17 @@
 <div class="viewcode-block" id="theta_impact">
 <a class="viewcode-back" href="../../api/solar.html#discovery.solar.theta_impact">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">theta_impact</span><span class="p">(</span><span class="n">psr</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;From enterprise_extensions: use the attributes of an Enterprise</span>
+<span class="w">    </span><span class="sd">"""From enterprise_extensions: use the attributes of an Enterprise</span>
 <span class="sd">    Pulsar object to calculate the solar impact angle.</span>
 <span class="sd">    Returns solar impact angle (rad), distance to Earth (R_earth),</span>
-<span class="sd">    impact distance (b), perpendicular distance (z_earth).&quot;&quot;&quot;</span>
+<span class="sd">    impact distance (b), perpendicular distance (z_earth)."""</span>
 
     <span class="n">earth</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">planetssb</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
     <span class="n">sun</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">sunssb</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
     <span class="n">earthsun</span> <span class="o">=</span> <span class="n">earth</span> <span class="o">-</span> <span class="n">sun</span>
 
-    <span class="n">R_earth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ij,ij-&gt;i&#39;</span><span class="p">,</span> <span class="n">earthsun</span><span class="p">,</span> <span class="n">earthsun</span><span class="p">))</span>
-    <span class="n">Re_cos_theta_impact</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ij,ij-&gt;i&#39;</span><span class="p">,</span> <span class="n">earthsun</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">pos_t</span><span class="p">)</span>
+    <span class="n">R_earth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ij,ij-&gt;i'</span><span class="p">,</span> <span class="n">earthsun</span><span class="p">,</span> <span class="n">earthsun</span><span class="p">))</span>
+    <span class="n">Re_cos_theta_impact</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">'ij,ij-&gt;i'</span><span class="p">,</span> <span class="n">earthsun</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">pos_t</span><span class="p">)</span>
 
     <span class="n">theta_impact</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="o">-</span><span class="n">Re_cos_theta_impact</span> <span class="o">/</span> <span class="n">R_earth</span><span class="p">)</span>
     <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">R_earth</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">Re_cos_theta_impact</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
@@ -558,8 +558,8 @@
 <div class="viewcode-block" id="make_solardm">
 <a class="viewcode-back" href="../../api/solar.html#discovery.solar.make_solardm">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;From enterprise_extensions: calculate DM</span>
-<span class="sd">    due to 1/r^2 solar wind density model.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""From enterprise_extensions: calculate DM</span>
+<span class="sd">    due to 1/r^2 solar wind density model."""</span>
 
     <span class="n">theta</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">theta_impact</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
     <span class="n">shape</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">AU_light_sec</span> <span class="o">*</span> <span class="n">AU_pc</span> <span class="o">/</span> <span class="n">r_earth</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">theta</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="mf">4.148808e3</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
@@ -582,7 +582,7 @@
 <div class="viewcode-block" id="dm_solar">
 <a class="viewcode-back" href="../../api/solar.html#discovery.solar.dm_solar">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">dm_solar</span><span class="p">(</span><span class="n">n_earth</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Calculate dispersion measure from a 1/r^2 solar wind density model.</span>
 
 <span class="sd">    This function computes the integrated column density of free electrons</span>
@@ -593,7 +593,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    n_earth : float or ndarray</span>
-<span class="sd">        Solar wind proton/electron density at Earth&#39;s orbit (cm^-3).</span>
+<span class="sd">        Solar wind proton/electron density at Earth's orbit (cm^-3).</span>
 <span class="sd">    theta : float or ndarray</span>
 <span class="sd">        Solar elongation angle between the Sun and the line of sight to the</span>
 <span class="sd">        pulsar (radians). theta = 0 corresponds to the Sun directly in the</span>
@@ -615,9 +615,9 @@
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
 <span class="sd">    .. [1] You, X. P., Hobbs, G., Coles, W. A., et al. 2007, MNRAS, 378, 493</span>
-<span class="sd">           &quot;Dispersion measure variations and their effect on precision pulsar timing&quot;</span>
+<span class="sd">           "Dispersion measure variations and their effect on precision pulsar timing"</span>
 <span class="sd">           https://doi.org/10.1111/j.1365-2966.2007.11617.x</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">theta</span> <span class="o">&gt;=</span> <span class="mf">1e-5</span><span class="p">,</span>
                     <span class="n">_dm_solar</span><span class="p">(</span><span class="n">n_earth</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">),</span>
                     <span class="n">_dm_solar_close</span><span class="p">(</span><span class="n">n_earth</span><span class="p">,</span> <span class="n">r_earth</span><span class="p">))</span></div>
@@ -628,7 +628,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">fourierbasis_solar_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span>
                         <span class="n">components</span><span class="p">,</span>
                         <span class="n">T</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Construct a Fourier design matrix for solar wind dispersion measure variations.</span>
 
 
@@ -641,7 +641,7 @@
 <span class="sd">        Number of Fourier components to include in the model.</span>
 <span class="sd">    T : float, optional</span>
 <span class="sd">        Total timespan of the data in seconds. If None, will be computed from</span>
-<span class="sd">        the pulsar&#39;s TOAs.</span>
+<span class="sd">        the pulsar's TOAs.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -671,9 +671,9 @@
 <span class="sd">    ...     signals.powerlaw,</span>
 <span class="sd">    ...     components=30,</span>
 <span class="sd">    ...     fourierbasis=solar.fourierbasis_solar_dm,</span>
-<span class="sd">    ...     name=&#39;solar_wind_dm&#39;</span>
+<span class="sd">    ...     name='solar_wind_dm'</span>
 <span class="sd">    ... )</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="c1"># Lazy import to avoid circular dependency</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">fourierbasis</span>
@@ -689,8 +689,8 @@
 
 <div class="viewcode-block" id="makegp_timedomain_solar_dm">
 <a class="viewcode-back" href="../../api/solar.html#discovery.solar.makegp_timedomain_solar_dm">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">makegp_timedomain_solar_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">covariance</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;timedomain_sw_gp&#39;</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">makegp_timedomain_solar_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">covariance</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'timedomain_sw_gp'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Construct a time-domain Gaussian process for solar wind dispersion measure variations.</span>
 
 <span class="sd">    This function builds a GP model for solar wind-induced DM variations by combining</span>
@@ -714,7 +714,7 @@
 <span class="sd">        pulsars rather than pulsar-specific. Default is [].</span>
 <span class="sd">    name : str, optional</span>
 <span class="sd">        Base name for the GP parameters. Used as prefix for parameter naming.</span>
-<span class="sd">        Default is &#39;timedomain_sw_gp&#39;.</span>
+<span class="sd">        Default is 'timedomain_sw_gp'.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -729,13 +729,13 @@
 <span class="sd">    The design matrix Umat maps the low-rank GP (evaluated at quantized TOAs)</span>
 <span class="sd">    to the full TOA residuals, scaled by the frequency-dependent solar wind</span>
 <span class="sd">    DM signature.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Lazy import to avoid circular dependency</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">quantize</span>
 
     <span class="n">argspec</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getfullargspec</span><span class="p">(</span><span class="n">covariance</span><span class="p">)</span>
-    <span class="n">argmap</span> <span class="o">=</span> <span class="p">[(</span><span class="n">arg</span> <span class="k">if</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">common</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">common</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-              <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">argspec</span><span class="o">.</span><span class="n">args</span> <span class="k">if</span> <span class="n">arg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;tau&#39;</span><span class="p">]]</span>
+    <span class="n">argmap</span> <span class="o">=</span> <span class="p">[(</span><span class="n">arg</span> <span class="k">if</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">common</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">'</span> <span class="k">if</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">'</span> <span class="ow">in</span> <span class="n">common</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+              <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">argspec</span><span class="o">.</span><span class="n">args</span> <span class="k">if</span> <span class="n">arg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'tau'</span><span class="p">]]</span>
 
     <span class="c1"># get solar wind ingredients</span>
     <span class="n">theta</span><span class="p">,</span> <span class="n">R_earth</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">theta_impact</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
@@ -743,7 +743,7 @@
     <span class="n">dt_DM</span> <span class="o">=</span> <span class="n">dm_sol_wind</span> <span class="o">*</span> <span class="mf">4.148808e3</span> <span class="o">/</span> <span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
     <span class="n">bins</span> <span class="o">=</span> <span class="n">quantize</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
-    <span class="n">Umat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">bins</span> <span class="o">==</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+    <span class="n">Umat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">bins</span> <span class="o">==</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'d'</span><span class="p">)</span>
     <span class="n">Umat</span> <span class="o">=</span> <span class="n">Umat</span> <span class="o">*</span> <span class="n">dt_DM</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
     <span class="n">toas</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">@</span> <span class="n">Umat</span> <span class="o">/</span> <span class="n">Umat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 

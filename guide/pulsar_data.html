@@ -558,7 +558,7 @@ you can convert them to Discovery format:</p>
 <span class="n">ent_psr</span> <span class="o">=</span> <span class="n">enterprise</span><span class="o">.</span><span class="n">Pulsar</span><span class="p">(</span><span class="n">parfile</span><span class="p">,</span> <span class="n">timfile</span><span class="p">)</span>
 
 <span class="c1"># Convert and save as Feather file</span>
-<span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">save_feather</span><span class="p">(</span><span class="n">ent_psr</span><span class="p">,</span> <span class="s1">&#39;B1855+09.feather&#39;</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">)</span>
+<span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">save_feather</span><span class="p">(</span><span class="n">ent_psr</span><span class="p">,</span> <span class="s1">'B1855+09.feather'</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">noisedict</span></code> parameter is optional and allows you to include default noise parameter
@@ -570,12 +570,12 @@ values (e.g., EFAC, EQUAD values) in the Feather file.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
 
 <span class="c1"># Load single pulsar</span>
-<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">&#39;data/v1p1_de440_pint_bipm2019-B1855+09.feather&#39;</span><span class="p">)</span>
+<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">'data/v1p1_de440_pint_bipm2019-B1855+09.feather'</span><span class="p">)</span>
 
 <span class="c1"># Load multiple pulsars</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
 <span class="n">psrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;data/v1p1_de440_pint_bipm2019-*.feather&#39;</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">'data/v1p1_de440_pint_bipm2019-*.feather'</span><span class="p">)]</span>
 </pre></div>
 </div>
 </section>
@@ -624,11 +624,11 @@ values (e.g., EFAC, EQUAD values) in the Feather file.</p>
 </div>
 <p>These can be used for testing and development:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load example pulsar</span>
-<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">&#39;data/v1p1_de440_pint_bipm2019-B1855+09.feather&#39;</span><span class="p">)</span>
+<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">'data/v1p1_de440_pint_bipm2019-B1855+09.feather'</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pulsar: </span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;TOAs: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Span: </span><span class="si">{</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">min</span><span class="p">())</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">365.25</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">86400</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> years&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pulsar: </span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TOAs: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Span: </span><span class="si">{</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">min</span><span class="p">())</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">365.25</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">86400</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> years"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>

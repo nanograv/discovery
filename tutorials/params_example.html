@@ -539,7 +539,7 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
-<span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s1">&#39;jax_enable_x64&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s1">'jax_enable_x64'</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.random</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -556,7 +556,7 @@
 <p>We read the first 15yr pulsar, <code class="docutils literal notranslate"><span class="pre">B1855+09</span></code>, and build a <code class="docutils literal notranslate"><span class="pre">PulsarLikelihood</span></code> with measurement noise, ECORR, a timing-model GP, and a powerlaw red-noise GP. The measurement/ECORR parameters are fixed from the pulsar’s <code class="docutils literal notranslate"><span class="pre">noisedict</span></code>, so the only free parameters are the red-noise amplitude and spectral index.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">&#39;../../data/v1p1_de440_pint_bipm2019-B1855+09.feather&#39;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">'../../data/v1p1_de440_pint_bipm2019-B1855+09.feather'</span><span class="p">)</span>
 <span class="n">Tspan</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
 
 <span class="n">logL</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">([</span><span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
@@ -564,14 +564,14 @@
                             <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
                             <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
                             <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                                              <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;red_noise&#39;</span><span class="p">)])</span><span class="o">.</span><span class="n">logL</span>
+                                              <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'red_noise'</span><span class="p">)])</span><span class="o">.</span><span class="n">logL</span>
 
 <span class="n">logL</span><span class="o">.</span><span class="n">params</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[&#39;B1855+09_red_noise_gamma&#39;, &#39;B1855+09_red_noise_log10_A&#39;]
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>['B1855+09_red_noise_gamma', 'B1855+09_red_noise_log10_A']
 </pre></div>
 </div>
 </div>
@@ -588,8 +588,8 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{&#39;B1855+09_red_noise_gamma&#39;: 0.1616758097635821,
- &#39;B1855+09_red_noise_log10_A&#39;: -11.010679240035966}
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>{'B1855+09_red_noise_gamma': 0.1616758097635821,
+ 'B1855+09_red_noise_log10_A': -11.010679240035966}
 </pre></div>
 </div>
 </div>
@@ -604,10 +604,10 @@
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="n">Params</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>                                  <span class="c1"># Params(size=..., nparams=...)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;flat array      :&#39;</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;indexed by name :&#39;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;pytree leaves   :&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">params</span><span class="p">)),</span>
-      <span class="s1">&#39;vs&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">p0</span><span class="p">)),</span> <span class="s1">&#39;for the dict&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'flat array      :'</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'indexed by name :'</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'pytree leaves   :'</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">params</span><span class="p">)),</span>
+      <span class="s1">'vs'</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">p0</span><span class="p">)),</span> <span class="s1">'for the dict'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -626,9 +626,9 @@ pytree leaves   : 1 vs 2 for the dict
 <p>Because <code class="docutils literal notranslate"><span class="pre">Params</span></code> is a <code class="docutils literal notranslate"><span class="pre">Mapping</span></code>, the dict-based <code class="docutils literal notranslate"><span class="pre">logL</span></code> accepts it unchanged – and the result is identical to passing the dict. The difference is the pytree structure crossing the jit boundary: one leaf instead of N.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logL(dict)   :&#39;</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">p0</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logL(Params) :&#39;</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">params</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;jit          :&#39;</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">logL</span><span class="p">)(</span><span class="n">params</span><span class="p">))</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'logL(dict)   :'</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">p0</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'logL(Params) :'</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">params</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'jit          :'</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">logL</span><span class="p">)(</span><span class="n">params</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -647,8 +647,8 @@ jit          : 90899.99397316329
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># value_and_grad: the cotangent is itself a single-leaf Params, not an N-key dict</span>
 <span class="n">value</span><span class="p">,</span> <span class="n">grad</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">logL</span><span class="p">))(</span><span class="n">params</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;value :&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;grad  :&#39;</span><span class="p">,</span> <span class="n">grad</span><span class="p">,</span> <span class="s1">&#39;-&gt;&#39;</span><span class="p">,</span> <span class="n">grad</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'value :'</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'grad  :'</span><span class="p">,</span> <span class="n">grad</span><span class="p">,</span> <span class="s1">'-&gt;'</span><span class="p">,</span> <span class="n">grad</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -678,8 +678,8 @@ grad  : Params(size=2, nparams=2) -&gt; [  -5.45665359 -124.20598362]
 <span class="n">hi</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bounds</span><span class="p">])</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">numpyro_model</span><span class="p">():</span>
-    <span class="n">raw</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">&#39;raw&#39;</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">))</span>   <span class="c1"># one (P,) array site</span>
-    <span class="n">numpyro</span><span class="o">.</span><span class="n">factor</span><span class="p">(</span><span class="s1">&#39;logl&#39;</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">Params</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">layout</span><span class="p">)))</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">numpyro</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s1">'raw'</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">))</span>   <span class="c1"># one (P,) array site</span>
+    <span class="n">numpyro</span><span class="o">.</span><span class="n">factor</span><span class="p">(</span><span class="s1">'logl'</span><span class="p">,</span> <span class="n">logL</span><span class="p">(</span><span class="n">Params</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">layout</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -737,11 +737,11 @@ grad  : Params(size=2, nparams=2) -&gt; [  -5.45665359 -124.20598362]
 <p>The <code class="docutils literal notranslate"><span class="pre">raw</span></code> samples have shape <code class="docutils literal notranslate"><span class="pre">(num_samples,</span> <span class="pre">P)</span></code>; column <code class="docutils literal notranslate"><span class="pre">i</span></code> corresponds to <code class="docutils literal notranslate"><span class="pre">logL.params[i]</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">raw_samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()[</span><span class="s1">&#39;raw&#39;</span><span class="p">]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">raw_samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">get_samples</span><span class="p">()[</span><span class="s1">'raw'</span><span class="p">]</span>
 
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">):</span>
     <span class="n">col</span> <span class="o">=</span> <span class="n">raw_samples</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s1">30s</span><span class="si">}</span><span class="s1"> mean=</span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s1">+.3f</span><span class="si">}</span><span class="s1">  std=</span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s1">30s</span><span class="si">}</span><span class="s1"> mean=</span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s1">+.3f</span><span class="si">}</span><span class="s1">  std=</span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

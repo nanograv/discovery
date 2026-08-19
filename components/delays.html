@@ -536,7 +536,7 @@ have free or fixed parameters.</p>
 <section id="the-makedelay-function">
 <h3>The <code class="docutils literal notranslate"><span class="pre">makedelay</span></code> Function<a class="headerlink" href="#the-makedelay-function" title="Link to this heading">#</a></h3>
 <p>Create a deterministic delay component:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">delayfunc</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;delay&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">delayfunc</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'delay'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This wraps a JAX-compatible delay function <code class="docutils literal notranslate"><span class="pre">delayfunc</span></code> to create a component that can be
@@ -551,13 +551,13 @@ included in a likelihood.</p>
 <p><strong>Delay Function Signature:</strong></p>
 <p>The delay function must have signature:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">delayfunc</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute delay in seconds.</span>
+<span class="w">    </span><span class="sd">"""Compute delay in seconds.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    delay : array</span>
 <span class="sd">        Timing delay at each TOA (seconds)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="o">...</span>
 </pre></div>
 </div>
@@ -576,7 +576,7 @@ variable parameters.</p>
 <h3>1/r² Solar Wind Model<a class="headerlink" href="#r2-solar-wind-model" title="Link to this heading">#</a></h3>
 <p>Model dispersion measure variations due to solar wind:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">solardm_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
-<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;solardm&#39;</span><span class="p">)</span>
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solardm'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="../api/solar.html#discovery.solar.make_solardm" title="discovery.solar.make_solardm"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_solardm()</span></code></a> and <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>.</p>
@@ -608,13 +608,13 @@ variable parameters.</p>
 <p>For stochastic fluctuations on top of the deterministic model:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add deterministic mean</span>
 <span class="n">solardm_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
-<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;solardm&#39;</span><span class="p">)</span>
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solardm'</span><span class="p">)</span>
 
 <span class="c1"># Add stochastic fluctuations</span>
 <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_sw</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardmfourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 <span class="n">sw_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
                            <span class="n">fourierbasis</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_sw</span><span class="p">),</span>
-                           <span class="n">name</span><span class="o">=</span><span class="s1">&#39;sw_gp&#39;</span><span class="p">)</span>
+                           <span class="n">name</span><span class="o">=</span><span class="s1">'sw_gp'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">make_solardmfourierbasis()</span></code>, <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a>,
@@ -630,7 +630,7 @@ geometry, so the GP represents fluctuations in <span class="math notranslate noh
 <p>Model chromatic exponential dips - sudden radio frequency-dependent advances of pulse arrival times.
 These events can impact measurements of time-correlated signals (see <a class="reference external" href="https://arxiv.org/abs/1909.08644">Hazboun et al. 2020</a>).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decay_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
-<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;chromatic&#39;</span><span class="p">)</span>
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chromatic'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">make_chromaticdelay()</span></code> and <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>.</p>
@@ -676,11 +676,11 @@ for the underlying delay function.</p>
 <p>Model deterministic signals from binary black hole systems:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># With pulsar term</span>
 <span class="n">bbh_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay_binary</span><span class="p">(</span><span class="n">pulsarterm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">bbh_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;bbh&#39;</span><span class="p">)</span>
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">bbh_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'bbh'</span><span class="p">)</span>
 
 <span class="c1"># Without pulsar term (Earth term only)</span>
 <span class="n">bbh_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay_binary</span><span class="p">(</span><span class="n">pulsarterm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">bbh_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;bbh&#39;</span><span class="p">)</span>
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">bbh_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'bbh'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="../api/deterministic.html#discovery.deterministic.makedelay_binary" title="discovery.deterministic.makedelay_binary"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay_binary()</span></code></a> and <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>.</p>
@@ -715,7 +715,7 @@ likelihood computations.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">quadratic_spindown</span><span class="p">(</span><span class="n">toas</span><span class="p">,</span> <span class="n">f0</span><span class="p">,</span> <span class="n">f1</span><span class="p">,</span> <span class="n">pepoch</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Model timing noise as quadratic spindown.</span>
+<span class="w">    </span><span class="sd">"""Model timing noise as quadratic spindown.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -727,13 +727,13 @@ likelihood computations.</p>
 <span class="sd">        Spin frequency derivative (Hz/s)</span>
 <span class="sd">    pepoch : float</span>
 <span class="sd">        Reference epoch (MJD)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">toas</span> <span class="o">/</span> <span class="mf">86400.0</span><span class="p">)</span> <span class="o">-</span> <span class="n">pepoch</span>  <span class="c1"># Convert to days</span>
     <span class="n">phase</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">f0</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">f1</span> <span class="o">*</span> <span class="n">dt</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">phase</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">f0</span><span class="p">)</span>  <span class="c1"># Convert phase to time</span>
 
 <span class="c1"># Use in model</span>
-<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">quadratic_spindown</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;spindown&#39;</span><span class="p">)</span>
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">quadratic_spindown</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'spindown'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>.</p>
@@ -752,18 +752,18 @@ likelihood computations.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
 
 <span class="c1"># Load pulsar</span>
-<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">&#39;data/v1p1_de440_pint_bipm2019-B1855+09.feather&#39;</span><span class="p">)</span>
+<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">'data/v1p1_de440_pint_bipm2019-B1855+09.feather'</span><span class="p">)</span>
 
 <span class="c1"># Solar wind delay</span>
 <span class="n">solardm_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
-<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;solardm&#39;</span><span class="p">)</span>
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solardm'</span><span class="p">)</span>
 
 <span class="c1"># Build likelihood</span>
 <span class="n">signals</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">),</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rn&#39;</span><span class="p">),</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rn'</span><span class="p">),</span>
     <span class="n">delay</span>
 <span class="p">]</span>
 
@@ -777,10 +777,10 @@ likelihood computations.</p>
 <h3>Multiple Chromatic Events<a class="headerlink" href="#multiple-chromatic-events" title="Link to this heading">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Model two separate DM events</span>
 <span class="n">decay1</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
-<span class="n">delay1</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dm_event1&#39;</span><span class="p">)</span>
+<span class="n">delay1</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dm_event1'</span><span class="p">)</span>
 
 <span class="n">decay2</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
-<span class="n">delay2</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dm_event2&#39;</span><span class="p">)</span>
+<span class="n">delay2</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dm_event2'</span><span class="p">)</span>
 
 <span class="n">signals</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
@@ -804,7 +804,7 @@ likelihood computations.</p>
 <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">:</span>
     <span class="n">solardm_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
     <span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span>
-                        <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;n_earth&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;solardm&#39;</span><span class="p">)</span>
+                        <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">'n_earth'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solardm'</span><span class="p">)</span>
     <span class="n">delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
 
 <span class="c1"># Build PTA likelihood</span>

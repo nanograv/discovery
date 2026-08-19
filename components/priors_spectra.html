@@ -534,7 +534,7 @@
 <p>For Fourier-basis GPs (see <a class="reference internal" href="../guide/data_model.html"><span class="doc">Data Model</span></a>), prior functions define the power spectral density,
 which produces the diagonal of the covariance matrix <span class="math notranslate nohighlight">\(\Phi\)</span>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">prior</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    f : array</span>
@@ -548,7 +548,7 @@ which produces the diagonal of the covariance matrix <span class="math notransla
 <span class="sd">    -------</span>
 <span class="sd">    psd : array</span>
 <span class="sd">        Power spectral density at each frequency</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="o">...</span>
 </pre></div>
 </div>
@@ -606,8 +606,8 @@ creates parameter names like <code class="docutils literal notranslate"><span cl
 
 <span class="c1"># Use in GP</span>
 <span class="n">gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                       <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;crn_log10_A&#39;</span><span class="p">,</span> <span class="s1">&#39;crn_gamma&#39;</span><span class="p">],</span>
-                       <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                       <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">'crn_log10_A'</span><span class="p">,</span> <span class="s1">'crn_gamma'</span><span class="p">],</span>
+                       <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This creates a prior function with signature:</p>
@@ -635,16 +635,16 @@ covariance matrix <span class="math notranslate nohighlight">\(\Phi\)</span> sho
 way to estimate the dense (non-diagonal) covariance matrix from the power spectral density.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Single pulsar</span>
 <span class="n">gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fftcov</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                      <span class="n">t0</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                      <span class="n">t0</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 
 <span class="c1"># Common GP (batched)</span>
 <span class="n">commongp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makecommongp_fftcov</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                                   <span class="n">t0</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                                   <span class="n">t0</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 
 <span class="c1"># Global GP with correlation</span>
 <span class="n">globalgp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makeglobalgp_fftcov</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span>
                                    <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span>
-                                   <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span><span class="p">)</span>
+                                   <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><strong>Parameters:</strong></p>
@@ -671,7 +671,7 @@ then uses time-interpolated basis functions to construct the GP efficiently.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">broken_powerlaw</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma_low</span><span class="p">,</span> <span class="n">gamma_high</span><span class="p">,</span> <span class="n">log10_fb</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Broken power law at frequency fb.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Broken power law at frequency fb."""</span>
     <span class="n">fb</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_fb</span>
     <span class="n">S_low</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">log10_A</span><span class="p">)</span> <span class="o">*</span> <span class="n">f</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">gamma_low</span><span class="p">)</span>
     <span class="n">S_high</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">log10_A</span><span class="p">)</span> <span class="o">*</span> <span class="n">fb</span><span class="o">**</span><span class="p">(</span><span class="n">gamma_high</span> <span class="o">-</span> <span class="n">gamma_low</span><span class="p">)</span> <span class="o">*</span> <span class="n">f</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">gamma_high</span><span class="p">)</span>
@@ -681,7 +681,7 @@ then uses time-interpolated basis functions to construct the GP efficiently.</p>
 
 <span class="c1"># Use in model</span>
 <span class="n">gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">broken_powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                       <span class="n">name</span><span class="o">=</span><span class="s1">&#39;broken_rn&#39;</span><span class="p">)</span>
+                       <span class="n">name</span><span class="o">=</span><span class="s1">'broken_rn'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><strong>Requirements:</strong></p>
@@ -700,10 +700,10 @@ then uses time-interpolated basis functions to construct the GP efficiently.</p>
 
 <span class="c1"># Custom priors</span>
 <span class="n">priordict</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;B1855+09_rednoise_log10_A&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">18</span><span class="p">,</span> <span class="o">-</span><span class="mi">11</span><span class="p">],</span>
-    <span class="s1">&#39;B1855+09_rednoise_gamma&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>
-    <span class="s1">&#39;crn_log10_A&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">18</span><span class="p">,</span> <span class="o">-</span><span class="mi">11</span><span class="p">],</span>
-    <span class="s1">&#39;crn_gamma&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span>
+    <span class="s1">'B1855+09_rednoise_log10_A'</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">18</span><span class="p">,</span> <span class="o">-</span><span class="mi">11</span><span class="p">],</span>
+    <span class="s1">'B1855+09_rednoise_gamma'</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>
+    <span class="s1">'crn_log10_A'</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">18</span><span class="p">,</span> <span class="o">-</span><span class="mi">11</span><span class="p">],</span>
+    <span class="s1">'crn_gamma'</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span>
 <span class="p">}</span>
 <span class="n">logprior</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makelogprior_uniform</span><span class="p">(</span><span class="n">logl</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">priordict</span><span class="p">)</span>
 
@@ -737,8 +737,8 @@ with default uniform (or log-uniform) prior ranges for common parameter names:</
 <span class="n">prior</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makepowerlaw_crn</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span>
 
 <span class="n">gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">prior</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                       <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;crn_log10_A&#39;</span><span class="p">,</span> <span class="s1">&#39;crn_gamma&#39;</span><span class="p">],</span>
-                       <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                       <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">'crn_log10_A'</span><span class="p">,</span> <span class="s1">'crn_gamma'</span><span class="p">],</span>
+                       <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 
 <span class="c1"># Parameters: rednoise_log10_A, rednoise_gamma, crn_log10_A, crn_gamma</span>
 </pre></div>
@@ -749,7 +749,7 @@ with default uniform (or log-uniform) prior ranges for common parameter names:</
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># DM with power law</span>
 <span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
                           <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span>
-                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dm&#39;</span><span class="p">)</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'dm'</span><span class="p">)</span>
 
 <span class="c1"># Parameters: dm_log10_A, dm_gamma</span>
 </pre></div>
@@ -759,7 +759,7 @@ with default uniform (or log-uniform) prior ranges for common parameter names:</
 <h3>Free Spectrum<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Independent amplitudes at each frequency</span>
 <span class="n">fs_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">freespectrum</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;fs&#39;</span><span class="p">)</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'fs'</span><span class="p">)</span>
 
 <span class="c1"># Parameters: fs_log10_rho(30) (vector parameter)</span>
 </pre></div>

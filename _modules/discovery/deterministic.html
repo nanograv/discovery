@@ -561,7 +561,7 @@
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.makedelay_binary">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">makedelay_binary</span><span class="p">(</span><span class="n">pulsarterm</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">delay_binary</span><span class="p">(</span><span class="n">toas</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">log10_h0</span><span class="p">,</span> <span class="n">log10_f0</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">sindec</span><span class="p">,</span> <span class="n">cosinc</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">phi_earth</span><span class="p">,</span> <span class="n">phi_psr</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;BBH residuals from Ellis et. al 2012, 2013&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""BBH residuals from Ellis et. al 2012, 2013"""</span>
 
         <span class="n">h0</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_h0</span>
         <span class="n">f0</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_f0</span>
@@ -617,14 +617,14 @@
 <div class="viewcode-block" id="makedelay_binary_phases">
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.makedelay_binary_phases">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">makedelay_binary_phases</span><span class="p">(</span><span class="n">pulsarterm</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Factory for computing cphase and sphase vectors from binary parameters.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Factory for computing cphase and sphase vectors from binary parameters."""</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">delay_binary_phases</span><span class="p">(</span><span class="n">toas</span><span class="p">,</span> <span class="n">log10_f0</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute cosine and sine phase vectors.</span>
+<span class="w">        </span><span class="sd">"""Compute cosine and sine phase vectors.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            cphase: cosine phase vector (toas,)</span>
 <span class="sd">            sphase: sine phase vector (toas,)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">f0</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_f0</span>
         <span class="n">tref</span> <span class="o">=</span> <span class="mf">86400.0</span> <span class="o">*</span> <span class="mf">51544.5</span>  <span class="c1"># MJD J2000 in seconds</span>
 
@@ -642,20 +642,20 @@
 <div class="viewcode-block" id="makedelay_binary_coefficients">
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.makedelay_binary_coefficients">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">makedelay_binary_coefficients</span><span class="p">(</span><span class="n">pulsarterm</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Factory for computing coefficients to multiply phase vectors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Factory for computing coefficients to multiply phase vectors."""</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">delay_binary_coefficients</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">log10_h0</span><span class="p">,</span> <span class="n">log10_f0</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">sindec</span><span class="p">,</span> <span class="n">cosinc</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">phi_earth</span><span class="p">,</span> <span class="n">phi_psr</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute antenna pattern factors and phase coefficients.</span>
+<span class="w">        </span><span class="sd">"""Compute antenna pattern factors and phase coefficients.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            coeffs: dictionary with keys:</span>
-<span class="sd">                - &#39;fplus&#39;, &#39;fcross&#39;: antenna pattern factors</span>
-<span class="sd">                - &#39;rplus_coeff_c&#39;, &#39;rplus_coeff_s&#39;: coefficients for cphase/sphase in rplus</span>
-<span class="sd">                - &#39;rcross_coeff_c&#39;, &#39;rcross_coeff_s&#39;: coefficients for cphase/sphase in rcross</span>
+<span class="sd">                - 'fplus', 'fcross': antenna pattern factors</span>
+<span class="sd">                - 'rplus_coeff_c', 'rplus_coeff_s': coefficients for cphase/sphase in rplus</span>
+<span class="sd">                - 'rcross_coeff_c', 'rcross_coeff_s': coefficients for cphase/sphase in rcross</span>
 
 <span class="sd">            Full response is reconstructed as:</span>
 <span class="sd">            res = -fplus * (rplus_coeff_c * cphase + rplus_coeff_s * sphase)</span>
 <span class="sd">                  -fcross * (rcross_coeff_c * cphase + rcross_coeff_s * sphase)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">h0</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_h0</span>
         <span class="n">f0</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_f0</span>
 
@@ -739,8 +739,8 @@
 <div class="viewcode-block" id="cos2comp">
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.cos2comp">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">cos2comp</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">f0</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">t0</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Project signal A * cos(2pi f t + phi) onto Fourier basis</span>
-<span class="sd">    cos(2pi k t/T), sin(2pi k t/T) for t in [t0, t0+T].&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Project signal A * cos(2pi f t + phi) onto Fourier basis</span>
+<span class="sd">    cos(2pi k t/T), sin(2pi k t/T) for t in [t0, t0+T]."""</span>
 
     <span class="n">T</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -771,7 +771,7 @@
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.makefourier_binary">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">makefourier_binary</span><span class="p">(</span><span class="n">pulsarterm</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">fourier_binary</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">mintoa</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">log10_h0</span><span class="p">,</span> <span class="n">log10_f0</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">sindec</span><span class="p">,</span> <span class="n">cosinc</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">phi_earth</span><span class="p">,</span> <span class="n">phi_psr</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;BBH residuals from Ellis et. al 2012, 2013&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""BBH residuals from Ellis et. al 2012, 2013"""</span>
 
         <span class="n">h0</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_h0</span>
         <span class="n">f0</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_f0</span>
@@ -827,7 +827,7 @@
 <div class="viewcode-block" id="chromatic_exponential">
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.chromatic_exponential">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">    Factory function for chromatic exponential delay model.</span>
 
 <span class="sd">    Creates a delay function that models chromatic exponential events (e.g., profile</span>
@@ -851,11 +851,11 @@
 <span class="sd">            \Delta(t) = \pm A_0 \exp\left(-\frac{t - t_0}{\tau}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha H(t - t_0)</span>
 
 <span class="sd">        where :math:`H(t - t_0)` is the Heaviside step function.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">toas</span><span class="p">,</span> <span class="n">fnorm</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">day</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">delay</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">sign_param</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">        Compute chromatic exponential delay.</span>
 
 <span class="sd">        .. math::</span>
@@ -879,13 +879,13 @@
 <span class="sd">        -------</span>
 <span class="sd">        delay : ndarray</span>
 <span class="sd">            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">dt</span> <span class="o">=</span> <span class="n">toas</span> <span class="o">-</span> <span class="n">t0</span>
         <span class="n">tau</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_tau</span>
         <span class="n">amp</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_Amp</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">sign_param</span><span class="p">)</span> <span class="o">*</span> <span class="n">amp</span> <span class="o">*</span> <span class="n">fnorm</span><span class="o">**</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dt</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">dt</span> <span class="o">/</span> <span class="n">tau</span><span class="p">),</span> <span class="mf">0.0</span> <span class="p">)</span>
 
-    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">&quot;chromatic_exponential_delay&quot;</span>
+    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">"chromatic_exponential_delay"</span>
     <span class="k">return</span> <span class="n">delay</span></div>
 
 
@@ -893,7 +893,7 @@
 <div class="viewcode-block" id="chromatic_annual">
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.chromatic_annual">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">chromatic_annual</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">    Factory function for chromatic annual delay model.</span>
 
 <span class="sd">    Creates a delay function that models chromatic annual sinusoidal variations</span>
@@ -917,11 +917,11 @@
 <span class="sd">            \Delta(t) = A_0 \sin(2\pi f_{\text{yr}} t + \phi) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha</span>
 
 <span class="sd">        where :math:`f_{\text{yr}}` is the annual frequency (1/year).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">toas</span><span class="p">,</span> <span class="n">fnorm</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">delay</span><span class="p">(</span><span class="n">log10_Amp</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">        Compute chromatic annual delay.</span>
 
 <span class="sd">        .. math::</span>
@@ -941,10 +941,10 @@
 <span class="sd">        -------</span>
 <span class="sd">        delay : ndarray</span>
 <span class="sd">            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_Amp</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">const</span><span class="o">.</span><span class="n">fyr</span> <span class="o">*</span> <span class="n">toas</span> <span class="o">+</span> <span class="n">phase</span><span class="p">)</span> <span class="o">*</span> <span class="n">fnorm</span><span class="o">**</span><span class="n">alpha</span>
 
-    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">&quot;chromatic_annual_delay&quot;</span>
+    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">"chromatic_annual_delay"</span>
     <span class="k">return</span> <span class="n">delay</span></div>
 
 
@@ -952,7 +952,7 @@
 <div class="viewcode-block" id="chromatic_gaussian">
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.chromatic_gaussian">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">chromatic_gaussian</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">fref</span><span class="o">=</span><span class="mf">1400.0</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">    Factory function for chromatic Gaussian delay model.</span>
 
 <span class="sd">    Creates a delay function that models chromatic Gaussian events (e.g., transient</span>
@@ -974,11 +974,11 @@
 <span class="sd">        .. math::</span>
 
 <span class="sd">            \Delta(t) = \pm A_0 \exp\left(-\frac{(t - t_0)^2}{2\sigma^2}\right) \left(\frac{f_{\text{ref}}}{f}\right)^\alpha</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">toas</span><span class="p">,</span> <span class="n">fnorm</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">day</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">fref</span> <span class="o">/</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">delay</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_sigma</span><span class="p">,</span> <span class="n">sign_param</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">        Compute chromatic Gaussian delay.</span>
 
 <span class="sd">        .. math::</span>
@@ -1002,10 +1002,10 @@
 <span class="sd">        -------</span>
 <span class="sd">        delay : ndarray</span>
 <span class="sd">            Array of timing residuals :math:`\Delta(t)` in seconds with shape matching psr.toas</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">sign_param</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10_Amp</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">toas</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">log10_sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="n">fnorm</span><span class="o">**</span><span class="n">alpha</span>
 
-    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">&quot;chromatic_gaussian_delay&quot;</span>
+    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">"chromatic_gaussian_delay"</span>
     <span class="k">return</span> <span class="n">delay</span></div>
 
 
@@ -1013,7 +1013,7 @@
 <div class="viewcode-block" id="orthometric_shapiro">
 <a class="viewcode-back" href="../../api/deterministic.html#discovery.deterministic.orthometric_shapiro">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">orthometric_shapiro</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">binphase</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">    Factory function for orthometric Shapiro delay model.</span>
 
 <span class="sd">    Creates a delay function that models Shapiro delay in binary pulsars using</span>
@@ -1046,13 +1046,13 @@
 <span class="sd">    Freire, P. C. C., &amp; Wex, N. (2010). The orthometric parametrization of the</span>
 <span class="sd">    Shapiro delay and an improved test of general relativity with binary pulsars.</span>
 <span class="sd">    MNRAS, 409(1), 199-212.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">toas</span><span class="p">,</span> <span class="n">binphase</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">/</span> <span class="n">const</span><span class="o">.</span><span class="n">day</span><span class="p">),</span> <span class="n">matrix</span><span class="o">.</span><span class="n">jnparray</span><span class="p">(</span><span class="n">binphase</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">binphase</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">toas</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input binphase must have the same shape as toas&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Input binphase must have the same shape as toas"</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">delay</span><span class="p">(</span><span class="n">h3</span><span class="p">,</span> <span class="n">stig</span><span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">        Compute orthometric Shapiro delay.</span>
 
 <span class="sd">        Implements Equation (29) from Freire &amp; Wex (2010):</span>
@@ -1072,10 +1072,10 @@
 <span class="sd">        -------</span>
 <span class="sd">        delay : ndarray</span>
 <span class="sd">            Shapiro timing delay :math:`\Delta_s` in seconds with shape matching psr.toas</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">h3</span> <span class="o">/</span> <span class="n">stig</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">stig</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">stig</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">binphase</span><span class="p">))</span>
 
-    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">&quot;orthometric_shapiro_delay&quot;</span>
+    <span class="n">delay</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="s2">"orthometric_shapiro_delay"</span>
     <span class="k">return</span> <span class="n">delay</span></div>
 
 </pre></div>

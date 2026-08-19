@@ -583,17 +583,17 @@ outlier analysis (see <a class="reference external" href="https://arxiv.org/abs/
 <p>Create GPs with Fourier basis (for red noise, DM variations, etc.):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Red noise</span>
 <span class="n">rn_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 
 <span class="c1"># DM variations</span>
 <span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
                           <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span>
-                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dmgp&#39;</span><span class="p">)</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'dmgp'</span><span class="p">)</span>
 
 <span class="c1"># Common process (shared parameters)</span>
 <span class="n">crn_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
-                           <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;crn_log10_A&#39;</span><span class="p">,</span> <span class="s1">&#39;crn_gamma&#39;</span><span class="p">],</span>
-                           <span class="n">name</span><span class="o">=</span><span class="s1">&#39;crn&#39;</span><span class="p">)</span>
+                           <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">'crn_log10_A'</span><span class="p">,</span> <span class="s1">'crn_gamma'</span><span class="p">],</span>
+                           <span class="n">name</span><span class="o">=</span><span class="s1">'crn'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The Fourier basis has shape <code class="docutils literal notranslate"><span class="pre">ntoas</span> <span class="pre">×</span> <span class="pre">2*components</span></code> (interleaved sines and cosines).</p>
@@ -608,10 +608,10 @@ outlier analysis (see <a class="reference external" href="https://arxiv.org/abs/
 </ul>
 <p><strong>Example prior function:</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">powerlaw</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Power-law spectrum.</span>
+<span class="w">    </span><span class="sd">"""Power-law spectrum.</span>
 
 <span class="sd">    Returns PSD at frequencies f.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">log10_A</span><span class="p">)</span> <span class="o">*</span> <span class="n">f</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">365.25</span><span class="o">*</span><span class="mi">86400</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">gamma</span><span class="o">+</span><span class="mi">3</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">12</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">df</span>
 </pre></div>
 </div>
@@ -623,12 +623,12 @@ outlier analysis (see <a class="reference external" href="https://arxiv.org/abs/
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Hellings-Downs correlated GW background</span>
 <span class="n">gw_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span>
                                   <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                                  <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span><span class="p">)</span>
+                                  <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span><span class="p">)</span>
 
 <span class="c1"># Monopole correlation</span>
 <span class="n">mono_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier_global</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">monopole_orf</span><span class="p">,</span>
                                     <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;mono&#39;</span><span class="p">)</span>
+                                    <span class="n">name</span><span class="o">=</span><span class="s1">'mono'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">orf</span></code> parameter specifies the overlap reduction function (see <span class="xref std std-doc">orf</span>).</p>
@@ -638,7 +638,7 @@ outlier analysis (see <a class="reference external" href="https://arxiv.org/abs/
     <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">],</span>  <span class="c1"># List of priors</span>
     <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">hd_orf</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">monopole_orf</span><span class="p">],</span> <span class="c1"># List of ORFs</span>
     <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -650,7 +650,7 @@ outlier analysis (see <a class="reference external" href="https://arxiv.org/abs/
 <p>For <code class="docutils literal notranslate"><span class="pre">ArrayLikelihood</span></code>, create vectorized GPs:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">commongp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makecommongp_fourier</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span>
                                    <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                                   <span class="n">name</span><span class="o">=</span><span class="s1">&#39;red_noise&#39;</span><span class="p">)</span>
+                                   <span class="n">name</span><span class="o">=</span><span class="s1">'red_noise'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This is similar to <code class="docutils literal notranslate"><span class="pre">makegp_fourier</span></code> but operates on a list of pulsars and
@@ -726,7 +726,7 @@ This allows the chromatic index to be a free parameter in the model.</p>
 <span class="c1"># In the model, the basis will be evaluated at the sampled alpha value</span>
 <span class="n">chrom_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">chromatic_prior</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
                              <span class="n">fourierbasis</span><span class="o">=</span><span class="k">lambda</span> <span class="n">psr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span><span class="p">),</span>
-                             <span class="n">name</span><span class="o">=</span><span class="s1">&#39;chromatic&#39;</span><span class="p">)</span>
+                             <span class="n">name</span><span class="o">=</span><span class="s1">'chromatic'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis_chrom" title="discovery.signals.fourierbasis_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_chrom()</span></code></a>.</p>

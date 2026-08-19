@@ -536,13 +536,13 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="c1"># Find and load data</span>
-<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
-<span class="n">data_pattern</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">&#39;v1p1_de440_pint_bipm2019-*.feather&#39;</span><span class="p">)</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'..'</span><span class="p">,</span> <span class="s1">'..'</span><span class="p">,</span> <span class="s1">'data'</span><span class="p">)</span>
+<span class="n">data_pattern</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">'v1p1_de440_pint_bipm2019-*.feather'</span><span class="p">)</span>
 <span class="n">psrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">data_pattern</span><span class="p">)]</span>
 
 <span class="n">Tspan</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psrs</span><span class="p">)</span>
 
-<span class="c1"># Build likelihood with &#39;gw&#39; component</span>
+<span class="c1"># Build likelihood with 'gw' component</span>
 <span class="n">gbl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">GlobalLikelihood</span><span class="p">(</span>
     <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">([</span>
         <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
@@ -550,10 +550,10 @@
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                         <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">),</span>
+                         <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                         <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;gw_log10_A&#39;</span><span class="p">,</span> <span class="s1">&#39;gw_gamma&#39;</span><span class="p">],</span>
-                         <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span><span class="p">)</span>
+                         <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">'gw_log10_A'</span><span class="p">,</span> <span class="s1">'gw_gamma'</span><span class="p">],</span>
+                         <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span><span class="p">)</span>
     <span class="p">])</span> <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">]</span>
 <span class="p">)</span>
 
@@ -574,10 +574,10 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="c1"># Compute OS</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">os_obj</span><span class="o">.</span><span class="n">os</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OS: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;os&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OS sigma: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;os_sigma&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SNR: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;log10_A: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;log10_A&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OS: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'os'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OS sigma: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'os_sigma'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"SNR: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"log10_A: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'log10_A'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The result dictionary contains:</p>
@@ -635,8 +635,8 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="c1"># Compute for all samples</span>
 <span class="n">results</span> <span class="o">=</span> <span class="n">os_vmap</span><span class="p">(</span><span class="n">params_batch</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orfa</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SNRs: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean SNR: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"SNRs: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mean SNR: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -663,8 +663,8 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="c1"># Compute OS with scrambled positions</span>
 <span class="n">result_scrambled</span> <span class="o">=</span> <span class="n">os_obj</span><span class="o">.</span><span class="n">scramble</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;True SNR: </span><span class="si">{</span><span class="n">result_true</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Scrambled SNR: </span><span class="si">{</span><span class="n">result_scrambled</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"True SNR: </span><span class="si">{</span><span class="n">result_true</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Scrambled SNR: </span><span class="si">{</span><span class="n">result_scrambled</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="vectorized-scrambling">
@@ -688,12 +688,12 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="n">results_scrambled</span> <span class="o">=</span> <span class="n">os_scramble_vmap</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">positions_batch</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orfa</span><span class="p">)</span>
 
 <span class="c1"># Compare to true value</span>
-<span class="n">snr_true</span> <span class="o">=</span> <span class="n">result_true</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span>
-<span class="n">snr_scrambled</span> <span class="o">=</span> <span class="n">results_scrambled</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span>
+<span class="n">snr_true</span> <span class="o">=</span> <span class="n">result_true</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span>
+<span class="n">snr_scrambled</span> <span class="o">=</span> <span class="n">results_scrambled</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span>
 <span class="n">p_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">snr_scrambled</span> <span class="o">&gt;</span> <span class="n">snr_true</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;True SNR: </span><span class="si">{</span><span class="n">snr_true</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;p-value: </span><span class="si">{</span><span class="n">p_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"True SNR: </span><span class="si">{</span><span class="n">snr_true</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"p-value: </span><span class="si">{</span><span class="n">p_value</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -709,7 +709,7 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="c1"># Compute OS with shifted phases</span>
 <span class="n">result_shifted</span> <span class="o">=</span> <span class="n">os_obj</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">phases</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shifted SNR: </span><span class="si">{</span><span class="n">result_shifted</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Shifted SNR: </span><span class="si">{</span><span class="n">result_shifted</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 <section id="vectorized-phase-shifting">
@@ -725,7 +725,7 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="n">results_shifted</span> <span class="o">=</span> <span class="n">os_shift_vmap</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">phases_batch</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orfa</span><span class="p">)</span>
 
 <span class="c1"># Compute p-value</span>
-<span class="n">p_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">results_shifted</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">result_true</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">p_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">results_shifted</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">result_true</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 </pre></div>
 </div>
 </section>
@@ -743,9 +743,9 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">cdf_values</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;SNR&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;CDF&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;OS SNR Distribution&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'SNR'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'CDF'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'OS SNR Distribution'</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -766,8 +766,8 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="c1"># Load data</span>
-<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
-<span class="n">data_pattern</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">&#39;v1p1_de440_pint_bipm2019-*.feather&#39;</span><span class="p">)</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'..'</span><span class="p">,</span> <span class="s1">'..'</span><span class="p">,</span> <span class="s1">'data'</span><span class="p">)</span>
+<span class="n">data_pattern</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">'v1p1_de440_pint_bipm2019-*.feather'</span><span class="p">)</span>
 <span class="n">psrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">data_pattern</span><span class="p">)]</span>
 <span class="n">Tspan</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psrs</span><span class="p">)</span>
 
@@ -778,9 +778,9 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
         <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-        <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">),</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">),</span>
         <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">Tspan</span><span class="p">,</span>
-                         <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;gw_log10_A&#39;</span><span class="p">,</span> <span class="s1">&#39;gw_gamma&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;gw&#39;</span><span class="p">)</span>
+                         <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">'gw_log10_A'</span><span class="p">,</span> <span class="s1">'gw_gamma'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'gw'</span><span class="p">)</span>
     <span class="p">])</span> <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span>
 <span class="p">])</span>
 
@@ -792,9 +792,9 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 
 <span class="c1"># Compute OS</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">os_obj</span><span class="o">.</span><span class="n">os</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OS: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;os&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SNR: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;log10_A: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;log10_A&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OS: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'os'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"SNR: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"log10_A: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'log10_A'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># Scrambling test</span>
 <span class="n">npsr</span><span class="p">,</span> <span class="n">ngw</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">psrs</span><span class="p">),</span> <span class="mi">14</span>
@@ -811,8 +811,8 @@ per-pulsar <code class="docutils literal notranslate"><span class="pre">'gw'</sp
 <span class="n">os_scramble</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">os_obj</span><span class="o">.</span><span class="n">scramble</span><span class="p">,</span> <span class="n">in_axes</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
 <span class="n">results_scrambled</span> <span class="o">=</span> <span class="n">os_scramble</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">hd_orfa</span><span class="p">)</span>
 
-<span class="n">p_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">results_scrambled</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;snr&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;p-value (scrambling): </span><span class="si">{</span><span class="n">p_value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">p_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">results_scrambled</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">result</span><span class="p">[</span><span class="s1">'snr'</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"p-value (scrambling): </span><span class="si">{</span><span class="n">p_value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>

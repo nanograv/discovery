@@ -603,11 +603,11 @@ see Chapter 7 of <a class="reference external" href="https://arxiv.org/abs/2105.
 <section id="example-gp-usage">
 <h3>Example GP Usage<a class="headerlink" href="#example-gp-usage" title="Link to this heading">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a red noise GP with Fourier basis</span>
-<span class="n">rn_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rednoise&#39;</span><span class="p">)</span>
+<span class="n">rn_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 
 <span class="c1"># Create a DM variation GP</span>
 <span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dmgp&#39;</span><span class="p">)</span>
+                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dmgp'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
