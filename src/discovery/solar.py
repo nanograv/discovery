@@ -1,9 +1,11 @@
 import numpy as np
 import inspect
 import jax.numpy as jnp
+import warnings
+from scipy import interpolate
 
-from . import const
-from . import matrix
+from discovery import const
+from discovery import matrix
 
 AU_light_sec = const.AU / const.c  # 1 AU in light seconds
 AU_pc = const.AU / const.pc        # 1 AU in parsecs (for DM normalization)
@@ -100,8 +102,9 @@ def fourierbasis_solar_dm(psr,
     psr : :class:`pulsar.Pulsar`
         Discovery Pulsar object containing TOAs, frequencies, and solar system
         ephemeris information.
-    components : int
-        Number of Fourier components to include in the model.
+    components : int or array-like
+        Number of Fourier components to include in the model, or an array of
+        explicit Fourier modes (frequencies in Hz) to use for the basis.
     T : float, optional
         Total timespan of the data in seconds. If None, will be computed from
         the pulsar's TOAs.
@@ -139,17 +142,17 @@ def fourierbasis_solar_dm(psr,
     """
 
     # Lazy import to avoid circular dependency
-    from .signals import fourierbasis
+    from discovery.signals import fourierbasis
 
     # get base Fourier design matrix and frequencies
-    f, df, fmat = fourierbasis(psr, components, T)
+    f, df, fmat = fourierbasis(psr, components, T=T)
     theta, R_earth, _, _ = theta_impact(psr)
     dm_sol_wind = dm_solar(1.0, theta, R_earth)
     dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
 
     return f, df, fmat * dt_DM[:, None]
 
-def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, common=[], name='timedomain_sw_gp'):
+def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, Umat=None, nodes=None, common=[], name='timedomain_sw_gp', noisedict={}):
     """
     Construct a time-domain Gaussian process for solar wind dispersion measure variations.
 
@@ -169,20 +172,29 @@ def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, common=[], name='timedom
         tau is the time separation array.
     dt : float, optional
         Time bin width in seconds for quantizing TOAs. Default is 1.0.
+    Umat : ndarray, optional
+        Design matrix mapping the low-rank GP to the TOA residuals. If None,
+        it will be constructed by quantizing the TOAs and weighting by the solar wind DM signature.
+        Default is None.
     common : list, optional
         List of parameter names that should be treated as common (shared) across
         pulsars rather than pulsar-specific. Default is [].
     name : str, optional
         Base name for the GP parameters. Used as prefix for parameter naming.
         Default is 'timedomain_sw_gp'.
+    noisedict : dict, optional
+        If it supplies values for all of the GP's hyperparameters (fixed-point
+        analysis), the covariance is evaluated once and a :class:`matrix.ConstantGP`
+        is returned so its contribution to the covariance is cached rather than
+        sampled; otherwise a :class:`matrix.VariableGP` is returned. Default is {}.
 
     Returns
     -------
-    :class:`matrix.VariableGP`
-        A matrix.VariableGP object containing the noise covariance matrix (as a
-        NoiseMatrix2D_var) and the design matrix (Umat) that maps the GP
-        to the TOA residuals via solar wind DM delays. See :class:`matrix.VariableGP`
-        for details.
+    :class:`matrix.VariableGP` or :class:`matrix.ConstantGP`
+        A GP object containing the noise covariance matrix (as a NoiseMatrix2D_var,
+        or NoiseMatrix2D_novar when the hyperparameters are fixed via noisedict) and
+        the design matrix (Umat) that maps the GP to the TOA residuals via solar wind
+        DM delays. See :class:`matrix.VariableGP` / :class:`matrix.ConstantGP`.
 
     Notes
     -----
@@ -191,7 +203,7 @@ def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, common=[], name='timedom
     DM signature.
     """
     # Lazy import to avoid circular dependency
-    from .signals import quantize
+    from discovery.signals import quantize
 
     argspec = inspect.getfullargspec(covariance)
     argmap = [(arg if arg in common else f'{name}_{arg}' if f'{name}_{arg}' in common else f'{psr.name}_{name}_{arg}')
@@ -202,17 +214,28 @@ def makegp_timedomain_solar_dm(psr, covariance, dt=1.0, common=[], name='timedom
     dm_sol_wind = dm_solar(1.0, theta, R_earth)
     dt_DM = dm_sol_wind * 4.148808e3 / (psr.freqs**2)
 
-    bins = quantize(psr.toas, dt)
-    Umat = np.vstack([bins == i for i in range(bins.max() + 1)]).T.astype('d')
-    Umat = Umat * dt_DM[:, None]
-    toas = psr.toas @ Umat / Umat.sum(axis=0)
+    if Umat is None:
+        bins = quantize(psr.toas, dt)
+        Umat = np.vstack([bins == i for i in range(bins.max() + 1)]).T.astype('d')
+        Umat = Umat * dt_DM[:, None]
+        nodes = psr.toas @ Umat / Umat.sum(axis=0)
+    else:
+        Umat = Umat * dt_DM[:, None]
+        assert nodes is not None, "If Umat is provided, nodes must also be provided."
+    
 
     get_tmat = covariance
-    tau = jnp.abs(toas[:, jnp.newaxis] - toas[jnp.newaxis, :])
+    tau = jnp.abs(nodes[:, jnp.newaxis] - nodes[jnp.newaxis, :])
 
     def getphi(params):
         return get_tmat(tau, *[params[arg] for arg in argmap])
     getphi.params = argmap
 
-    return matrix.VariableGP(matrix.NoiseMatrix2D_var(getphi), Umat)
-
+    # fixed noise parameter analysis: if all hyperparameters are supplied in noisedict,
+    # evaluate the covariance once and return a cached ConstantGP.
+    if noisedict and all(par in noisedict for par in argmap):
+        gp = matrix.ConstantGP(matrix.NoiseMatrix2D_novar(getphi(noisedict)), Umat)
+    else:
+        gp = matrix.VariableGP(matrix.NoiseMatrix2D_var(getphi), Umat)
+    gp.index = {f'{psr.name}_{name}_coefficients({Umat.shape[1]})': slice(0, Umat.shape[1])}
+    return gp

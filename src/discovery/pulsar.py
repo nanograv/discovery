@@ -41,12 +41,19 @@ def read_chain(fileordir):
 
         return df
 
-def save_chain(df, filename):
-    """Saves Pandas chain table to Feather, preserving `attrs` in `schema.metadata['json']`."""
+def save_chain(df, filename, compression='zstd'):
+    """Saves Pandas chain table to Feather, preserving `attrs` in `schema.metadata['json']`.
+
+    Args:
+        df: pandas DataFrame to save.
+        filename: output path.
+        compression: Feather v2 codec passed to ``pyarrow.feather.write_feather``.
+            Default ``'zstd'``. Use ``'uncompressed'`` to disable.
+    """
 
     table = pyarrow.Table.from_pandas(df)
     table = table.replace_schema_metadata({**table.schema.metadata, 'json': json.dumps(df.attrs)})
-    pyarrow.feather.write_feather(table, filename)
+    pyarrow.feather.write_feather(table, filename, compression=compression)
 
 
 class Pulsar:

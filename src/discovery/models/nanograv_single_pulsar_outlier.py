@@ -88,25 +88,43 @@ def _partition_params(psrl):
         dict with sorted lists under keys `efac`, `equad`, `ecorr`,
         `red_noise`, plus a single string under `alpha_scaling`.
 
+        The ``red_noise`` bucket contains *all* GP hyperparameters that
+        are not white-noise or ``alpha_scaling`` — i.e. red noise, DM GP,
+        solar-wind GP, chromatic GP, etc. The key name is kept as
+        ``"red_noise"`` for backward compatibility; downstream code that
+        iterates over it by parameter name is unaffected.
+
     Raises:
         ValueError: if there isn't exactly one `alpha_scaling` parameter
             (usually means `outliers=True` was not passed to
             `makenoise_measurement`).
     """
     params = psrl.logL.params
-    parts = {
-        "efac":      sorted(p for p in params if "efac" in p),
-        "equad":     sorted(p for p in params if "equad" in p),
-        "ecorr":     sorted(p for p in params if "log10_ecorr" in p),
-        "red_noise": sorted(p for p in params if "red_noise" in p),
-    }
+
+    efac  = sorted(p for p in params if "efac"          in p)
+    equad = sorted(p for p in params if "equad"         in p)
+    ecorr = sorted(p for p in params if "log10_ecorr"   in p)
     alpha = [p for p in params if "alpha_scaling" in p]
+
     if len(alpha) != 1:
         raise ValueError(
             f"expected exactly one alpha_scaling param, found {alpha}; "
             "did you pass outliers=True to makenoise_measurement?")
-    parts["alpha_scaling"] = alpha[0]
-    return parts
+
+    # Everything that is not a WN parameter or alpha_scaling is a GP
+    # hyperparameter (red noise, DM GP, SW GP, chromatic GP, …).  Using
+    # set-difference keeps the classifier future-proof without any
+    # hard-coded name patterns.
+    _classified = set(efac) | set(equad) | set(ecorr) | {alpha[0]}
+    gp_hypers = sorted(p for p in params if p not in _classified)
+
+    return {
+        "efac":         efac,
+        "equad":        equad,
+        "ecorr":        ecorr,
+        "red_noise":    gp_hypers,   # key kept for backward compatibility
+        "alpha_scaling": alpha[0],
+    }
 
 
 def assemble_pardict(hmc_sites: dict, partition: dict) -> dict:
