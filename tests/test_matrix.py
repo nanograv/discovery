@@ -401,3 +401,26 @@ class TestMakeUind:
         Uind = matrix.make_uind(U)
         assert Uind.shape == (0, 1)
         assert Uind.dtype.kind == 'i'
+
+
+class TestNoiseMatrix12DNovar:
+    """NoiseMatrix12D_novar is the constant analog of NoiseMatrix12D_var and
+    dispatches on the ndim of the evaluated prior (1D diagonal vs 2D full)."""
+
+    def test_1d_returns_1d_novar(self):
+        N = jnp.array([1.0, 2.0, 3.0])
+        out = matrix.NoiseMatrix12D_novar(N)
+        assert isinstance(out, matrix.NoiseMatrix1D_novar)
+        np.testing.assert_allclose(np.asarray(out.N), np.asarray(N))
+
+    def test_2d_returns_2d_novar(self):
+        N = jnp.eye(3) * 2.0
+        out = matrix.NoiseMatrix12D_novar(N)
+        assert isinstance(out, matrix.NoiseMatrix2D_novar)
+        np.testing.assert_allclose(np.asarray(out.N), np.asarray(N))
+
+    def test_result_is_constant_kernel(self):
+        assert isinstance(matrix.NoiseMatrix12D_novar(jnp.ones(4)),
+                          matrix.ConstantKernel)
+        assert isinstance(matrix.NoiseMatrix12D_novar(jnp.eye(4)),
+                          matrix.ConstantKernel)

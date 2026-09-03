@@ -324,6 +324,200 @@ class TestLikelihood:
         # before we can run this, but at least we can check the JITted likelihood runs
         # assert float(jax.numpy.abs(ll_difference - offset)) <= atol
 
+    @pytest.mark.integration
+    def test_singlepsr_conditional_constant_wn(self):
+        """Test sample_conditional with constant white noise (WoodburyKernel_varP)."""
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        psrfile = data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
+        psr = ds.Pulsar.read_feather(psrfile)
+
+        # constant WN (noisedict provided) + ecorr + red noise
+        mdl = ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr, psr.noisedict),
+                                   ds.makegp_ecorr(psr, psr.noisedict),
+                                   ds.makegp_fourier(psr, ds.powerlaw, components=30, name='rednoise')])
+        p0 = ds.sample_uniform(mdl.logL.params)
+
+        # logL should work and be JIT-consistent
+        l1 = mdl.logL(p0)
+        l2 = jax.jit(mdl.logL)(p0)
+        assert np.allclose(l1, l2)
+
+        # sample_conditional should produce dict of GP coefficients
+        key = jax.random.PRNGKey(42)
+        key, cond_draw = mdl.sample_conditional(key, p0)
+        assert isinstance(cond_draw, dict)
+        assert len(cond_draw) > 0
+        for name, coeffs in cond_draw.items():
+            assert coeffs.shape[0] > 0
+
+    @pytest.mark.integration
+    def test_singlepsr_conditional_varying_wn(self):
+        """Test sample_conditional with varying white noise (WoodburyKernel_varNP).
+
+        This is the case that was broken when WoodburyKernel_varNP
+        changed its inner noise attribute from .N to .N_var.
+        """
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        psrfile = data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
+        psr = ds.Pulsar.read_feather(psrfile)
+
+        # varying WN (no noisedict) + ecorr + red noise
+        mdl = ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr),
+                                   ds.makegp_ecorr(psr),
+                                   ds.makegp_fourier(psr, ds.powerlaw, components=30, name='rednoise')])
+        p0 = ds.sample_uniform(mdl.logL.params)
+
+        # logL should work and be JIT-consistent
+        l1 = mdl.logL(p0)
+        l2 = jax.jit(mdl.logL)(p0)
+        assert np.allclose(l1, l2)
+
+        # sample_conditional should produce dict of GP coefficients
+        key = jax.random.PRNGKey(42)
+        key, cond_draw = mdl.sample_conditional(key, p0)
+        assert isinstance(cond_draw, dict)
+        assert len(cond_draw) > 0
+        for name, coeffs in cond_draw.items():
+            assert coeffs.shape[0] > 0
+    
+    @pytest.mark.integration
+    def test_singlepsr_conditional_varying_wn_free_chromatic(self):
+        """Test sample_conditional with varying white noise (WoodburyKernel_varNP).
+
+        This is the case that was broken when WoodburyKernel_varNP
+        changed its inner noise attribute from .N to .N_var.
+        """
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        psrfile = data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
+        psr = ds.Pulsar.read_feather(psrfile)
+
+        # varying WN (no noisedict) + ecorr + red noise + dm noise + free chromatic noise
+        mdl = ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr),
+                                   ds.makegp_ecorr(psr),
+                                   ds.makegp_fourier(psr, ds.powerlaw, components=30, name='rednoise'),
+                                   ds.makegp_fourier(psr, ds.powerlaw, fourierbasis=ds.fourierbasis_dm, components=30, name='dm_gp'),
+                                   ds.makegp_fourier(psr, ds.powerlaw, fourierbasis=ds.fourierbasis_chrom, components=30, name='chrom_gp')])
+        p0 = ds.sample_uniform(mdl.logL.params)
+
+        # logL should work and be JIT-consistent
+        l1 = mdl.logL(p0)
+        l2 = jax.jit(mdl.logL)(p0)
+        assert np.allclose(l1, l2)
+
+        # sample_conditional should produce dict of GP coefficients
+        key = jax.random.PRNGKey(42)
+        key, cond_draw = mdl.sample_conditional(key, p0)
+        assert isinstance(cond_draw, dict)
+        assert len(cond_draw) > 0
+        for name, coeffs in cond_draw.items():
+            assert coeffs.shape[0] > 0
+
+    @pytest.mark.integration
+    def test_singlepsr_conditional_varying_wn_simple(self):
+        """Test sample_conditional with varying WN and *no* constant GPs.
+
+        When there is no ecorr/timing wrapping the noise into a
+        WoodburyKernel_novar, the inner N of the outermost kernel is
+        a bare NoiseMatrix, exercising make_kernelsolve_simple.
+        """
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        psrfile = data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
+        psr = ds.Pulsar.read_feather(psrfile)
+
+        # varying WN (no noisedict), no ecorr, just red noise
+        mdl = ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr),
+                                   ds.makegp_fourier(psr, ds.powerlaw, components=30, name='rednoise')])
+        p0 = ds.sample_uniform(mdl.logL.params)
+
+        # logL should work
+        l1 = mdl.logL(p0)
+        l2 = jax.jit(mdl.logL)(p0)
+        assert np.allclose(l1, l2)
+
+        # sample_conditional
+        key = jax.random.PRNGKey(42)
+        key, cond_draw = mdl.sample_conditional(key, p0)
+        assert isinstance(cond_draw, dict)
+        assert len(cond_draw) > 0
+
+    @pytest.mark.integration
+    def test_chromatic_quad_gp_variable_index_shared(self):
+        """Smoke test: chromatic quadratic GP with a *variable* (free) chromatic index.
+
+        Intended use case: pair the chromatic quadratic GP (``makegp_improper_varF``
+        with the callable ``chromatic_quad_basis``) with a free chromatic Fourier GP,
+        giving both ``name='chrom_gp'`` so they share the single chromatic-index
+        parameter ``idx``. Exercises the callable (VariableGP) branch.
+        """
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        psrfile = data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
+        psr = ds.Pulsar.read_feather(psrfile)
+
+        quad = ds.makegp_improper_varF(psr, ds.chromatic_quad_basis(psr),
+                                       name='chrom_gp', param_names=['alpha'])
+        chrom = ds.makegp_fourier(psr, ds.powerlaw, fourierbasis=ds.fourierbasis_chrom,
+                                  components=30, name='chrom_gp')
+
+        # the quadratic GP contributes a variable design matrix keyed by the shared index
+        assert quad.F.params == ['B1855+09_chrom_gp_alpha']
+        assert np.asarray(quad.F({'B1855+09_chrom_gp_alpha': 4.0})).shape == (len(psr.toas), 3)
+
+        mdl = ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr),
+                                   ds.makegp_timing(psr, svd=True),
+                                   quad,
+                                   chrom])
+
+        # both signals reference the same chromatic index -> a single unique parameter
+        alpha_params = {p for p in mdl.logL.params if p.endswith('chrom_gp_alpha')}
+        assert alpha_params == {'B1855+09_chrom_gp_alpha'}
+        # the shared parameter must not be duplicated in the aggregated parameter list
+        assert len(mdl.logL.params) == len(set(mdl.logL.params))
+
+        p0 = ds.sample_uniform(mdl.logL.params)
+        l1 = mdl.logL(p0)
+        l2 = jax.jit(mdl.logL)(p0)
+        assert np.isfinite(l1)
+        assert np.allclose(l1, l2)
+
+    @pytest.mark.integration
+    def test_chromatic_quad_gp_fixed_index(self):
+        """Smoke test: chromatic quadratic GP with a *fixed* chromatic index.
+
+        When the index is supplied via ``noisedict``, ``makegp_improper_varF`` takes
+        the non-callable (ConstantGP) branch with a fixed design matrix. Paired with a
+        free chromatic Fourier GP as in the intended use case.
+        """
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        psrfile = data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
+        psr = ds.Pulsar.read_feather(psrfile)
+
+        quad = ds.makegp_improper_varF(psr, ds.chromatic_quad_basis(psr),
+                                       name='chrom_gp', param_names=['alpha'],
+                                       noisedict={f'{psr.name}_chrom_gp_alpha': 4.0})
+        chrom = ds.makegp_fourier(psr, ds.powerlaw, fourierbasis=ds.fourierbasis_chrom,
+                                  components=30, name='chrom_gp')
+
+        # fixed index -> constant design matrix, no free parameter from the quad GP
+        assert not callable(quad.F)
+        assert np.asarray(quad.F).shape == (len(psr.toas), 3)
+        assert not any('chrom_gp_alpha' in p for p in getattr(quad.Phi, 'params', []))
+
+        mdl = ds.PulsarLikelihood([psr.residuals,
+                                   ds.makenoise_measurement(psr),
+                                   ds.makegp_timing(psr, svd=True),
+                                   quad,
+                                   chrom])
+
+        p0 = ds.sample_uniform(mdl.logL.params)
+        l1 = mdl.logL(p0)
+        l2 = jax.jit(mdl.logL)(p0)
+        assert np.isfinite(l1)
+        assert np.allclose(l1, l2)
 
 class TestConditionalAllVariable:
     """Regression: all-variable GPs must support conditional / sample_conditional."""

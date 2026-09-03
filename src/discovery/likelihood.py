@@ -130,6 +130,7 @@ class PulsarLikelihood:
     def conditional(self):
         if self.delay:
             raise NotImplementedError('No PulsarLikelihood.conditional with delays so far.')
+
         # if there's only one woodbury to do (N + T Phi T)
         # as opposed to (N + T Phi T + ... + T Phi T)
         N_Nmat = self.N.N_var if hasattr(self.N, 'N_var') else self.N.N
@@ -143,9 +144,11 @@ class PulsarLikelihood:
             def cond(params):
                 mu, cf = ksolve(params)
                 return mu, cf
-            cond.params = sorted(set(N_Nmat.params + self.N.P_var.params))
+            # ksolve.params already unions N_var, P_var and any parameters the
+            # design matrix depends on (e.g. a free chromatic index).
+            cond.params = ksolve.params
             return cond
-        P_var_inv = self.N.P_var.Phi_inv or self.N.P_var.make_inv()
+        P_var_inv = getattr(self.N.P_var, 'Phi_inv', None) or self.N.P_var.make_inv()
 
         ksolve = N_Nmat.make_kernelsolve(self.y, self.N.F)
 
