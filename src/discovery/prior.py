@@ -27,6 +27,8 @@ priordict_standard = {
     "(.*_)?red_noise_log10_A.*": [-20, -11],  # deprecated
     "(.*_)?red_noise_gamma.*": [0, 7],  # deprecated
     "(.*_)?red_noise_log10_fb.*": [-9, -6],  # deprecated
+    "(.*_)?sw_gp_log10_A": [-10, -2],
+    "(.*_)?sw_gp_gamma": [0, 4],
     "crn_log10_A.*": [-18, -11],
     "crn_gamma.*": [0, 7],
     "crn_log10_fb.*": [-9, -6],
@@ -36,6 +38,15 @@ priordict_standard = {
     "(.*_)?dmgp_log10_A": [-20, -11],
     "(.*_)?dmgp_gamma": [0, 7],
     "(.*_)?dmgp_alpha": [1, 3],
+    "(.*_)?chromgp_log10_A": [-20, -11],
+    "(.*_)?chromgp_gamma": [0, 7],
+    "(.*_)?chromgp_alpha": [1, 7],
+    "(.*_)?dm_gp_log10_A": [-20, -11],
+    "(.*_)?dm_gp_gamma": [0, 7],
+    "(.*_)?dm_gp_alpha": [1, 3],
+    "(.*_)?chrom_gp_log10_A": [-20, -11],
+    "(.*_)?chrom_gp_gamma": [0, 7],
+    "(.*_)?chrom_gp_alpha": [2.5, 14],  # scattering noise. Should be steeper than DM
     "crn_log10_rho": [-9, -4],
     "gw_(.*_)?log10_rho": [-9, -4],
     r"(.*_)?red_noise_log10_rho\(([0-9]*)\)": [-9, -4],
@@ -49,7 +60,22 @@ priordict_standard = {
     "cw_log10_f0": [-9.0, -7.0],
     "cw_log10_h0": [-18.0, -11.0],
     "cw_phi_earth": [0., 2*np.pi],
-    "(.*_)?cw_phi_psr": [0., 2*np.pi]
+    "(.*_)?cw_phi_psr": [0., 2*np.pi],
+    "(.*_)?chrom_exp_t0": [50000, 65000],
+    "(.*_)?chrom_exp_log10_Amp": [-10, -4],
+    "(.*_)?chrom_exp_log10_tau": [0, 4],
+    "(.*_)?chrom_exp_sign_param": [-1, 1],
+    "(.*_)?chrom_exp_alpha": [0, 7],
+    "(.*_)?chrom_1yr_log10_Amp": [-10, -4],
+    "(.*_)?chrom_1yr_phase": [0, 2 * np.pi],
+    "(.*_)?chrom_1yr_alpha": [0, 7],
+    "(.*_)?chrom_gauss_t0": [50000, 65000],
+    "(.*_)?chrom_gauss_log10_Amp": [-10, -4],
+    "(.*_)?chrom_gauss_log10_sigma": [0, 4],
+    "(.*_)?chrom_gauss_sign_param": [-1, 1],
+    "(.*_)?chrom_gauss_alpha": [0, 7],
+    "(.*_)?h3": [0.0, 10**-5],
+    "(.*_)?stig": [0.0, 1.0]
 }
 
 def getprior_uniform(par, priordict={}):

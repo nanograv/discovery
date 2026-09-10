@@ -14,6 +14,17 @@ _Discovery_ needs a modern Python with `numpy`, `scipy`, `jax`, `pyarrow`. It wi
 
 _Discovery_'s subpackages (such as `discovery.flow` and the packages under `discovery.samplers`) require additional dependencies.
 
+## Installation
+
+_Discovery_ is not currently registered don PyPI, so the current suggested installation is to clone and install the code locally. That should be straightforward witH:
+
+```
+git clone https://github.com/nanograv/discovery.git
+cd discovery
+pip install .
+```
+or `pip install -e .` if you plan to do development. 
+
 ## Examples
 
 The folder `examples` contains a growing set of usage examples.
@@ -45,7 +56,8 @@ _Discovery_ uses lightweight `Pulsar` objects saved as Arrow Feather files. To c
 ## GP basis and priors (`signals.py`)
 
 - `fourierbasis(psr, components, [T])`: returns `(f, df, F)` for a basis of interleaved sines and cosines evaluated over `psr` TOAs with frequencies `k/T`, with `k = 1, ..., components`. Again `T` defaults to the pulsar span.
-- `dmfourierbasis(psr, components, [T, fref])`: same, but rescales the basis by `(fref / psr.freqs)**2`, useful to define DMGP. Here `T` defaults to the pulsar span and `fref` to 1400.
+- `fourierbasis_dm(psr, components, [T, fref])`: same, but rescales the basis by `(fref / psr.freqs)**2` (a fixed chromatic index of 2), useful to define a DMGP. Here `T` defaults to the pulsar span and `fref` to 1400. (Formerly `dmfourierbasis`, now deprecated.)
+- `fourierbasis_chrom(psr, components, [T, fref])`: returns `(f, df, fmatfunc)` where `fmatfunc(alpha)` rescales the basis by `(fref / psr.freqs)**alpha` for a variable chromatic index `alpha`, useful to define a general chromatic GP. (Formerly `dmfourierbasis_alpha`, now deprecated.)
 
 - `getspan(psr or psrs)`: returns the TOA span of the pulsar or iterable of pulsars. Useful for `makegp_fourier` and `makegp_fourier_global`.
 

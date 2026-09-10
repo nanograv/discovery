@@ -141,6 +141,51 @@ class TestWoodburyKernel:
         assert np.isclose(logL_varP, logL_varP_jit, rtol=1e-10, atol=1e-10), \
             "JIT and non-JIT varP should give identical results"
 
+    @staticmethod
+    def _oracle_b_mean_and_Sigma(y, N_diag, F, P_diag):
+        NmF = F / N_diag[:, None]
+        FtNmF = F.T @ NmF
+        FtNmy = NmF.T @ y
+        Sigma = np.diag(1.0 / P_diag) + FtNmF
+        return np.linalg.solve(Sigma, FtNmy), Sigma
+
+    def test_WoodburyKernel_varP_make_kernelsolve_simple(self):
+        """Mean matches dense oracle; cf is lower Cholesky of Sigma."""
+        np.random.seed(7)
+        n_data, n_basis = 80, 6
+        y = np.random.randn(n_data)
+        F = np.random.randn(n_data, n_basis)
+        N_diag = np.random.uniform(0.2, 1.5, n_data)
+        rn_name = "test_log10_A"
+
+        def getP_diag(params):
+            return jnp.ones(n_basis) * (10 ** params[rn_name])
+
+        getP_diag.params = [rn_name]
+        P_var = matrix.NoiseMatrix1D_var(getP_diag)
+        N_fixed = matrix.NoiseMatrix1D_novar(N_diag)
+        kernel = matrix.WoodburyKernel_varP(N_fixed, F, P_var)
+
+        ksolve = kernel.make_kernelsolve_simple(y)
+        assert list(ksolve.params) == [rn_name]
+
+        params = {rn_name: -0.4}
+        b_mean, cf = ksolve(params)
+        b_mean = np.asarray(b_mean)
+
+        P_diag = np.ones(n_basis) * (10 ** params[rn_name])
+        b_oracle, Sigma = self._oracle_b_mean_and_Sigma(y, N_diag, F, P_diag)
+        np.testing.assert_allclose(b_mean, b_oracle, rtol=1e-10, atol=1e-12)
+
+        # Lower-factor contract (sample_conditional depends on this)
+        assert cf[1] is True
+        L = np.tril(np.asarray(cf[0]))
+        np.testing.assert_allclose(L @ L.T, Sigma, rtol=1e-10, atol=1e-12)
+
+        FtNmy = F.T @ (y / N_diag)
+        b_from_cf = np.asarray(matrix.jsp.linalg.cho_solve(cf, matrix.jnparray(FtNmy)))
+        np.testing.assert_allclose(b_from_cf, b_oracle, rtol=1e-10, atol=1e-12)
+
 
 class TestPulsarLikelihoodWithDelay:
     """Tests for PulsarLikelihood with deterministic delay signals (solar DM)
@@ -331,3 +376,28 @@ class TestPulsarLikelihoodWithDelay:
             f"kernelsolve TtSy should agree. Max diff={np.max(np.abs(TtSy_no_rn - TtSy_rn))}"
         assert np.allclose(TtST_no_rn, TtST_rn, rtol=1e-12), \
             f"kernelsolve TtST should agree. Max diff={np.max(np.abs(TtST_no_rn - TtST_rn))}"
+
+
+class TestMakeUind:
+    def test_variable_epoch_sizes_pad_with_zero(self):
+        U = np.array(
+            [
+                [1, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [1, 0],
+            ],
+            dtype=float,
+        )
+        Uind = matrix.make_uind(U)
+        assert Uind.shape == (2, 5)
+        # 1-based TOA indices, zero-padded rows.
+        assert list(Uind[0]) == [1, 2, 3, 5, 0]
+        assert list(Uind[1]) == [3, 4, 0, 0, 0]
+
+    def test_empty_basis_returns_empty_index_table(self):
+        U = np.zeros((5, 0), dtype=float)
+        Uind = matrix.make_uind(U)
+        assert Uind.shape == (0, 1)
+        assert Uind.dtype.kind == 'i'

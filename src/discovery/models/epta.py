@@ -56,11 +56,11 @@ def gps2commongp(gps):
 def _makegps(psr, Tred):
     return (([signals.makegp_fourier(psr, signals.powerlaw,
                                      components=psr.noisedict[psr.name + '_dm_gp_components'], T=signals.getspan(psr),
-                                     fourierbasis=signals.make_dmfourierbasis(alpha=2.0, tndm=False), name='dm_gp')]
+                                     fourierbasis=signals.make_fourierbasis_dm(alpha=2.0, tndm=False), name='dm_gp')]
              if psr.noisedict[psr.name + '_dm_gp_components'] else []) +
             ([signals.makegp_fourier(psr, signals.powerlaw,
                                      components=psr.noisedict[psr.name + '_chrom_components'], T=signals.getspan(psr),
-                                     fourierbasis=signals.make_dmfourierbasis(alpha=4.0, tndm=False), name='chrom_gp')]
+                                     fourierbasis=signals.make_fourierbasis_chrom(alpha=4.0, tndm=False), name='chrom_gp')]
              if psr.noisedict[psr.name + '_chrom_components'] else []) + 
             ([signals.makegp_fourier(psr, signals.powerlaw,
                                      components=psr.noisedict[psr.name + '_red_components'], T=Tred, name='red_noise')]

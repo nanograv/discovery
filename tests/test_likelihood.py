@@ -323,3 +323,58 @@ class TestLikelihood:
         # we need to check the systematic difference between enterprise and discovery
         # before we can run this, but at least we can check the JITted likelihood runs
         # assert float(jax.numpy.abs(ll_difference - offset)) <= atol
+
+
+class TestConditionalAllVariable:
+    """Regression: all-variable GPs must support conditional / sample_conditional."""
+
+    def _psr(self):
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        return ds.Pulsar.read_feather(
+            data_dir / "v1p1_de440_pint_bipm2019-B1855+09.feather"
+        )
+
+    def test_conditional_variable_timing_plus_red(self):
+        psr = self._psr()
+        N = ds.matrix.NoiseMatrix1D_novar(psr.toaerrs ** 2)
+        tm = ds.makegp_timing(psr, svd=True, variable=True)
+        # name="rednoise" so params match priordict_standard (not bare "red")
+        red = ds.makegp_fourier(psr, ds.powerlaw, components=10, name="rednoise")
+        like = ds.PulsarLikelihood([psr.residuals, N, tm, red])
+
+        assert type(like.N).__name__ == "WoodburyKernel_varP"
+        assert isinstance(like.N.N, ds.matrix.NoiseMatrix)
+
+        p0 = ds.sample_uniform(like.logL.params)
+        mu, cf = like.conditional(p0)
+        mu = np.asarray(mu)
+
+        n_tm, n_red = tm.F.shape[1], red.F.shape[1]
+        assert mu.shape[0] == n_tm + n_red
+        names = list(like.N.index)
+        assert any("timingmodel_coefficients" in n for n in names)
+        assert any("rednoise_coefficients" in n for n in names)
+
+        # Lower-factor contract on the joint precision
+        assert cf[1] is True
+        L = np.tril(np.asarray(cf[0]))
+        assert L.shape == (mu.shape[0], mu.shape[0])
+
+        key = jax.random.PRNGKey(0)
+        _, draws = like.sample_conditional(key, p0)
+        assert set(draws) == set(like.N.index)
+        for name, sli in like.N.index.items():
+            assert np.asarray(draws[name]).shape == (sli.stop - sli.start,)
+
+    def test_conditional_red_only_does_not_crash(self):
+        """Minimal simple-branch smoke: measurement + one variable Fourier GP."""
+        psr = self._psr()
+        N = ds.matrix.NoiseMatrix1D_novar(psr.toaerrs ** 2)
+        red = ds.makegp_fourier(psr, ds.powerlaw, components=10, name="rednoise")
+        like = ds.PulsarLikelihood([psr.residuals, N, red])
+        assert type(like.N).__name__ == "WoodburyKernel_varP"
+
+        p0 = ds.sample_uniform(like.logL.params)
+        mu, cf = like.conditional(p0)
+        assert np.asarray(mu).shape[0] == red.F.shape[1]
+        assert cf[1] is True

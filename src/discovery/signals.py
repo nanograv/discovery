@@ -3,6 +3,7 @@ import re
 import inspect
 import types
 import typing
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -23,19 +24,44 @@ def residuals(psr):
 # EFAC/EQUAD/ECORR noise
 
 # no backends
-def makenoise_measurement_simple(psr, noisedict={}):
+def makenoise_measurement_simple(psr, noisedict={}, add_equad=True, tnequad=False):
+    """Single-EFAC (optionally single-EQUAD) white-noise model for a pulsar.
+
+    Builds a diagonal measurement-noise matrix using one ``efac`` for the whole
+    pulsar. When ``add_equad`` is True an EQUAD term is included: ``tnequad=True``
+    uses the TempoNest convention (EQUAD added outside the EFAC scaling), while the
+    default (``tnequad=False``) uses the tempo2/``t2equad`` convention (EQUAD added
+    in quadrature with the TOA errors, inside the EFAC scaling). Set
+    ``add_equad=False`` for an EFAC-only model. If all required parameters are present
+    in ``noisedict`` a constant matrix is returned, otherwise a variable one.
+    """
     efac = f'{psr.name}_efac'
-    log10_t2equad = f'{psr.name}_log10_t2equad'
-    params = [efac, log10_t2equad]
+    if tnequad and add_equad:
+        log10_tnequad = f'{psr.name}_log10_tnequad'
+        params = [efac, log10_tnequad]
+    elif add_equad:
+        log10_t2equad = f'{psr.name}_log10_t2equad'
+        params = [efac, log10_t2equad]
+    else:
+        params = [efac]
 
     if all(par in noisedict for par in params):
-        noise = noisedict[efac]**2 * (psr.toaerrs**2 + 10.0**(2.0 * noisedict[log10_t2equad]))
-
+        if tnequad and add_equad:
+            noise = noisedict[efac]**2 * psr.toaerrs**2 + (10.0**(2.0 * noisedict[log10_tnequad]))
+        elif add_equad:
+            noise = noisedict[efac]**2 * (psr.toaerrs**2 + 10.0**(2.0 * noisedict[log10_t2equad]))
+        else:
+            noise = noisedict[efac]**2 * psr.toaerrs**2
         return matrix.NoiseMatrix1D_novar(noise)
     else:
         toaerrs = matrix.jnparray(psr.toaerrs)
-        def getnoise(params):
-            return params[efac]**2 * (toaerrs**2 + 10.0**(2.0 * params[log10_t2equad]))
+        def getnoise(params, tnequad=tnequad):
+            if tnequad and add_equad:
+                return params[efac]**2 * toaerrs**2 + 10.0**(2.0 * params[log10_tnequad])
+            elif add_equad:
+                return params[efac]**2 * (toaerrs**2 + 10.0**(2.0 * params[log10_t2equad]))
+            else:
+                return params[efac]**2 * toaerrs**2
         getnoise.params = params
 
         return matrix.NoiseMatrix1D_var(getnoise)
@@ -330,14 +356,29 @@ def fourierbasis(psr, components, T=None):
 
     return np.repeat(f, 2), np.repeat(df, 2), fmat
 
-def dmfourierbasis(psr, components, T=None, fref=1400.0):
+def fourierbasis_dm(psr, components, T=None, fref=1400.0):
+    """Fourier design matrix for a DM (dispersion measure) Gaussian process.
+
+    Identical to :func:`fourierbasis`, but each row is scaled by the cold-plasma
+    dispersion factor ``(fref / psr.freqs) ** 2``, i.e. a fixed chromatic index
+    alpha = 2. Use :func:`fourierbasis_chrom` when the chromatic index is a free
+    parameter, in which case the process is general chromatic noise rather than DM.
+    """
     f, df, fmat = fourierbasis(psr, components, T)
 
     Dm = (fref / psr.freqs)**2
 
     return f, df, fmat * Dm[:, None]
 
-def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
+def fourierbasis_chrom(psr, components, T=None, fref=1400.0):
+    """Fourier design matrix for a chromatic Gaussian process with variable index.
+
+    Returns a callable design-matrix factory ``fmatfunc(alpha)`` that scales the
+    achromatic :func:`fourierbasis` columns by ``(fref / psr.freqs) ** alpha``,
+    where the chromatic index ``alpha`` is a free parameter. Because alpha is not
+    fixed to 2 the resulting process is general chromatic noise, not DM; use
+    :func:`fourierbasis_dm` for the alpha = 2 (DM) case.
+    """
     f, df, fmat = fourierbasis(psr, components, T)
 
     fmat, fnorm = matrix.jnparray(fmat), matrix.jnparray(fref / psr.freqs)
@@ -346,13 +387,15 @@ def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
 
     return f, df, fmatfunc
 
-def dmfourierbasis_solar(psr, components, T=None):
-    f, df, fmat = fourierbasis(psr, components, T)
-    shape = solar.make_solardm(psr)(1.0)
+def make_fourierbasis_dm(alpha=2.0, tndm=False):
+    """Build a DM Fourier-basis function with a fixed chromatic index ``alpha``.
 
-    return f, df, fmat * shape[:, None]
-
-def make_dmfourierbasis(alpha=2.0, tndm=False):
+    Returns a ``basis(psr, components, T, fref)`` callable whose columns are the
+    achromatic :func:`fourierbasis` scaled by ``(fref / psr.freqs) ** alpha``. With
+    ``tndm=True`` the tempo2/TempoNest DM normalisation is also applied. A genuine
+    DM basis should keep ``alpha = 2``; for a variable chromatic index use
+    :func:`fourierbasis_chrom`.
+    """
     def basis(psr, components, T=None, fref=1400.0):
         f, df, fmat = fourierbasis(psr, components, T)
 
@@ -364,6 +407,37 @@ def make_dmfourierbasis(alpha=2.0, tndm=False):
         return f, df, fmat * Dm[:, None]
 
     return basis
+
+def make_fourierbasis_chrom(alpha=4.0, tndm=False):
+    """Build a chromatic Fourier-basis function with a fixed chromatic index ``alpha``.
+
+    Thin wrapper around :func:`make_fourierbasis_dm` with a default ``alpha = 4`` (a
+    common scattering-like index). The returned basis scales the achromatic
+    :func:`fourierbasis` columns by ``(fref / psr.freqs) ** alpha``. Use this for a
+    fixed-index chromatic process; for DM use :func:`make_fourierbasis_dm` (alpha = 2).
+    """
+    return make_fourierbasis_dm(alpha=alpha, tndm=tndm)
+
+def dmfourierbasis(psr, components, T=None, fref=1400.0):
+    warnings.warn("dmfourierbasis is deprecated; use fourierbasis_dm instead.",
+                  DeprecationWarning, stacklevel=2)
+    return fourierbasis_dm(psr, components, T=T, fref=fref)
+
+def dmfourierbasis_alpha(psr, components, T=None, fref=1400.0):
+    warnings.warn("dmfourierbasis_alpha is deprecated; use fourierbasis_chrom instead.",
+                  DeprecationWarning, stacklevel=2)
+    return fourierbasis_chrom(psr, components, T=T, fref=fref)
+
+def dmfourierbasis_solar(psr, components, T=None):
+    f, df, fmat = fourierbasis(psr, components, T)
+    shape = solar.make_solardm(psr)(1.0)
+
+    return f, df, fmat * shape[:, None]
+
+def make_dmfourierbasis(alpha=2.0, tndm=False):
+    warnings.warn("make_dmfourierbasis is deprecated; use make_fourierbasis_dm instead.",
+                  DeprecationWarning, stacklevel=2)
+    return make_fourierbasis_dm(alpha=alpha, tndm=tndm)
 
 def makegp_fourier(psr, prior, components, T=None, mean=None, fourierbasis=fourierbasis, common=[], exclude=['f', 'df'], name='fourierGP'):
     argspec = inspect.getfullargspec(prior)
@@ -731,7 +805,46 @@ def make_timeinterpbasis(start_time=None, order=1):
 
     return timeinterpbasis
 
+def make_timeinterpbasis_dm(start_time=None, order=1, fref=1400.0):
+    """Build a DM time-interpolation basis (fixed chromatic index alpha = 2).
+
+    Time-domain analogue of :func:`make_fourierbasis_dm` used by the FFT-covariance
+    GPs: it scales the achromatic :func:`make_timeinterpbasis` basis by the
+    cold-plasma dispersion factor ``(fref / psr.freqs) ** 2``. Used by
+    :func:`makegp_fftcov_dm`.
+    """
+    timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
+
+    def timeinterpbasis_dm(psr, nmodes, T):
+        t_coarse, dt_coarse, Bmat = timeinterpbasis_achrom(psr, nmodes, T)
+        scale = (fref / psr.freqs) ** 2
+        return t_coarse, dt_coarse, scale[:, None] * Bmat
+
+    return timeinterpbasis_dm
+
+def make_timeinterpbasis_chromatic(start_time=None, order=1, fref=1400.0):
+    """Build a chromatic time-interpolation basis with a variable chromatic index.
+
+    Time-domain analogue of :func:`fourierbasis_chrom` used by the FFT-covariance
+    GPs. The returned basis yields a callable ``Bmat_func(alpha)`` that scales the
+    achromatic :func:`make_timeinterpbasis` basis by ``(fref / psr.freqs) ** alpha``,
+    with ``alpha`` a free parameter. Used by :func:`makegp_fftcov_chrom`.
+    """
+    timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
+
+    def timeinterpbasis_chrom(psr, nmodes, T):
+        t_coarse, dt_coarse, Bmat = timeinterpbasis_achrom(psr, nmodes, T)
+        scale = (fref / psr.freqs)
+        def Bmat_func(alpha):
+            return (scale[:, None]**alpha) * Bmat
+        return t_coarse, dt_coarse, Bmat_func
+
+    return timeinterpbasis_chrom
+
 def make_dmtimeinterpbasis(alpha=2.0, tndm=False, start_time=None, order=1):
+    warnings.warn("make_dmtimeinterpbasis is deprecated; use make_timeinterpbasis_dm "
+                  "(alpha=2 DM) or make_timeinterpbasis_chromatic (variable alpha) instead.",
+                  DeprecationWarning, stacklevel=2)
     basis = make_timeinterpbasis(start_time, order)
 
     def dmbasis(psr, components, T=None, fref=1400.0):
@@ -796,6 +909,33 @@ def makegp_fftcov(psr, prior, components, T=None, t0=None, order=1, oversample=4
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), components, T=T,
                           fourierbasis=(make_timeinterpbasis(start_time=t0, order=order) if fourierbasis is None else fourierbasis),
                           common=common, name=name)
+
+def makegp_fftcov_dm(psr, prior, components, T=None, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, common=[], name='dm_gp', fref=1400.0):
+    """FFT-covariance (time-domain) GP for DM noise (fixed chromatic index alpha = 2).
+
+    DM counterpart of :func:`makegp_fftcov`: the achromatic time-interpolation basis
+    is replaced by :func:`make_timeinterpbasis_dm`, scaling each row by the cold-plasma
+    dispersion factor ``(fref / psr.freqs) ** 2``. ``prior`` is a power-spectral-density
+    function (e.g. :func:`powerlaw`) that is converted to a time-domain covariance via
+    :func:`psd2cov`. For a free chromatic index use :func:`makegp_fftcov_chrom`.
+    """
+    T = getspan(psr) if T is None else T
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
+                          components, T=T, fourierbasis=make_timeinterpbasis_dm(start_time=t0, order=order, fref=fref), common=common, name=name)
+
+def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, common=[], name='chrom_gp', fref=1400.0):
+    """FFT-covariance (time-domain) GP for chromatic noise with a variable index.
+
+    Chromatic counterpart of :func:`makegp_fftcov`: the achromatic time-interpolation
+    basis is replaced by :func:`make_timeinterpbasis_chromatic`, scaling each row by
+    ``(fref / psr.freqs) ** alpha`` with the chromatic index ``alpha`` a free parameter.
+    ``prior`` is a power-spectral-density function (e.g. :func:`powerlaw`) converted to a
+    time-domain covariance via :func:`psd2cov`. For the alpha = 2 (DM) case use
+    :func:`makegp_fftcov_dm`.
+    """
+    T = getspan(psr) if T is None else T
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
+                          components, T=T, fourierbasis=make_timeinterpbasis_chromatic(start_time=t0, order=order, fref=fref), common=common, name=name)
 
 def makecommongp_fftcov(psrs, prior, components, T, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, fourierbasis=None, common=[], vector=False, name='fftcovCommonGP'):
     return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), components, T,

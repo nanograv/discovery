@@ -80,7 +80,7 @@ Create GPs with Fourier basis (for red noise, DM variations, etc.):
 
    # DM variations
    dm_gp = ds.makegp_fourier(psr, ds.powerlaw, components=30,
-                             fourierbasis=ds.dmfourierbasis,
+                             fourierbasis=ds.fourierbasis_dm,
                              name='dmgp')
 
    # Common process (shared parameters)
@@ -214,11 +214,11 @@ For dispersion measure variations (chromatic index :math:`\\alpha = 2`):
 
 .. code-block:: python
 
-   f, df, F = ds.dmfourierbasis(psr, components=30, T=None, fref=1400)
+   f, df, F = ds.fourierbasis_dm(psr, components=30, T=None, fref=1400)
 
 Rescales the basis by ``(fref / psr.freqs)**2`` for DM scaling.
 
-See :func:`~discovery.signals.dmfourierbasis`.
+See :func:`~discovery.signals.fourierbasis_dm`.
 
 Chromatic Noise Basis
 ~~~~~~~~~~~~~~~~~~~~~
@@ -227,7 +227,7 @@ For general chromatic noise with arbitrary spectral index:
 
 .. code-block:: python
 
-   f, df, fmat_func = ds.dmfourierbasis_alpha(psr, components=30, T=None, fref=1400)
+   f, df, fmat_func = ds.fourierbasis_chrom(psr, components=30, T=None, fref=1400)
 
    # fmat_func is a closure that takes the chromatic index
    F = fmat_func(alpha)  # Returns basis scaled by (fref / psr.freqs)**alpha
@@ -241,7 +241,7 @@ This allows the chromatic index to be a free parameter in the model.
 .. code-block:: python
 
    # Create GP with variable chromatic index
-   f, df, fmat_func = ds.dmfourierbasis_alpha(psr, components=30)
+   f, df, fmat_func = ds.fourierbasis_chrom(psr, components=30)
 
    def chromatic_prior(f, df, log10_A, gamma, alpha):
        # alpha is a free parameter here
@@ -252,7 +252,7 @@ This allows the chromatic index to be a free parameter in the model.
                                 fourierbasis=lambda psr, c, T: (f, df, fmat_func),
                                 name='chromatic')
 
-See :func:`~discovery.signals.dmfourierbasis_alpha`.
+See :func:`~discovery.signals.fourierbasis_chrom`.
 
 Utility Functions
 -----------------
