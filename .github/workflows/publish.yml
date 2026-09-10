@@ -1,5 +1,7 @@
 name: Python Publish Workflow
 on:
+  release:
+    types: [created]
   workflow_call:
 
 jobs:
