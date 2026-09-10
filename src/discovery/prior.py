@@ -23,15 +23,15 @@ priordict_standard = {
     "(.*_)?log10_ecorr": [-8.5, -5],
     "(.*_)?rednoise_log10_A.*": [-20, -11],
     "(.*_)?rednoise_gamma.*": [0, 7],
-    "(.*_)?rednoise_log10_fb": [-9, -6],
+    "(.*_)?rednoise_log10_fb.*": [-9, -6],
     "(.*_)?red_noise_log10_A.*": [-20, -11],  # deprecated
     "(.*_)?red_noise_gamma.*": [0, 7],  # deprecated
-    "(.*_)?red_noise_log10_fb": [-9, -6],
+    "(.*_)?red_noise_log10_fb.*": [-9, -6],  # deprecated
     "(.*_)?sw_gp_log10_A": [-10, -2],
     "(.*_)?sw_gp_gamma": [0, 4],
     "crn_log10_A.*": [-18, -11],
     "crn_gamma.*": [0, 7],
-    "crn_log10_fb": [-9, -6],
+    "crn_log10_fb.*": [-9, -6],
     "gw_(.*_)?log10_A": [-18, -11],
     "gw_(.*_)?gamma": [0, 7],
     "gw_log10_fb": [-9, -6],

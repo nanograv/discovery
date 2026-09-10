@@ -859,12 +859,18 @@ def make_dmtimeinterpbasis(alpha=2.0, tndm=False, start_time=None, order=1):
 
     return dmbasis
 
-def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
-    if not (isinstance(oversample, int) and isinstance(fmax_factor, int) and isinstance(cutoff, int)):
-        raise ValueError('psd2cov: oversample, fmax_factor and cutoff must be integers.')
+def psd2cov(psdfunc, components, T, oversample=4, fmax_factor=1, cutoff=4):
+    if not (isinstance(oversample, int) and isinstance(fmax_factor, int)):
+        raise ValueError('psd2cov: oversample and fmax_factor must be integers.')
 
     if components % 2 == 0:
         raise ValueError('psd2cov: number of components must be odd.')
+        
+    if cutoff is not None and not isinstance(cutoff, int):
+        raise ValueError('psd2cov: cutoff must be None or an integer.')
+
+    if isinstance(cutoff, int) and cutoff > oversample:
+        raise ValueError('psd2cov: cutoff must be <= oversample.')
 
     scaled_components = (components - 1) * fmax_factor + 1
     n_freqs = int((scaled_components - 1) / 2 * oversample + 1)
@@ -874,15 +880,19 @@ def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
 
     if cutoff is not None:
         i_cutoff = int(np.ceil(oversample / cutoff))
-        fs, zs = matrix.jnparray(freqs[i_cutoff:]), jnp.zeros(i_cutoff)
+        fs = matrix.jnparray(freqs[i_cutoff:])
     else:
         fs = matrix.jnparray(freqs)
 
     def covmat(*args):
+        clip_max = 1e4
+        clip_min = 1e-18
+        psd_hi = jnp.clip(psdfunc(fs, 1.0, *args[2:]), clip_min, clip_max)
+        
         if cutoff is not None:
-            psd = jnp.concatenate([zs, psdfunc(fs, 1.0, *args[2:])])
+            psd = jnp.concatenate([jnp.full((i_cutoff,), psd_hi[0], dtype=psd_hi.dtype), psd_hi])
         else:
-            psd = psdfunc(fs, 1.0, *args[2:])
+            psd = psd_hi
 
         fullpsd = jnp.concatenate((psd, psd[-2:0:-1]))
         Cfreq = jnp.fft.ifft(fullpsd, norm='backward')
@@ -894,13 +904,13 @@ def psd2cov(psdfunc, components, T, oversample=3, fmax_factor=1, cutoff=1):
 
     return covmat
 
-def makegp_fftcov(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, fourierbasis=None, common=[], name='fftcovGP'):
+def makegp_fftcov(psr, prior, components, T=None, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, fourierbasis=None, common=[], name='fftcovGP'):
     T = getspan(psr) if T is None else T
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), components, T=T,
                           fourierbasis=(make_timeinterpbasis(start_time=t0, order=order) if fourierbasis is None else fourierbasis),
                           common=common, name=name)
 
-def makegp_fftcov_dm(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='dm_gp', fref=1400.0):
+def makegp_fftcov_dm(psr, prior, components, T=None, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, common=[], name='dm_gp', fref=1400.0):
     """FFT-covariance (time-domain) GP for DM noise (fixed chromatic index alpha = 2).
 
     DM counterpart of :func:`makegp_fftcov`: the achromatic time-interpolation basis
@@ -913,7 +923,7 @@ def makegp_fftcov_dm(psr, prior, components, T=None, t0=None, order=1, oversampl
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=make_timeinterpbasis_dm(start_time=t0, order=order, fref=fref), common=common, name=name)
 
-def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, common=[], name='chrom_gp', fref=1400.0):
+def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, common=[], name='chrom_gp', fref=1400.0):
     """FFT-covariance (time-domain) GP for chromatic noise with a variable index.
 
     Chromatic counterpart of :func:`makegp_fftcov`: the achromatic time-interpolation
@@ -927,12 +937,12 @@ def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversa
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=make_timeinterpbasis_chromatic(start_time=t0, order=order, fref=fref), common=common, name=name)
 
-def makecommongp_fftcov(psrs, prior, components, T, t0=None, order=1, oversample=3, fmax_factor=1, cutoff=1, fourierbasis=None, common=[], vector=False, name='fftcovCommonGP'):
+def makecommongp_fftcov(psrs, prior, components, T, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, fourierbasis=None, common=[], vector=False, name='fftcovCommonGP'):
     return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), components, T,
                                 fourierbasis=(make_timeinterpbasis(start_time=t0, order=order) if fourierbasis is None else fourierbasis),
                                 common=common, vector=vector, name=name)
 
-def makeglobalgp_fftcov(psrs, prior, orf, components, T, t0, order=1, oversample=3, fmax_factor=1, cutoff=1, fourierbasis=None, name='fftcovGlobalGP'):
+def makeglobalgp_fftcov(psrs, prior, orf, components, T, t0, order=1, oversample=4, fmax_factor=1, cutoff=4, fourierbasis=None, name='fftcovGlobalGP'):
     return makeglobalgp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), orf, components, T,
                                 fourierbasis=(make_timeinterpbasis(start_time=t0, order=order) if fourierbasis is None else fourierbasis),
                                 name=name)
