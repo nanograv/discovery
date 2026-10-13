@@ -534,6 +534,367 @@ def makegp_timing(psr, constant=None, variance=None, svd=False, scale=1.0, varia
     return makegp_improper(psr, fmat, constant=constant, name='timingmodel', variable=variable)
 
 
+# static frequency-dependent delay
+
+def normalise_tm_basis(psr, scale=1.0):
+    """Timing-model design matrix with unit-norm columns.
+
+    All-zero columns, as from a fitted parameter with no TOAs behind it, are dropped with a
+    warning naming them.
+
+    psr:   Pulsar with ``Mmat`` and, optionally, ``fitpars``
+    scale: multiplies ``psr.Mmat`` before the columns are normalised
+    """
+    Mmat = np.asarray(scale * psr.Mmat, dtype=np.float64)
+    norms = np.sqrt(np.sum(Mmat**2, axis=0))
+    keep = norms > 0
+
+    ndrop = int((~keep).sum())
+    if ndrop:
+        idx = np.where(~keep)[0]
+        names = (list(np.asarray(psr.fitpars)[idx]) if hasattr(psr, 'fitpars')
+                 else list(idx))
+        warnings.warn(f'{psr.name} has {ndrop} all-zero timing-model column(s), '
+                      f'dropped: {names}')
+
+    return Mmat[:, keep] / norms[keep]
+
+
+class _FewBins(ValueError):
+    """Raised by :func:`_fd_bins` when a selection of TOAs supports fewer than two bins."""
+
+
+def makegp_fd_powerlaw(psr, bins='chan', selection=None, flo_pad=2.0, nf=128, jitter=1e-8,
+                       name='fd_gp'):
+    """Static frequency-dependent (FD) delay, one per frequency bin, with a power-law prior.
+
+    A delay that is the same at every epoch and varies across the band, such as the mismatch
+    between a template and the frequency evolution of the profile::
+
+        n_FD = F_FD c,   (F_FD)_ik = 1[bin_i = k]
+
+    with ``q_k`` the mean of ``ln(nu)`` over the TOAs in bin ``k`` (:func:`_fd_bins`). ``bins`` names
+    a per-TOA flag whose values are the bins, one per channel for ``'chan'``, or is an integer ``N``
+    for ``N`` bins of equal width in ``ln(nu)`` between the lowest and highest TOA frequency, empty
+    bins dropped. Bins of equal width in ``ln(nu)`` do not line up with a channel grid linear in
+    frequency; on channelised data, use the channel flag.
+
+    ``selection``, a callable returning a per-TOA label such as the observing system, gives each
+    label its own block of bins, for systems that observe the same band with different
+    channelisations or templates. The bins, their guards and the band ``[f_lo, f_hi]`` then apply
+    within each block; the blocks share ``sigma_FD`` and ``gamma_FD``, and ``K`` is block diagonal
+    across them before the bin-space reduction. A block with fewer than two bins, a single
+    frequency, or too few bins for its band (``f_hi <= f_lo``) gets no bins, with a warning.
+
+    The unit-amplitude prior on ``c`` is a power law over ``f``, in cycles per unit ``ln(nu)``,
+    band-limited to ``[f_lo, f_hi]``::
+
+        K_kl = int f**-gamma_FD cos(2 pi f (q_k - q_l)) df / int f**-gamma_FD df
+
+    evaluated as the exact covariance of a step spectrum over ``nf`` log-spaced bins
+    (:func:`_fd_powerlaw_correlation`), with ``f_hi = 1/(2 x median spacing of the q_k)`` and
+    ``f_lo = 1/(flo_pad x span of the q_k)``. ``gamma_FD = 0`` is close to an independent offset per
+    bin where the bins are close to uniform in ``ln(nu)``; at the Nyquist frequency the correlation
+    of neighbouring bins changes at first order with their spacing. ``gamma_FD = 2 nu + 1`` has the
+    high-frequency slope of a Matern kernel of order ``nu``.
+
+    The timing-model span is projected out of the basis, ``F_FD <- (I - Q Q^T) F_FD``, with ``Q`` the
+    orthonormal factor of the QR decomposition of ``M`` after its columns are scaled to unit norm
+    (:func:`normalise_tm_basis`). The bin-space directions of the timing-model columns that depend
+    on frequency alone (the offset, each ``FDk``, a constant DM, or a column the bins reproduce
+    exactly, such as a jump between receivers) are removed from the prior
+    (:func:`_fd_node_projection`): ``c = B a``, with ``B`` an orthonormal basis of the remaining bin
+    space, and ``K <- B^T K B`` plus ``jitter`` times its mean diagonal on the diagonal. The prior is
+    normalised so that ``sigma_FD`` is the rms delay per TOA after both projections::
+
+        Phi = N_TOA sigma_FD**2 K / tr(F_FD K F_FD^T)
+
+    with ``F_FD`` the projected basis. Samples ``{psr}_{name}_log10_sigma`` (``log10 sigma_FD``, in
+    seconds) and ``{psr}_{name}_gamma`` (``gamma_FD``).
+
+    Raises if the flag is missing, if a TOA has an empty flag value, if two flag bins overlap in
+    frequency, if fewer than two bin directions survive the projections, or if ``f_hi <= f_lo``.
+    The GP carries ``project_basis``, ``F_FD`` after the timing-model projection and before the
+    bin-space reduction, which :func:`makegp_pa` projects out; ``node_basis``, ``B``;
+    ``node_removed``, the names of the removed timing-model columns; ``fd_nodes``, the bin
+    frequencies ``exp(q_k)``, a dict by label with ``selection``; and ``fd_bands``, the
+    ``(f_lo, f_hi)`` of each block.
+
+    Example::
+
+        fd = makegp_fd_powerlaw(psr, bins='chan')
+        m = PulsarLikelihood([psr.residuals, makenoise_measurement(psr),
+                              makegp_timing(psr, svd=True), fd])
+
+    psr:     Discovery Pulsar object
+    bins:    per-TOA flag whose distinct values are the bins, or an integer number of bins of
+             equal width in ``ln(nu)``
+    selection: None, or a callable returning a per-TOA label; each label gets its own bins
+    flo_pad: outer scale ``f_lo`` as ``1/(flo_pad x span)``
+    nf:      log-spaced bins in the step spectrum
+    jitter:  diagonal added to the projected prior, relative to its mean diagonal
+    name:    parameter-name stem; :data:`prior.priordict_standard` has boxes for the default only
+    """
+    if not (np.isfinite(flo_pad) and flo_pad > 0):
+        raise ValueError(f"makegp_fd_powerlaw: flo_pad must be positive and finite, got {flo_pad!r}.")
+    if isinstance(nf, bool) or not isinstance(nf, (int, np.integer)) or nf < 1:
+        raise ValueError(f"makegp_fd_powerlaw: nf must be an integer >= 1, got {nf!r}.")
+    if not (np.isfinite(jitter) and jitter >= 0):
+        raise ValueError(f"makegp_fd_powerlaw: jitter must be non-negative and finite, got {jitter!r}.")
+
+    if selection is None:
+        fmat_raw, q = _fd_bins(psr, bins)
+        blocks = [(None, q)]
+    else:
+        labels = np.asarray(selection(psr)).astype(str)
+        mats, blocks = [], []
+        for label in sorted(set(labels.tolist())):
+            try:
+                F_b, q_b = _fd_bins(psr, bins, sel=labels == label)
+            except _FewBins as err:
+                warnings.warn(f"makegp_fd_powerlaw: {psr.name}: selection {label!r} gets no FD bins: {err}")
+                continue
+            dq_b = np.diff(np.sort(q_b))
+            if not float(flo_pad) * float(q_b.max() - q_b.min()) > 2.0 * float(np.median(dq_b[dq_b > 0])):
+                warnings.warn(f"makegp_fd_powerlaw: {psr.name}: selection {label!r} gets no FD bins: its "
+                              f"{len(q_b)} bins put the bin Nyquist frequency at or below the outer scale.")
+                continue
+            mats.append(F_b)
+            blocks.append((label, q_b))
+        if not mats:
+            raise ValueError(f"makegp_fd_powerlaw: {psr.name}: no selection supports two or more bins.")
+        fmat_raw, q = np.hstack(mats), np.concatenate([q_b for _, q_b in blocks])
+    Q_tm, _ = np.linalg.qr(normalise_tm_basis(psr))
+    fmat = fmat_raw - Q_tm @ (Q_tm.T @ fmat_raw)
+
+    B, removed = _fd_node_projection(psr, fmat_raw, q)
+    fmat_out = fmat @ B
+    if fmat_out.shape[1] < 2:
+        raise ValueError(f"makegp_fd_powerlaw: {psr.name}: the timing model spans all but "
+                         f"{fmat_out.shape[1]} of the {len(q)} bin directions; at least two are needed.")
+
+    bands, corrs = [], []
+    for label, q_b in blocks:
+        dq = np.diff(np.sort(q_b))
+        f_hi = 1.0 / (2.0 * float(np.median(dq[dq > 0])))
+        f_lo = 1.0 / (float(flo_pad) * float(q_b.max() - q_b.min()))
+        if not f_hi > f_lo:
+            raise ValueError(f"makegp_fd_powerlaw: {psr.name}: the bin Nyquist "
+                             f"1/{1 / f_hi:.3g} is not above the outer scale 1/{1 / f_lo:.3g} "
+                             f"(per unit log freq); lower flo_pad or use more bins.")
+        bands.append((f_lo, f_hi))
+        corrs.append(_fd_powerlaw_correlation(q_b, f_lo, f_hi, nf))
+
+    Bj = matrix.jnparray(B)
+    eye_out = matrix.jnparray(np.eye(B.shape[1]))
+
+    signame, gamname = f'{psr.name}_{name}_log10_sigma', f'{psr.name}_{name}_gamma'
+
+    def shape(params):
+        K = (corrs[0](params[gamname]) if len(corrs) == 1 else
+             jax.scipy.linalg.block_diag(*[c(params[gamname]) for c in corrs]))
+        Ks = Bj.T @ K @ Bj
+        return Ks + jitter * jnp.mean(jnp.diag(Ks)) * eye_out
+
+    ntoa = fmat_out.shape[0]
+    gram = matrix.jnparray(fmat_out.T @ fmat_out)
+
+    def getphi(params):
+        Ks = shape(params)
+        g = jnp.sum(gram * Ks) / ntoa
+        return 10.0 ** (2.0 * params[signame]) / g * Ks
+    getphi.params = [signame, gamname]
+
+    Phi = matrix.NoiseMatrix2D_var(getphi)
+
+    gp = matrix.VariableGP(Phi, fmat_out)
+    gp.index = {f'{psr.name}_{name}_coefficients({fmat_out.shape[1]})': slice(0, fmat_out.shape[1])}
+    gp.name, gp.pos, gp.gpname, gp.gpcommon = psr.name, psr.pos, name, []
+    gp.fd_nodes = np.exp(q) if selection is None else {label: np.exp(q_b) for label, q_b in blocks}
+    gp.node_basis, gp.node_removed, gp.fd_bands = B, removed, bands
+    gp.project_basis = fmat
+
+    return gp
+
+
+def _fd_bins(psr, bins, what='makegp_fd_powerlaw', sel=None):
+    """Indicator basis over frequency bins, and the bin positions.
+
+    Returns ``(F, q)``: ``F[i, k] = 1`` if TOA ``i`` is in bin ``k`` and 0 otherwise, so a coefficient
+    is a delay in seconds, and ``q_k`` the mean of ``ln(nu)`` over the TOAs in bin ``k``. A string
+    ``bins`` names a per-TOA flag, one bin per value, in numeric order where every value is an
+    integer; an integer gives that many bins of equal width in ``ln(nu)`` between the lowest and
+    highest TOA frequency, empty bins dropped; where the TOA frequencies form clusters (the
+    gaps between clusters more than 100 times the median gap), an edge that falls inside a
+    cluster is warned about. Raises for non-finite or non-positive frequencies, a single frequency, a
+    missing flag, an empty flag value, flag bins that overlap in frequency (the highest TOA
+    frequency of one bin above the lowest of the next), or fewer than two non-empty bins.
+
+    psr:  Discovery Pulsar object
+    bins: flag name, or integer number of bins
+    what: caller named in messages
+    """
+    x = np.log(np.asarray(psr.freqs, dtype=np.float64))
+    if not np.all(np.isfinite(x)):
+        raise ValueError(f"{what}: {psr.name}: psr.freqs must be positive and finite.")
+    sel = np.ones(len(x), dtype=bool) if sel is None else np.asarray(sel, dtype=bool)
+    xs = x[sel]
+    if xs.max() == xs.min():
+        raise _FewBins(f"{what}: {psr.name}: every TOA is at one frequency, so there is no band to bin.")
+    if isinstance(bins, str):
+        if bins not in psr.flags:
+            raise KeyError(f"{what}: {psr.name} has no flag {bins!r}; available "
+                           f"flags are {sorted(psr.flags)}.")
+
+        labels = np.asarray(psr.flags[bins]).astype(str)
+        present = set(labels[sel].tolist())
+        if '' in present:
+            raise ValueError(f"{what}: {psr.name}: {int((labels[sel] == '').sum())} TOAs carry an empty "
+                             f"{bins!r} flag, so they would have no bin.")
+
+        try:
+            order = sorted(present, key=int)
+        except ValueError:
+            # not every label is an integer, so plain string order is the only option
+            order = sorted(present)
+
+        pairs = [(v, sel & (labels == v)) for v in order]
+    elif isinstance(bins, (int, np.integer)) and not isinstance(bins, bool) and bins >= 2:
+        edges = np.linspace(xs.min(), xs.max(), int(bins) + 1)[1:-1]
+        which = np.searchsorted(np.asarray(edges, dtype=np.float64), x)
+        pairs = [(str(b), sel & (which == b)) for b in range(len(edges) + 1)]
+    else:
+        raise ValueError(f"{what}: bins must be a flag name or an integer >= 2, got {bins!r}.")
+
+    counts = np.array([int(m.sum()) for _, m in pairs])
+    pairs = [(lab, m) for (lab, m), n in zip(pairs, counts) if n > 0]
+
+    if len(pairs) < 2:
+        raise _FewBins(f"{what}: {psr.name}: bins={bins!r} gives {len(pairs)} non-empty bin(s); "
+                         f"at least two are needed.")
+
+    if isinstance(bins, str):
+        stats = sorted((x[m].mean(), x[m].min(), x[m].max(), lab) for lab, m in pairs)
+        clash = [(a[3], b[3]) for a, b in zip(stats[:-1], stats[1:]) if a[2] > b[1]]
+        if clash:
+            raise ValueError(
+                f"{what}: {psr.name}: {len(clash)} pair(s) of {bins!r} bins overlap in frequency, "
+                f"e.g. values {clash[0][0]!r} and {clash[0][1]!r}; a single TOA can cause this. A channel "
+                f"index reused across receivers does this; combine it with the receiver flag into a "
+                f"new flag (e.g. psr.flags['rcvr_chan'] = np.char.add(np.char.add(rcvr, '_'), chan)) "
+                f"and pass that. Systems that observe the same band need selection=, which gives "
+                f"each its own bins.")
+
+    if not isinstance(bins, str):
+        # count the edges that fall inside a populated frequency block rather than in a
+        # gap between blocks
+        uf = np.unique(np.exp(xs))
+        gaps = np.diff(uf)
+        nb = len(pairs)
+        if len(gaps) >= nb > 1 and float(np.sort(gaps)[-(nb - 1)]) > 100.0 * float(np.median(gaps)):
+            boundary = float(np.sort(gaps)[-(nb - 1)])
+            j = np.clip(np.searchsorted(uf, np.exp(edges)), 1, len(uf) - 1)
+            split = int(np.sum((uf[j] - uf[j - 1]) < 0.5 * boundary))
+            if split:
+                warnings.warn(f"{what}: {psr.name}: bins={bins} puts {split} of {len(edges)} edges "
+                              f"inside a populated frequency block, splitting it across two bins; "
+                              f"a channel flag places the bins on the channels.")
+        live = np.array([int(m.sum()) for _, m in pairs])
+        thin = int(np.sum(live < 0.5 * np.median(live)))
+        if thin:
+            warnings.warn(f"{what}: {psr.name}: {thin} of {len(live)} "
+                          f"bins hold below half the median TOA count ({int(np.median(live))}).")
+
+    fmat = np.zeros((len(x), len(pairs)), dtype=np.float64)
+    q = np.empty(len(pairs), dtype=np.float64)
+    for i, (_, mask) in enumerate(pairs):
+        fmat[mask, i] = 1.0
+        q[i] = float(np.mean(x[mask]))
+
+    return fmat, q
+
+
+def _fd_node_projection(psr, F, q, fit_tol=1e-9, degree=12, tol=1e-10):
+    """Orthonormal basis of the bin space left once the timing model's frequency-only
+    directions are removed, and the names of the columns they come from.
+
+    A column of ``psr.Mmat`` counts when its per-TOA values are reproduced to relative residual
+    ``fit_tol`` either by a function of frequency in the span of Legendre polynomials in ``ln(nu)``
+    up to ``degree`` and ``nu**-2`` (the offset, every ``FDk``, a constant DM), evaluated at ``q``, or
+    by the bin basis ``F`` itself (a jump between groups of bins), taken as its least-squares bin
+    representation. The patterns are orthonormalised with singular values below ``tol`` of the
+    largest dropped, so a prior ``B^T K B`` on the returned ``B`` puts no power along them.
+
+    psr: Discovery Pulsar object with ``Mmat`` and, optionally, ``fitpars``
+    F:   indicator basis before any projection
+    q:   bin positions in ``ln(nu)``
+    """
+    M = np.asarray(psr.Mmat, dtype=np.float64)
+    x = np.log(np.asarray(psr.freqs, dtype=np.float64))
+    lo, hi = float(x.min()), float(x.max())
+
+    def functions(y):
+        u = (2.0 * y - lo - hi) / (hi - lo)
+        return np.column_stack([np.polynomial.legendre.legvander(u, degree), np.exp(-2.0 * (y - lo))])
+
+    at_toas, at_nodes = functions(x), functions(np.asarray(q, dtype=np.float64))
+    names = [str(n) for n in getattr(psr, 'fitpars', [])]
+    if len(names) != M.shape[1]:
+        names = [f'Mmat column {j}' for j in range(M.shape[1])]
+
+    patterns, labels = [], []
+    for j in range(M.shape[1]):
+        m = M[:, j]
+        scale = np.linalg.norm(m)
+        if scale == 0.0:
+            continue
+        coef, *_ = np.linalg.lstsq(at_toas, m, rcond=None)
+        if np.linalg.norm(at_toas @ coef - m) < fit_tol * scale:
+            patterns.append(at_nodes @ coef)
+            labels.append(names[j])
+            continue
+        g, *_ = np.linalg.lstsq(F, m, rcond=None)
+        if np.linalg.norm(F @ g - m) < fit_tol * scale:
+            patterns.append(g)
+            labels.append(names[j])
+
+    n = len(q)
+    if not patterns:
+        warnings.warn(f'makegp_fd_powerlaw: {psr.name}: no timing-model column depends on frequency alone; '
+                      f'node space left whole ({n} directions).')
+        return np.eye(n), labels
+
+    U, S, _ = np.linalg.svd(np.column_stack(patterns), full_matrices=True)
+    r = int(np.sum(S > tol * S[0]))
+    B = U[:, r:]
+    return B, labels
+
+
+def _fd_powerlaw_correlation(q, f_lo, f_hi, nf):
+    """Band-limited power law in log-frequency as a correlation matrix over nodes ``q``.
+
+    ``S(f) = f**-gamma`` over ``nf`` log-spaced bins of ``[f_lo, f_hi]``, each bin's weight
+    ``w_j`` its Simpson integral and the bin taken flat across its width ``df_j``, so
+
+        k(dq) = sum_j w_j cos(2 pi f_j dq) sinc(df_j dq),
+
+    normalised to ``k(0) = 1``, is the exact covariance of that step spectrum. Returns
+    ``corr(gamma)``.
+    """
+    edges = np.exp(np.linspace(np.log(f_lo), np.log(f_hi), int(nf) + 1))
+    a, b = matrix.jnparray(edges[:-1] / f_hi), matrix.jnparray(edges[1:] / f_hi)
+    m = 0.5 * (a + b)
+    dq = np.asarray(q)[None, :, None] - np.asarray(q)[None, None, :]
+    cosines = matrix.jnparray(np.cos(2.0 * np.pi * f_hi * np.asarray(m)[:, None, None] * dq)
+                              * np.sinc(f_hi * (np.asarray(b) - np.asarray(a))[:, None, None] * dq))
+
+    def corr(gamma):
+        w = (b - a) / 6.0 * (a ** -gamma + 4.0 * m ** -gamma + b ** -gamma)
+        return jnp.tensordot(w / jnp.sum(w), cosines, axes=1)
+
+    return corr
+
+
 # Fourier GP
 
 def getspan(psrs):
