@@ -30,6 +30,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -195,6 +196,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../../components/noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../components/chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -392,6 +400,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../components/chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../components/priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -572,12 +587,19 @@
 
 <div class="viewcode-block" id="save_chain">
 <a class="viewcode-back" href="../../api/pulsar.html#discovery.pulsar.save_chain">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">save_chain</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Saves Pandas chain table to Feather, preserving `attrs` in `schema.metadata['json']`."""</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">save_chain</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s1">'zstd'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Saves Pandas chain table to Feather, preserving `attrs` in `schema.metadata['json']`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        df: pandas DataFrame to save.</span>
+<span class="sd">        filename: output path.</span>
+<span class="sd">        compression: Feather v2 codec passed to ``pyarrow.feather.write_feather``.</span>
+<span class="sd">            Default ``'zstd'``. Use ``'uncompressed'`` to disable.</span>
+<span class="sd">    """</span>
 
     <span class="n">table</span> <span class="o">=</span> <span class="n">pyarrow</span><span class="o">.</span><span class="n">Table</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
     <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">replace_schema_metadata</span><span class="p">({</span><span class="o">**</span><span class="n">table</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="s1">'json'</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">attrs</span><span class="p">)})</span>
-    <span class="n">pyarrow</span><span class="o">.</span><span class="n">feather</span><span class="o">.</span><span class="n">write_feather</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span></div>
+    <span class="n">pyarrow</span><span class="o">.</span><span class="n">feather</span><span class="o">.</span><span class="n">write_feather</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="n">compression</span><span class="p">)</span></div>
 
 
 

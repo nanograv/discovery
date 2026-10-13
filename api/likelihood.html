@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -198,6 +199,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../components/noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -397,6 +405,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../components/priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -533,7 +548,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="discovery.likelihood.PulsarLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.likelihood.</span></span><span class="sig-name descname"><span class="pre">PulsarLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/likelihood.html#PulsarLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.likelihood.PulsarLikelihood" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <dl class="py property">
 <dt class="sig sig-object py" id="discovery.likelihood.PulsarLikelihood.sample_conditional">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample_conditional</span></span><a class="headerlink" href="#discovery.likelihood.PulsarLikelihood.sample_conditional" title="Link to this definition">#</a></dt>
@@ -571,7 +586,7 @@ It will be scaled by EFAC and ECORR, but will NOT include EQUAD.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="discovery.likelihood.GlobalLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.likelihood.</span></span><span class="sig-name descname"><span class="pre">GlobalLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">globalgp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/likelihood.html#GlobalLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.likelihood.GlobalLikelihood" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <dl class="py property">
 <dt class="sig sig-object py" id="discovery.likelihood.GlobalLikelihood.sample">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><a class="headerlink" href="#discovery.likelihood.GlobalLikelihood.sample" title="Link to this definition">#</a></dt>
@@ -602,7 +617,7 @@ It will be scaled by EFAC and ECORR, but will NOT include EQUAD.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="discovery.likelihood.ArrayLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.likelihood.</span></span><span class="sig-name descname"><span class="pre">ArrayLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psls</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commongp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">globalgp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/likelihood.html#ArrayLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.likelihood.ArrayLikelihood" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <dl class="py property">
 <dt class="sig sig-object py" id="discovery.likelihood.ArrayLikelihood.clogL">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clogL</span></span><a class="headerlink" href="#discovery.likelihood.ArrayLikelihood.clogL" title="Link to this definition">#</a></dt>

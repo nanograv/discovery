@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -198,6 +199,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../components/noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -397,6 +405,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../components/priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -557,18 +572,18 @@ depending on the solar elongation angle to avoid numerical issues.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n_earth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> or </em><em>ndarray</em>) – Solar wind proton/electron density at Earth’s orbit (cm^-3).</p></li>
-<li><p><strong>theta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> or </em><em>ndarray</em>) – Solar elongation angle between the Sun and the line of sight to the
+<li><p><strong>n_earth</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><em>ndarray</em>) – Solar wind proton/electron density at Earth’s orbit (cm^-3).</p></li>
+<li><p><strong>theta</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><em>ndarray</em>) – Solar elongation angle between the Sun and the line of sight to the
 pulsar (radians). theta = 0 corresponds to the Sun directly in the
 line of sight, theta = pi/2 is at right angles.</p></li>
-<li><p><strong>r_earth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> or </em><em>ndarray</em>) – Distance from Earth to Sun (light seconds).</p></li>
+<li><p><strong>r_earth</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><em>ndarray</em>) – Distance from Earth to Sun (light seconds).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Dispersion measure contribution from solar wind (pc cm^-3).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a> or ndarray</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a> or ndarray</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -595,8 +610,9 @@ it uses the full integral formula from the 1/r^2 density model.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs, frequencies, and solar system
 ephemeris information.</p></li>
-<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of Fourier components to include in the model.</p></li>
-<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Total timespan of the data in seconds. If None, will be computed from
+<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em> or </em><em>array-like</em>) – Number of Fourier components to include in the model, or an array of
+explicit Fourier modes (frequencies in Hz) to use for the basis.</p></li>
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Total timespan of the data in seconds. If None, will be computed from
 the pulsar’s TOAs.</p></li>
 </ul>
 </dd>
@@ -632,7 +648,7 @@ model.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.solar.makegp_timedomain_solar_dm">
-<span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">makegp_timedomain_solar_dm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'timedomain_sw_gp'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#makegp_timedomain_solar_dm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.makegp_timedomain_solar_dm" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">discovery.solar.</span></span><span class="sig-name descname"><span class="pre">makegp_timedomain_solar_dm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Umat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'timedomain_sw_gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/solar.html#makegp_timedomain_solar_dm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.solar.makegp_timedomain_solar_dm" title="Link to this definition">#</a></dt>
 <dd><p>Construct a time-domain Gaussian process for solar wind dispersion measure variations.</p>
 <p>This function builds a GP model for solar wind-induced DM variations by combining
 a covariance function in the time domain with a model for the solar wind geometry.
@@ -646,21 +662,32 @@ ephemeris information.</p></li>
 <li><p><strong>covariance</strong> (<em>callable</em>) – Function that returns the time domain autocorrelation for a given
 separation (tau). Must have signature <cite>covariance(tau, *params)</cite> where
 tau is the time separation array.</p></li>
-<li><p><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Time bin width in seconds for quantizing TOAs. Default is 1.0.</p></li>
-<li><p><strong>common</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – List of parameter names that should be treated as common (shared) across
+<li><p><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Time bin width in seconds for quantizing TOAs. Default is 1.0.</p></li>
+<li><p><strong>Umat</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Design matrix mapping the low-rank GP to the TOA residuals. If None,
+it will be constructed by quantizing the TOAs and weighting by the solar wind DM signature.
+Default is None.</p></li>
+<li><p><strong>nodes</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Time in seconds of each column of <code class="docutils literal notranslate"><span class="pre">Umat</span></code>. The GP covariance is evaluated
+at the separations between nodes. Required if <code class="docutils literal notranslate"><span class="pre">Umat</span></code> is given. If
+<code class="docutils literal notranslate"><span class="pre">Umat</span></code> is None, each node is the mean TOA of its bin, weighted by the
+solar wind DM signature. Default is None.</p></li>
+<li><p><strong>common</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>, </em><em>optional</em>) – List of parameter names that should be treated as common (shared) across
 pulsars rather than pulsar-specific. Default is [].</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Base name for the GP parameters. Used as prefix for parameter naming.
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Base name for the GP parameters. Used as prefix for parameter naming.
 Default is ‘timedomain_sw_gp’.</p></li>
+<li><p><strong>noisedict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>, </em><em>optional</em>) – If it supplies values for all of the GP’s hyperparameters (fixed-point
+analysis), the covariance is evaluated once and a <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.ConstantGP</span></code>
+is returned so its contribution to the covariance is cached rather than
+sampled; otherwise a <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code> is returned. Default is {}.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A matrix.VariableGP object containing the noise covariance matrix (as a
-NoiseMatrix2D_var) and the design matrix (Umat) that maps the GP
-to the TOA residuals via solar wind DM delays. See <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code>
-for details.</p>
+<dd class="field-even"><p>A GP object containing the noise covariance matrix (as a NoiseMatrix2D_var,
+or NoiseMatrix2D_novar when the hyperparameters are fixed via noisedict) and
+the design matrix (Umat) that maps the GP to the TOA residuals via solar wind
+DM delays. See <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code> / <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.ConstantGP</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code></p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.ConstantGP</span></code></p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>

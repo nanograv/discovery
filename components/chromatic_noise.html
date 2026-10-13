@@ -1,0 +1,1607 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Chromatic noise analyses &#8212; Discovery 0.5 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../_static/documentation_options.js?v=db78e746"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'components/chromatic_noise';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="GP Priors and Spectra" href="priors_spectra.html" />
+    <link rel="prev" title="Noise and Signal Components" href="noise_signals.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Discovery 0.5 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../tutorials/simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/curn_example.html">
+    How best to run a CURN model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/overview.html">
+    Overview
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart.html">
+    Quick Start
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/basic_likelihood.html">
+    Basic Likelihood
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/params_example.html">
+    Fast likelihood evaluation with Params
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/optimal_statistic.html">
+    Optimal Statistic
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials/simulations.html">
+    Simulations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="noise_signals.html">
+    Noise and Signal Components
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="priors_spectra.html">
+    GP Priors and Spectra
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="delays.html">
+    Deterministic Delays
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/data_model.html">
+    Data Model
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../guide/pulsar_data.html">
+    Pulsar Data
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../advanced/conditional_sampling.html">
+    Conditional Sampling of GP Coefficients
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Chromatic noise analyses</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="chromatic-noise-analyses">
+<span id="chromatic-noise"></span><h1>Chromatic noise analyses<a class="headerlink" href="#chromatic-noise-analyses" title="Link to this heading">#</a></h1>
+<p>A <em>chromatic</em> signal is any contribution to the timing residuals whose delay depends on
+the observing radio frequency <span class="math notranslate nohighlight">\(\nu\)</span>. A variety of methods exist for modeling them,
+but the documentation here touches on some of the more widely used methods in the likelihood.:</p>
+<ul class="simple">
+<li><p><strong>DM noise</strong> — stochastic dispersion-measure variations, <span class="math notranslate nohighlight">\(\alpha = 2\)</span>.</p></li>
+<li><p><strong>Solar wind</strong> — dispersion by the solar wind, also <span class="math notranslate nohighlight">\(\alpha = 2\)</span>, but modulated
+by a strongly time-dependent geometry factor.</p></li>
+<li><p><strong>Free chromatic noise</strong> — a stochastic process with the chromatic index
+<span class="math notranslate nohighlight">\(\alpha\)</span> left as a free parameter, usually to capture scattering
+(<span class="math notranslate nohighlight">\(\alpha \approx 4\)</span>).</p></li>
+<li><p><strong>Deterministic chromatic events</strong> — parametric, often transient features such as
+exponential dips, transient Gaussian events, and annual variations.</p></li>
+</ul>
+<p>This page explains what each of these actually infers, gives example code for including
+each one, sets out the different ways of modelling them (Fourier basis, FFT-covariance,
+time-domain kernels, deterministic delays), and describes the <em>fixed chromatic
+parameter</em> analysis in which a noise dictionary turns a variable GP into a cached,
+constant GP.</p>
+<p>For the general Gaussian-process machinery that all of these share, see
+<a class="reference internal" href="noise_signals.html"><span class="doc">Noise and Signal Components</span></a>; for the spectral priors, see <a class="reference internal" href="priors_spectra.html"><span class="doc">GP Priors and Spectra</span></a>; for
+deterministic delays in general, see <a class="reference internal" href="delays.html"><span class="doc">Deterministic Delays</span></a>.</p>
+<section id="what-is-actually-being-inferred">
+<h2>What is actually being inferred<a class="headerlink" href="#what-is-actually-being-inferred" title="Link to this heading">#</a></h2>
+<p>Every chromatic signal in discovery factorizes into a quantity that varies in time and a
+scaling that depends only on radio frequency:</p>
+<div class="math notranslate nohighlight">
+\[\delta t(t, \nu) \;=\; \underbrace{x(t)}_{\text{the process}}
+                 \;\times\; \underbrace{\left(\frac{f_\mathrm{ref}}{\nu}\right)^{\alpha}}_{\text{chromatic scaling}}\]</div>
+<p>For the Gaussian-process signals, <span class="math notranslate nohighlight">\(x(t)\)</span> is expanded on a basis and it is the
+<em>coefficients</em> of that basis that are given a prior:</p>
+<div class="math notranslate nohighlight">
+\[\delta t \;=\; F\,a, \qquad a \sim \mathcal{N}(0, \Phi)\]</div>
+<p>where the design matrix <span class="math notranslate nohighlight">\(F\)</span> already contains the <span class="math notranslate nohighlight">\((f_\mathrm{ref}/\nu)^\alpha\)</span>
+factor. Everything on this page is a choice about three things: what <span class="math notranslate nohighlight">\(\alpha\)</span> is,
+what the columns of <span class="math notranslate nohighlight">\(F\)</span> are, and what <span class="math notranslate nohighlight">\(\Phi\)</span> looks like (covariance/prior/psd).</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 12.0%" />
+<col style="width: 34.0%" />
+<col style="width: 34.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(\alpha\)</span></p></th>
+<th class="head"><p>What <span class="math notranslate nohighlight">\(x(t)\)</span> is</p></th>
+<th class="head"><p>Units of the coefficients</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>DM noise</p></td>
+<td><p>2, fixed</p></td>
+<td><p>DM variations</p></td>
+<td><p>seconds of delay at <span class="math notranslate nohighlight">\(f_\mathrm{ref}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Solar wind</p></td>
+<td><p>2, fixed</p></td>
+<td><p>solar wind electron density at 1 AU</p></td>
+<td><p><span class="math notranslate nohighlight">\(\mathrm{cm}^{-3}\)</span> (a <em>density</em>, not a delay)</p></td>
+</tr>
+<tr class="row-even"><td><p>Free chromatic</p></td>
+<td><p>free</p></td>
+<td><p>scattering / unmodelled chromatic variations</p></td>
+<td><p>seconds of delay at <span class="math notranslate nohighlight">\(f_\mathrm{ref}\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p>Deterministic events</p></td>
+<td><p>free or fixed</p></td>
+<td><p>a parametric shape in time</p></td>
+<td><p>seconds of delay at <span class="math notranslate nohighlight">\(f_\mathrm{ref}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The default reference frequency throughout is <code class="docutils literal notranslate"><span class="pre">fref</span> <span class="pre">=</span> <span class="pre">1400.0</span></code> MHz, so all amplitudes
+are quoted as the delay the signal would produce at 1400 MHz.</p>
+<p>The chromatic index is what separates these signals from one another, and the separation
+is only as good as the frequency coverage of the data.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># A time series x(t), rendered as a delay in four bands under two chromatic indices.</span>
+<span class="n">tt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="mf">0.6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">tt</span> <span class="o">/</span> <span class="mf">6.3</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">tt</span> <span class="o">/</span> <span class="mf">2.1</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">))</span>
+
+<span class="n">nu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">2500</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="p">[(</span><span class="mf">0.</span><span class="p">,</span> <span class="s1">'0.4'</span><span class="p">,</span> <span class="s1">' (achromatic)'</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="s1">'C4'</span><span class="p">,</span> <span class="s1">''</span><span class="p">),</span>
+                  <span class="p">(</span><span class="mf">2.</span><span class="p">,</span> <span class="s1">'C0'</span><span class="p">,</span> <span class="s1">' (DM)'</span><span class="p">),</span> <span class="p">(</span><span class="mf">4.</span><span class="p">,</span> <span class="s1">'C3'</span><span class="p">,</span> <span class="s1">' (scattering)'</span><span class="p">)]:</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="p">(</span><span class="mf">1400.</span> <span class="o">/</span> <span class="n">nu</span><span class="p">)</span><span class="o">**</span><span class="n">a</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">fr</span><span class="s1">'$\alpha$ = </span><span class="si">{</span><span class="n">a</span><span class="si">:</span><span class="s1">g</span><span class="si">}</span><span class="s1">'</span> <span class="o">+</span> <span class="n">lbl</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mi">1400</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'0.85'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$\nu$ (MHz)'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$(f_\mathrm</span><span class="si">{ref}</span><span class="s1">/\nu)^\alpha$'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">'log'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">r</span><span class="s1">'(a) frequency scaling ($f_\mathrm</span><span class="si">{ref}</span><span class="s1">$ = 1400 MHz)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">ttl</span> <span class="ow">in</span> <span class="p">[(</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mf">2.0</span><span class="p">,</span> <span class="sa">r</span><span class="s1">'(b) DM, $\alpha = 2$'</span><span class="p">),</span>
+                   <span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mf">4.0</span><span class="p">,</span> <span class="sa">r</span><span class="s1">'(c) scattering, $\alpha = 4$'</span><span class="p">)]:</span>
+    <span class="k">for</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[(</span><span class="mi">430</span><span class="p">,</span> <span class="s1">'C3'</span><span class="p">),</span> <span class="p">(</span><span class="mi">820</span><span class="p">,</span> <span class="s1">'C1'</span><span class="p">),</span> <span class="p">(</span><span class="mi">1400</span><span class="p">,</span> <span class="s1">'C0'</span><span class="p">),</span> <span class="p">(</span><span class="mi">2300</span><span class="p">,</span> <span class="s1">'C2'</span><span class="p">)]:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tt</span><span class="p">,</span> <span class="n">x</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1400.</span> <span class="o">/</span> <span class="n">f</span><span class="p">)</span><span class="o">**</span><span class="n">a</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s1"> MHz'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'0.85'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'time (yr)'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$\delta t$ (arb.)'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">ttl</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">,</span> <span class="sa">f</span><span class="s1">'430:1400 = </span><span class="si">{</span><span class="p">(</span><span class="mi">1400</span><span class="o">/</span><span class="mi">430</span><span class="p">)</span><span class="o">**</span><span class="n">a</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1">:1'</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+            <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">fc</span><span class="o">=</span><span class="s1">'white'</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s1">'0.8'</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'upper right'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="../_images/chromatic_noise-1.png" class="plot-directive" src="../_images/chromatic_noise-1.png" />
+</figure>
+<p>Panel (a) is the whole difficulty in one plot. Over a 430–2300 MHz span the
+<span class="math notranslate nohighlight">\(\alpha = 2\)</span> and <span class="math notranslate nohighlight">\(\alpha = 4\)</span> curves differ by a factor of ten.
+With narrow-band data near 1400 MHz, all the curves converge, DM and scattering
+and solar wind become nearly degenerate with one another, and the posterior
+on <span class="math notranslate nohighlight">\(\alpha\)</span> is driven by the prior rather than the likelihood.
+The solar wind is partly rescued from this by its geometry factor, which
+imposes a distinctive annual time structure that neither DM nor scattering noise has.</p>
+</section>
+<section id="dispersion-measure-dm-noise">
+<h2>Dispersion measure (DM) noise<a class="headerlink" href="#dispersion-measure-dm-noise" title="Link to this heading">#</a></h2>
+<p>Cold-plasma dispersion delays the arrival of a pulse by <span class="math notranslate nohighlight">\(\propto \mathrm{DM}/\nu^2\)</span>,
+so DM noise is the <span class="math notranslate nohighlight">\(\alpha = 2\)</span> case, with <span class="math notranslate nohighlight">\(\alpha\)</span> held fixed rather than
+fitted. In discovery this is a choice of <em>basis</em>: <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis_dm" title="discovery.signals.fourierbasis_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_dm()</span></code></a>
+is exactly <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis" title="discovery.signals.fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a> with every row multiplied by
+<span class="math notranslate nohighlight">\((f_\mathrm{ref}/\nu)^2\)</span>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
+
+<span class="c1"># DM noise as a Fourier-basis GP with a power-law prior</span>
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span>
+                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>DM noise is conventionally given many more frequency components than achromatic red
+noise (100 is a common choice against 30) because DM variations have substantial power
+at high frequencies — they are not a steep red process.</p>
+<p>Three variants are worth knowing:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A different fixed index, or the tempo2/TempoNest DM normalisation</span>
+<span class="n">basis</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_fourierbasis_dm</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tndm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">fourierbasis</span><span class="o">=</span><span class="n">basis</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">)</span>
+
+<span class="c1"># The same prior, realised as a time-domain covariance instead (see below)</span>
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fftcov_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">101</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">)</span>
+
+<span class="c1"># A time-domain GP with an explicit kernel over quantized epochs</span>
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timedomain_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">matern_kernel</span><span class="p">(),</span> <span class="n">dt</span><span class="o">=</span><span class="mi">15</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameters created are <code class="docutils literal notranslate"><span class="pre">{psr}_dm_gp_log10_A</span></code> and <code class="docutils literal notranslate"><span class="pre">{psr}_dm_gp_gamma</span></code> for the
+power-law cases, and the kernel’s own hyperparameters for the last one.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use the name <code class="docutils literal notranslate"><span class="pre">dm_gp</span></code> unless you have a reason not to.
+<code class="xref py py-data docutils literal notranslate"><span class="pre">priordict_standard</span></code> matches parameters by regular expression,
+and it knows about <code class="docutils literal notranslate"><span class="pre">dm_gp</span></code>, <code class="docutils literal notranslate"><span class="pre">chrom_gp</span></code>, <code class="docutils literal notranslate"><span class="pre">sw_gp</span></code>, <code class="docutils literal notranslate"><span class="pre">rednoise</span></code>, <code class="docutils literal notranslate"><span class="pre">chrom_exp</span></code>,
+<code class="docutils literal notranslate"><span class="pre">chrom_1yr</span></code> and <code class="docutils literal notranslate"><span class="pre">chrom_gauss</span></code>. A GP named something else will build and evaluate
+perfectly well but will raise <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> from
+<a class="reference internal" href="../api/prior.html#discovery.prior.sample_uniform" title="discovery.prior.sample_uniform"><code class="xref py py-func docutils literal notranslate"><span class="pre">sample_uniform()</span></code></a> or
+<a class="reference internal" href="../api/prior.html#discovery.prior.makelogprior_uniform" title="discovery.prior.makelogprior_uniform"><code class="xref py py-func docutils literal notranslate"><span class="pre">makelogprior_uniform()</span></code></a> unless you supply your own <code class="docutils literal notranslate"><span class="pre">priordict</span></code>.</p>
+</div>
+</section>
+<section id="solar-wind">
+<h2>Solar wind<a class="headerlink" href="#solar-wind" title="Link to this heading">#</a></h2>
+<p>The solar wind contributes a dispersive delay too, but with a decisive difference: the
+electron column density along the line of sight changes by orders of magnitude over the
+year as the line of sight sweeps past the Sun. Discovery follows the usual
+spherically-symmetric <span class="math notranslate nohighlight">\(1/r^2\)</span> model and splits the solar-wind DM into a density and
+a purely geometric factor,</p>
+<div class="math notranslate nohighlight">
+\[\mathrm{DM}_\odot(t) \;=\; n_E(t) \;\times\; G(t),
+\qquad
+\delta t(t,\nu) \;=\; n_E(t)\, G(t)\, \frac{K}{\nu^2}\]</div>
+<p>where <span class="math notranslate nohighlight">\(n_E\)</span> is the electron density referenced to 1 AU in <span class="math notranslate nohighlight">\(\mathrm{cm}^{-3}\)</span>,
+<span class="math notranslate nohighlight">\(G(t)\)</span> is computed by <a class="reference internal" href="../api/solar.html#discovery.solar.dm_solar" title="discovery.solar.dm_solar"><code class="xref py py-func docutils literal notranslate"><span class="pre">dm_solar()</span></code></a> from the pulsar’s solar
+elongation and the Earth–Sun distance, and <span class="math notranslate nohighlight">\(K = 4.148808\times10^3\)</span> is the
+dispersion constant.</p>
+<p>The simplest model holds the density constant and fits one number:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Deterministic solar wind: a single electron density n_earth at 1 AU</span>
+<span class="n">sw_delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solar'</span><span class="p">)</span>
+<span class="c1"># -&gt; parameter {psr}_solar_n_earth, in cm^-3</span>
+</pre></div>
+</div>
+<p>To let the density vary, put a GP on it. <a class="reference internal" href="../api/solar.html#discovery.solar.fourierbasis_solar_dm" title="discovery.solar.fourierbasis_solar_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_solar_dm()</span></code></a>
+builds a Fourier basis whose rows are scaled by <span class="math notranslate nohighlight">\(G(t)\,K/\nu^2\)</span>, so — importantly —
+<strong>the GP coefficients are a density, not a delay</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sw_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span>
+                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_solar_dm</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'sw_gp'</span><span class="p">)</span>
+
+<span class="c1"># or in the time domain, with an explicit kernel over quantized epochs</span>
+<span class="n">sw_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timedomain_solar_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">matern_kernel</span><span class="p">(),</span>
+                                      <span class="n">dt</span><span class="o">=</span><span class="mi">15</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'sw_gp'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is why <code class="xref py py-data docutils literal notranslate"><span class="pre">priordict_standard</span></code> gives <code class="docutils literal notranslate"><span class="pre">sw_gp_log10_A</span></code> the range
+<span class="math notranslate nohighlight">\([-10, -2]\)</span> while red noise gets <span class="math notranslate nohighlight">\([-20, -11]\)</span>: the amplitude is in
+<span class="math notranslate nohighlight">\(\mathrm{cm}^{-3}\)</span>, and physically sensible values are of order unity, comparable
+to <code class="docutils literal notranslate"><span class="pre">n_earth</span></code> itself. Feeding a solar wind GP a red-noise prior range is a common and
+silent mistake.</p>
+<p>Two consequences follow from the geometry factor. Because <span class="math notranslate nohighlight">\(G(t)\)</span> is sharply peaked
+at solar conjunction, the solar wind GP is informed almost entirely by TOAs taken near
+conjunction and at low frequency; and because the delay is the <em>product</em> of a smooth
+density with an annually cusped geometry, its time structure is not stationary, which is
+exactly what a stationary power law in a Fourier basis reproduces least well. That is the
+main argument for the time-domain treatment. PINT’s <code class="docutils literal notranslate"><span class="pre">TimeDomainSWNoise</span></code>
+component works through the same geometry in detail, and its documentation carries
+figures of the annual cusp.</p>
+</section>
+<section id="free-chromatic-noise">
+<h2>Free chromatic noise<a class="headerlink" href="#free-chromatic-noise" title="Link to this heading">#</a></h2>
+<p>When the chromatic index is not known — scattering gives <span class="math notranslate nohighlight">\(\alpha \approx 4\)</span>, but
+the effective index of unmodelled chromatic structure need not be any particular value —
+<a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis_chrom" title="discovery.signals.fourierbasis_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_chrom()</span></code></a> leaves it free. This changes the type of
+the design matrix: instead of an array it returns a <em>callable</em> <code class="docutils literal notranslate"><span class="pre">fmatfunc(alpha)</span></code>, and
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a> detects that and builds a GP whose basis is
+rebuilt at every likelihood evaluation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">chrom_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span>
+                             <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_chrom</span><span class="p">,</span>
+                             <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">)</span>
+<span class="c1"># -&gt; {psr}_chrom_gp_log10_A, {psr}_chrom_gp_gamma, {psr}_chrom_gp_alpha</span>
+
+<span class="c1"># the FFT-covariance (time-domain) counterpart</span>
+<span class="n">chrom_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fftcov_chrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">101</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If instead you want a fixed non-DM index, use
+<a class="reference internal" href="../api/signals.html#discovery.signals.make_fourierbasis_chrom" title="discovery.signals.make_fourierbasis_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_fourierbasis_chrom()</span></code></a>, which is
+<a class="reference internal" href="../api/signals.html#discovery.signals.make_fourierbasis_dm" title="discovery.signals.make_fourierbasis_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_fourierbasis_dm()</span></code></a> with a default <code class="docutils literal notranslate"><span class="pre">alpha=4</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">chrom_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span>
+                             <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">make_fourierbasis_chrom</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">4.0</span><span class="p">),</span>
+                             <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The standard prior range for <code class="docutils literal notranslate"><span class="pre">chrom_gp_alpha</span></code> is <span class="math notranslate nohighlight">\([2.5, 14]\)</span> — deliberately
+excluding 2, so that the free chromatic process cannot simply collapse onto the DM GP.</p>
+<section id="low-frequency-chromatic-structure">
+<h3>Low-frequency chromatic structure<a class="headerlink" href="#low-frequency-chromatic-structure" title="Link to this heading">#</a></h3>
+<p>A Fourier basis over the data span cannot represent a chromatic trend that is constant,
+linear, or quadratic in time — those are precisely the modes the basis lacks, and in the
+<span class="math notranslate nohighlight">\(\alpha = 2\)</span> case they are already in the timing model as <code class="docutils literal notranslate"><span class="pre">DM</span></code>, <code class="docutils literal notranslate"><span class="pre">DM1</span></code>, <code class="docutils literal notranslate"><span class="pre">DM2</span></code>.
+For a <em>free</em> index there is no such timing-model equivalent, so discovery provides the
+missing quadratic as a GP with an improper (flat) prior, via
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_improper_varF" title="discovery.signals.makegp_improper_varF"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A chromatic quadratic [1, t, t^2] * (fref/freq)^alpha, analytically marginalised</span>
+<span class="n">chrom_quad</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_improper_varF</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">chromatic_quad_basis</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span>
+                                     <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">,</span> <span class="n">param_names</span><span class="o">=</span><span class="p">[</span><span class="s1">'alpha'</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_improper_varF" title="discovery.signals.makegp_improper_varF"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a> exists for exactly this situation: a GP
+whose <em>design matrix</em> depends on a fit parameter while its prior does not. It takes a
+callable basis <code class="docutils literal notranslate"><span class="pre">fmat(*param_values)</span></code>, reads the column count from the basis’s <code class="docutils literal notranslate"><span class="pre">ncol</span></code>
+attribute (evaluating it once if absent), and gives the coefficients a flat diagonal prior
+<code class="docutils literal notranslate"><span class="pre">constant</span> <span class="pre">=</span> <span class="pre">1e40</span></code> — improper, so the coefficients are marginalised without informative
+shrinkage, and only the basis carries parameters.</p>
+<p>The important detail is the <code class="docutils literal notranslate"><span class="pre">name</span></code>. Because
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_improper_varF" title="discovery.signals.makegp_improper_varF"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a> names its parameters
+<code class="docutils literal notranslate"><span class="pre">{psr}_{name}_{param}</span></code>, giving the quadratic the <em>same</em> <code class="docutils literal notranslate"><span class="pre">name</span></code> as the chromatic
+Fourier GP makes both signals depend on one shared <code class="docutils literal notranslate"><span class="pre">{psr}_chrom_gp_alpha</span></code> parameter — a
+single chromatic index for the whole chromatic model, rather than one per component.
+Giving them different names silently produces two independent indices.</p>
+<p><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_chrom_poly_svd" title="discovery.signals.makegp_chrom_poly_svd"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_chrom_poly_svd()</span></code></a> is a more careful variant of the same
+idea: it SVD-orthonormalises the polynomial basis and projects the timing-model column
+subspace out of it at runtime, removing the degeneracy with
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_timing" title="discovery.signals.makegp_timing"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_timing()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">chrom_quad</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_chrom_poly_svd</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="deterministic-chromatic-events">
+<h2>Deterministic chromatic events<a class="headerlink" href="#deterministic-chromatic-events" title="Link to this heading">#</a></h2>
+<p>Some chromatic features are not stochastic at all: a sudden dip lasting months, a
+transient event, an annual modulation. Modelling these as parametric delays rather than
+absorbing them into a GP keeps the GP’s stationary prior honest and gives directly
+interpretable parameters — an epoch, an amplitude, a timescale.</p>
+<p>Discovery provides three, all in <a class="reference internal" href="../api/deterministic.html#module-discovery.deterministic" title="discovery.deterministic"><code class="xref py py-mod docutils literal notranslate"><span class="pre">discovery.deterministic</span></code></a>, all with a free
+chromatic index, and all attached with <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 26.0%" />
+<col style="width: 30.0%" />
+<col style="width: 44.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Factory</p></th>
+<th class="head"><p>Standard <code class="docutils literal notranslate"><span class="pre">name</span></code></p></th>
+<th class="head"><p>Parameters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_exponential" title="discovery.deterministic.chromatic_exponential"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_exponential()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">chrom_exp</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">t0</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_Amp</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_tau</span></code>, <code class="docutils literal notranslate"><span class="pre">sign_param</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_gaussian" title="discovery.deterministic.chromatic_gaussian"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_gaussian()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">chrom_gauss</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">t0</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_Amp</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_sigma</span></code>, <code class="docutils literal notranslate"><span class="pre">sign_param</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_annual" title="discovery.deterministic.chromatic_annual"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_annual()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">chrom_1yr</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_Amp</span></code>, <code class="docutils literal notranslate"><span class="pre">phase</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">deterministic</span> <span class="k">as</span> <span class="n">det</span>
+
+<span class="c1"># An exponential dip: sharp onset at t0, exponential recovery over tau</span>
+<span class="n">dip</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_exp'</span><span class="p">)</span>
+
+<span class="c1"># A transient Gaussian event</span>
+<span class="n">event</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_gaussian</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gauss'</span><span class="p">)</span>
+
+<span class="c1"># An annual chromatic variation</span>
+<span class="n">annual</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_annual</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_1yr'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">t0</span></code> is in MJD and <code class="docutils literal notranslate"><span class="pre">log10_tau</span></code> / <code class="docutils literal notranslate"><span class="pre">log10_sigma</span></code> in days, while <code class="docutils literal notranslate"><span class="pre">log10_Amp</span></code> is the
+log amplitude in seconds at <code class="docutils literal notranslate"><span class="pre">fref</span></code>. <code class="docutils literal notranslate"><span class="pre">sign_param</span></code> carries only its sign, so a prior of
+<span class="math notranslate nohighlight">\([-1, 1]\)</span> lets the sampler choose between a dip and a bump.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">deterministic</span> <span class="k">as</span> <span class="n">det</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FakePulsar</span><span class="p">:</span>            <span class="c1"># the delay factories need only .toas and .freqs</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">'J1234+5678'</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">span_yr</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span> <span class="n">cadence_d</span><span class="o">=</span><span class="mf">7.0</span><span class="p">):</span>
+        <span class="n">bands</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">430.0</span><span class="p">,</span> <span class="mf">820.0</span><span class="p">,</span> <span class="mf">1400.0</span><span class="p">,</span> <span class="mf">2300.0</span><span class="p">])</span>
+        <span class="n">ep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">span_yr</span> <span class="o">*</span> <span class="mf">365.25</span><span class="p">,</span> <span class="n">cadence_d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toas</span> <span class="o">=</span> <span class="p">(</span><span class="mf">53000.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">ep</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">)))</span> <span class="o">*</span> <span class="mf">86400.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">bands</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ep</span><span class="p">))</span>
+
+<span class="n">psr</span> <span class="o">=</span> <span class="n">FakePulsar</span><span class="p">()</span>
+<span class="n">t_mjd</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">/</span> <span class="mf">86400.0</span>
+
+<span class="n">specs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="n">det</span><span class="o">.</span><span class="n">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span>
+     <span class="nb">dict</span><span class="p">(</span><span class="n">t0</span><span class="o">=</span><span class="mi">53000</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="mf">365.25</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="o">=-</span><span class="mf">7.2</span><span class="p">,</span> <span class="n">log10_tau</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">120.</span><span class="p">),</span>
+          <span class="n">sign_param</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">4.0</span><span class="p">),</span>
+     <span class="s1">'chromatic_exponential</span><span class="se">\n</span><span class="s1">(exponential dip)'</span><span class="p">),</span>
+    <span class="p">(</span><span class="n">det</span><span class="o">.</span><span class="n">chromatic_gaussian</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span>
+     <span class="nb">dict</span><span class="p">(</span><span class="n">t0</span><span class="o">=</span><span class="mi">53000</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="mf">365.25</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="o">=-</span><span class="mf">7.2</span><span class="p">,</span> <span class="n">log10_sigma</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">90.</span><span class="p">),</span>
+          <span class="n">sign_param</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">4.0</span><span class="p">),</span>
+     <span class="s1">'chromatic_gaussian</span><span class="se">\n</span><span class="s1">(transient event)'</span><span class="p">),</span>
+    <span class="p">(</span><span class="n">det</span><span class="o">.</span><span class="n">chromatic_annual</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span>
+     <span class="nb">dict</span><span class="p">(</span><span class="n">log10_Amp</span><span class="o">=-</span><span class="mf">6.5</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">),</span>
+     <span class="s1">'chromatic_annual</span><span class="se">\n</span><span class="s1">(annual DM, $</span><span class="se">\\</span><span class="s1">alpha=2$)'</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mf">3.4</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">kw</span><span class="p">,</span> <span class="n">ttl</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">specs</span><span class="p">):</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e6</span>
+    <span class="k">for</span> <span class="n">f</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[(</span><span class="mi">430</span><span class="p">,</span> <span class="s1">'C3'</span><span class="p">),</span> <span class="p">(</span><span class="mi">820</span><span class="p">,</span> <span class="s1">'C1'</span><span class="p">),</span> <span class="p">(</span><span class="mi">1400</span><span class="p">,</span> <span class="s1">'C0'</span><span class="p">),</span> <span class="p">(</span><span class="mi">2300</span><span class="p">,</span> <span class="s1">'C2'</span><span class="p">)]:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">freqs</span> <span class="o">==</span> <span class="n">f</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_mjd</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">-</span> <span class="mi">53000</span><span class="p">,</span> <span class="n">d</span><span class="p">[</span><span class="n">m</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s1"> MHz'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'0.85'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">ttl</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'MJD $-$ 53000 (d)'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$\delta t$ ($\mu$s)'</span><span class="p">)</span>
+    <span class="n">a_</span> <span class="o">=</span> <span class="n">kw</span><span class="p">[</span><span class="s1">'alpha'</span><span class="p">]</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">,</span> <span class="sa">fr</span><span class="s1">'$\alpha$ = </span><span class="si">{</span><span class="n">a_</span><span class="si">:</span><span class="s1">g</span><span class="si">}</span><span class="s1">;  430:1400 = </span><span class="si">{</span><span class="p">(</span><span class="mi">1400</span><span class="o">/</span><span class="mi">430</span><span class="p">)</span><span class="o">**</span><span class="n">a_</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1">:1'</span><span class="p">,</span>
+            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mf">7.5</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">fc</span><span class="o">=</span><span class="s1">'white'</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s1">'0.8'</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'lower right'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="../_images/chromatic_noise-2.png" class="plot-directive" src="../_images/chromatic_noise-2.png" />
+</figure>
+<p>Note the y-axis scales: at <span class="math notranslate nohighlight">\(\alpha = 4\)</span> the 1400 and 2300 MHz curves are nearly
+flat while the 430 MHz curve carries the event. A chromatic event is essentially a
+low-frequency phenomenon, and a dataset without low-frequency coverage during the event
+will not constrain it.</p>
+</section>
+<section id="choosing-a-basis">
+<h2>Choosing a basis<a class="headerlink" href="#choosing-a-basis" title="Link to this heading">#</a></h2>
+<p>Every GP on this page is <span class="math notranslate nohighlight">\(F a\)</span> with <span class="math notranslate nohighlight">\(a \sim \mathcal{N}(0, \Phi)\)</span>. Discovery
+offers three families of basis, and the choice determines both what structure is easy to
+represent and whether <span class="math notranslate nohighlight">\(\Phi\)</span> is diagonal.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">signals</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FakePulsar</span><span class="p">:</span>            <span class="c1"># the bases need only .toas, .freqs and .name</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">'J1234+5678'</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">span_yr</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span> <span class="n">cadence_d</span><span class="o">=</span><span class="mf">14.0</span><span class="p">):</span>
+        <span class="n">bands</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">430.0</span><span class="p">,</span> <span class="mf">820.0</span><span class="p">,</span> <span class="mf">1400.0</span><span class="p">,</span> <span class="mf">2300.0</span><span class="p">])</span>
+        <span class="n">ep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">span_yr</span> <span class="o">*</span> <span class="mf">365.25</span><span class="p">,</span> <span class="n">cadence_d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toas</span> <span class="o">=</span> <span class="p">(</span><span class="mf">53000.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">ep</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">)))</span> <span class="o">*</span> <span class="mf">86400.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">bands</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ep</span><span class="p">))</span>
+
+<span class="n">psr</span> <span class="o">=</span> <span class="n">FakePulsar</span><span class="p">()</span>
+<span class="n">tp</span> <span class="o">=</span> <span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">-</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">/</span> <span class="p">(</span><span class="mf">365.25</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">)</span>
+<span class="n">o</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">tp</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mf">7.2</span><span class="p">))</span>
+
+<span class="c1"># (a) Fourier: global sines and cosines at k/T</span>
+<span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">F</span> <span class="o">=</span> <span class="n">signals</span><span class="o">.</span><span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tp</span><span class="p">[</span><span class="n">o</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">F</span><span class="p">)[</span><span class="n">o</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'(a) Fourier basis: ds.fourierbasis(psr, 3) — 3 sine/cosine pairs'</span><span class="p">,</span>
+                  <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># (b) time interpolation: local hats anchored at evenly spaced nodes</span>
+<span class="n">t_coarse</span><span class="p">,</span> <span class="n">dt_coarse</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="n">signals</span><span class="o">.</span><span class="n">timeinterpbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tp</span><span class="p">[</span><span class="n">o</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="n">o</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="n">t_coarse</span> <span class="o">-</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">/</span> <span class="p">(</span><span class="mf">365.25</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">),</span>
+             <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">t_coarse</span><span class="p">),</span> <span class="s1">'k|'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tp</span><span class="p">[</span><span class="n">o</span><span class="p">],</span> <span class="n">B</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="n">o</span><span class="p">],</span> <span class="s1">'k--'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">'row sum $\equiv$ 1'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'(b) time-interpolation basis: ds.timeinterpbasis(psr, 16) — '</span>
+                  <span class="sa">f</span><span class="s1">'nodes every </span><span class="si">{</span><span class="n">dt_coarse</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">86400</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> d'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">'center right'</span><span class="p">)</span>
+
+<span class="c1"># (c) quantized epochs: one indicator column per time bin</span>
+<span class="n">bins</span> <span class="o">=</span> <span class="n">signals</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">,</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">)</span>
+<span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">bins</span> <span class="o">==</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'d'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">U</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">U</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tp</span><span class="p">[</span><span class="n">m</span><span class="p">],</span> <span class="n">U</span><span class="p">[</span><span class="n">m</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'(c) quantized-epoch basis: ds.quantize(psr.toas, 60 d) — '</span>
+                  <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">U</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> bins, first 2 yr shown'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'time (yr)'</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'basis value'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="../_images/chromatic_noise-3.png" class="plot-directive" src="../_images/chromatic_noise-3.png" />
+</figure>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 27.0%" />
+<col style="width: 27.0%" />
+<col style="width: 26.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Fourier</p></th>
+<th class="head"><p>Time interpolation</p></th>
+<th class="head"><p>Quantized epochs</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Built by</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fourierbasis*</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">timeinterpbasis</span></code>, <code class="docutils literal notranslate"><span class="pre">make_timeinterpbasis_*</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quantize</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Columns</p></td>
+<td><p>sines/cosines at <span class="math notranslate nohighlight">\(k/T\)</span></p></td>
+<td><p>piecewise-linear hats at nodes</p></td>
+<td><p>indicators for time bins</p></td>
+</tr>
+<tr class="row-even"><td><p>Support</p></td>
+<td><p>global</p></td>
+<td><p>local (one node spacing)</p></td>
+<td><p>local (one bin)</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\Phi\)</span></p></td>
+<td><p>diagonal — the PSD</p></td>
+<td><p>dense — a covariance matrix</p></td>
+<td><p>dense — a covariance matrix</p></td>
+</tr>
+<tr class="row-even"><td><p>Resolution set by</p></td>
+<td><p>number of components</p></td>
+<td><p>number of nodes</p></td>
+<td><p>bin width <code class="docutils literal notranslate"><span class="pre">dt</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Used by</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fourier</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fftcov*</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_timedomain_*</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Naturally expresses</p></td>
+<td><p>scale-free power laws</p></td>
+<td><p>band-limited processes without periodicity</p></td>
+<td><p>finite correlation times, sharp features</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The Fourier basis is the default and is the right thing for a stationary power law. Its
+costs are the familiar ones: a lowest resolvable frequency <span class="math notranslate nohighlight">\(1/T\)</span>, periodicity over
+the span, and the leakage and edge artifacts that come with them. The interpolation and
+quantized bases have local support and no periodicity, at the price of a dense
+<span class="math notranslate nohighlight">\(\Phi\)</span> that must be factored — a cost set by the number of nodes, not the number of
+TOAs.</p>
+<p>Which factory to call, by signal and basis:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 27.0%" />
+<col style="width: 27.0%" />
+<col style="width: 26.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal</p></th>
+<th class="head"><p>Fourier</p></th>
+<th class="head"><p>FFT-covariance</p></th>
+<th class="head"><p>Time domain + kernel</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Achromatic</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fourier</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fftcov</span></code></p></td>
+<td><p>—</p></td>
+</tr>
+<tr class="row-odd"><td><p>DM (<span class="math notranslate nohighlight">\(\alpha=2\)</span>)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fourier</span></code> + <code class="docutils literal notranslate"><span class="pre">fourierbasis_dm</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fftcov_dm</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_timedomain_dm</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Free chromatic</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fourier</span></code> + <code class="docutils literal notranslate"><span class="pre">fourierbasis_chrom</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fftcov_chrom</span></code></p></td>
+<td><p>—</p></td>
+</tr>
+<tr class="row-odd"><td><p>Solar wind</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_fourier</span></code> + <code class="docutils literal notranslate"><span class="pre">fourierbasis_solar_dm</span></code></p></td>
+<td><p>—</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makegp_timedomain_solar_dm</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="choosing-a-prior">
+<h2>Choosing a prior<a class="headerlink" href="#choosing-a-prior" title="Link to this heading">#</a></h2>
+<section id="fourier-basis-priors-psd">
+<h3>Fourier-basis priors (PSD)<a class="headerlink" href="#fourier-basis-priors-psd" title="Link to this heading">#</a></h3>
+<p>For Fourier-basis GPs, <span class="math notranslate nohighlight">\(\Phi\)</span> is diagonal and its entries are a power spectral
+density evaluated at the basis frequencies. Any function with the signature
+<code class="docutils literal notranslate"><span class="pre">prior(f,</span> <span class="pre">df,</span> <span class="pre">...)</span></code> will work, so this list is not exhaustive.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Prior</p></th>
+<th class="head"><p>Parameters and use</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.powerlaw" title="discovery.signals.powerlaw"><code class="xref py py-func docutils literal notranslate"><span class="pre">powerlaw()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_A</span></code>, <code class="docutils literal notranslate"><span class="pre">gamma</span></code>. The default for essentially every stochastic signal.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.freespectrum" title="discovery.signals.freespectrum"><code class="xref py py-func docutils literal notranslate"><span class="pre">freespectrum()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_rho</span></code> (a vector). One independent amplitude per frequency bin — the
+most flexible option and the standard way to look for spectral structure
+without assuming a shape.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.brokenpowerlaw" title="discovery.signals.brokenpowerlaw"><code class="xref py py-func docutils literal notranslate"><span class="pre">brokenpowerlaw()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_A</span></code>, <code class="docutils literal notranslate"><span class="pre">gamma</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_fb</span></code>. A power law that changes slope at a break
+frequency; useful when a single index does not fit across the band.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.powerlaw_cutoff" title="discovery.signals.powerlaw_cutoff"><code class="xref py py-func docutils literal notranslate"><span class="pre">powerlaw_cutoff()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_A</span></code>, <code class="docutils literal notranslate"><span class="pre">gamma</span></code>, <code class="docutils literal notranslate"><span class="pre">Nfreq_cutoff</span></code>. A power law smoothly gated off above a
+given mode index, plus a small numerical floor. Used for inferring an optimal number
+Fourier modes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.makepowerlaw_crn" title="discovery.signals.makepowerlaw_crn"><code class="xref py py-func docutils literal notranslate"><span class="pre">makepowerlaw_crn()</span></code></a>, <a class="reference internal" href="../api/signals.html#discovery.signals.make_combined_crn" title="discovery.signals.make_combined_crn"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_combined_crn()</span></code></a>, <a class="reference internal" href="../api/signals.html#discovery.signals.makefreespectrum_crn" title="discovery.signals.makefreespectrum_crn"><code class="xref py py-func docutils literal notranslate"><span class="pre">makefreespectrum_crn()</span></code></a></p></td>
+<td><p>Combine an intrinsic per-pulsar spectrum with a common process on the same basis.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>It is straight forward to create your own PSD:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">powerlaw_flattail</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">log10_floor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A power law that flattens to a constant floor at high frequency."""</span>
+    <span class="n">pl</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">log10_A</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">12</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">ds</span><span class="o">.</span><span class="n">fyr</span><span class="o">**</span><span class="p">(</span><span class="n">gamma</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">f</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">gamma</span><span class="p">)</span> <span class="o">*</span> <span class="n">df</span>
+    <span class="k">return</span> <span class="n">pl</span> <span class="o">+</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">log10_floor</span><span class="p">)</span> <span class="o">*</span> <span class="n">df</span>
+
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">powerlaw_flattail</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span>
+                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'red_noise'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameter names are read off the function signature, so this GP acquires
+<code class="docutils literal notranslate"><span class="pre">{psr}_dm_gp_log10_A</span></code>, <code class="docutils literal notranslate"><span class="pre">{psr}_dm_gp_gamma</span></code> and <code class="docutils literal notranslate"><span class="pre">{psr}_dm_gp_log10_floor</span></code>
+automatically. Annotate an argument as <code class="docutils literal notranslate"><span class="pre">typing.Sequence</span></code> to make it a vector parameter,
+as <a class="reference internal" href="../api/signals.html#discovery.signals.freespectrum" title="discovery.signals.freespectrum"><code class="xref py py-func docutils literal notranslate"><span class="pre">freespectrum()</span></code></a> does.</p>
+</section>
+<section id="time-domain-kernels">
+<h3>Time-domain kernels<a class="headerlink" href="#time-domain-kernels" title="Link to this heading">#</a></h3>
+<p>For the <code class="docutils literal notranslate"><span class="pre">makegp_timedomain_*</span></code> GPs, <span class="math notranslate nohighlight">\(\Phi\)</span> is a dense covariance matrix built by
+evaluating a kernel at the lags between nodes. Each kernel factory returns a closure
+<code class="docutils literal notranslate"><span class="pre">kernel(tau,</span> <span class="pre">...)</span></code> whose remaining arguments become the GP’s hyperparameters. Writing
+<span class="math notranslate nohighlight">\(\tau\)</span> for the lag, <span class="math notranslate nohighlight">\(\sigma = 10^{\texttt{log10\_sigma\_*}}\)</span>, and
+<span class="math notranslate nohighlight">\(\ell = 10^{\texttt{log10\_ell}}\)</span> in days:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 26.0%" />
+<col style="width: 30.0%" />
+<col style="width: 44.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Kernel</p></th>
+<th class="head"><p>Hyperparameters</p></th>
+<th class="head"><p><span class="math notranslate nohighlight">\(K(\tau)\)</span></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.ridge_kernel" title="discovery.signals.ridge_kernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">ridge_kernel()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_sigma_ridge</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(\sigma^2 \delta_{ij}\)</span> — uncorrelated between nodes</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.square_exponential_kernel" title="discovery.signals.square_exponential_kernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">square_exponential_kernel()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_sigma_sq_exp</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_ell</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(\sigma^2 \exp(-\tau^2 / 2\ell^2)\)</span></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.matern_kernel" title="discovery.signals.matern_kernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">matern_kernel()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_sigma_matern</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_ell</span></code> (<code class="docutils literal notranslate"><span class="pre">nu</span></code> fixed at build time)</p></td>
+<td><p><span class="math notranslate nohighlight">\(\sigma^2\,(1 + \sqrt{3}\tau/\ell)\,e^{-\sqrt{3}\tau/\ell}\)</span> for
+<span class="math notranslate nohighlight">\(\nu = 3/2\)</span>, and the usual forms for <span class="math notranslate nohighlight">\(\nu = 1/2, 5/2\)</span></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/signals.html#discovery.signals.quasi_periodic_kernel" title="discovery.signals.quasi_periodic_kernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">quasi_periodic_kernel()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_sigma_quasi_periodic</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_ell</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_gamma_p</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_p</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(\sigma^2 \exp\!\left(-\tau^2/2\ell^2 - \Gamma_p \sin^2(\pi\tau/P)\right)\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">nu</span></code> is baked into the closure by
+<a class="reference internal" href="../api/signals.html#discovery.signals.matern_kernel" title="discovery.signals.matern_kernel"><code class="xref py py-func docutils literal notranslate"><span class="pre">matern_kernel()</span></code></a>, so it is a modelling choice rather than a
+sampled parameter, and that <code class="docutils literal notranslate"><span class="pre">log10_p</span></code> is in <strong>years</strong> while <code class="docutils literal notranslate"><span class="pre">log10_ell</span></code> is in
+<strong>days</strong>. All kernels but the ridge add a small diagonal regulariser
+<span class="math notranslate nohighlight">\((\sigma/50000)^2\)</span> for numerical stability.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The kernel factory's arguments are defaults; the closure's arguments are sampled</span>
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timedomain_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">matern_kernel</span><span class="p">(</span><span class="n">nu</span><span class="o">=</span><span class="mf">1.5</span><span class="p">),</span> <span class="n">dt</span><span class="o">=</span><span class="mi">15</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">,</span>
+                                <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">)</span>
+<span class="c1"># -&gt; {psr}_dm_gp_log10_sigma_matern, {psr}_dm_gp_log10_ell</span>
+</pre></div>
+</div>
+</section>
+<section id="spectra-and-kernels-are-two-descriptions-of-the-same-object">
+<h3>Spectra and kernels are two descriptions of the same object<a class="headerlink" href="#spectra-and-kernels-are-two-descriptions-of-the-same-object" title="Link to this heading">#</a></h3>
+<p>For a stationary process the Wiener–Khinchin theorem makes the kernel and the PSD a
+Fourier pair, and <a class="reference internal" href="../api/signals.html#discovery.signals.psd2cov" title="discovery.signals.psd2cov"><code class="xref py py-func docutils literal notranslate"><span class="pre">psd2cov()</span></code></a> is that transform: it takes a PSD
+function, evaluates it on an oversampled frequency grid, inverse-FFTs it, and returns a
+Toeplitz covariance matrix over lags. This is exactly how the <code class="docutils literal notranslate"><span class="pre">makegp_fftcov*</span></code> family
+turns a power law into a time-domain GP — the node spacing of the interpolation basis and
+the lag spacing of the covariance are both <span class="math notranslate nohighlight">\(T/(N-1)\)</span>, so they line up by
+construction.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">signals</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FakePulsar</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">'J1234+5678'</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">span_yr</span><span class="o">=</span><span class="mf">15.0</span><span class="p">,</span> <span class="n">cadence_d</span><span class="o">=</span><span class="mf">14.0</span><span class="p">):</span>
+        <span class="n">bands</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">430.0</span><span class="p">,</span> <span class="mf">820.0</span><span class="p">,</span> <span class="mf">1400.0</span><span class="p">,</span> <span class="mf">2300.0</span><span class="p">])</span>
+        <span class="n">ep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">span_yr</span> <span class="o">*</span> <span class="mf">365.25</span><span class="p">,</span> <span class="n">cadence_d</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">toas</span> <span class="o">=</span> <span class="p">(</span><span class="mf">53000.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">ep</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">)))</span> <span class="o">*</span> <span class="mf">86400.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">bands</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ep</span><span class="p">))</span>
+
+<span class="n">psr</span> <span class="o">=</span> <span class="n">FakePulsar</span><span class="p">()</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">signals</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
+<span class="n">ncomp</span> <span class="o">=</span> <span class="mi">121</span>                              <span class="c1"># psd2cov requires an odd component count</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mf">6.8</span><span class="p">))</span>
+<span class="n">gs</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_gridspec</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="mf">0.34</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.24</span><span class="p">)</span>
+<span class="n">axp</span><span class="p">,</span> <span class="n">axk</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">axr1</span><span class="p">,</span> <span class="n">axr2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># --- (a) the spectral priors, as spectra ---</span>
+<span class="n">fq</span><span class="p">,</span> <span class="n">dfq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">31</span><span class="p">)</span> <span class="o">/</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">T</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">psd</span><span class="p">,</span> <span class="n">kw</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">'powerlaw'</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">log10_A</span><span class="o">=-</span><span class="mf">13.5</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">),</span> <span class="s1">'C0'</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'brokenpowerlaw'</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">brokenpowerlaw</span><span class="p">,</span>
+         <span class="nb">dict</span><span class="p">(</span><span class="n">log10_A</span><span class="o">=-</span><span class="mf">13.5</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">4.5</span><span class="p">,</span> <span class="n">log10_fb</span><span class="o">=-</span><span class="mf">8.3</span><span class="p">),</span> <span class="s1">'C1'</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'powerlaw_cutoff'</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw_cutoff</span><span class="p">,</span>
+         <span class="nb">dict</span><span class="p">(</span><span class="n">log10_A</span><span class="o">=-</span><span class="mf">13.5</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">Nfreq_cutoff</span><span class="o">=</span><span class="mf">8.</span><span class="p">),</span> <span class="s1">'C2'</span><span class="p">)]:</span>
+    <span class="n">axp</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">fq</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">psd</span><span class="p">(</span><span class="n">fq</span><span class="p">,</span> <span class="n">dfq</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.8</span><span class="p">,</span>
+               <span class="n">ls</span><span class="o">=</span><span class="s1">'--'</span> <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">'powerlaw_cutoff'</span> <span class="k">else</span> <span class="s1">'-'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">rho</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">(</span><span class="n">fq</span><span class="p">,</span> <span class="n">dfq</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">)))</span> <span class="o">+</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fq</span><span class="p">))</span>
+<span class="n">axp</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">fq</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">freespectrum</span><span class="p">(</span><span class="n">fq</span><span class="p">,</span> <span class="n">dfq</span><span class="p">,</span> <span class="n">rho</span><span class="p">))[::</span><span class="mi">2</span><span class="p">],</span> <span class="s1">'o'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span>
+           <span class="n">color</span><span class="o">=</span><span class="s1">'C3'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'freespectrum'</span><span class="p">)</span>
+<span class="n">axp</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mf">365.25</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s1">'0.85'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">axp</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'$f$ (Hz)'</span><span class="p">)</span>
+<span class="n">axp</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'PSD $\times\ \Delta f$  (s$^2$)'</span><span class="p">)</span>
+<span class="n">axp</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'(a) spectral priors, as spectra'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">axp</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+<span class="c1"># --- (b) a power law and the kernels, both as covariances ---</span>
+<span class="n">lags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ncomp</span><span class="p">)</span> <span class="o">*</span> <span class="n">T</span> <span class="o">/</span> <span class="p">(</span><span class="n">ncomp</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">86400</span>
+<span class="n">C1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">signals</span><span class="o">.</span><span class="n">psd2cov</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ncomp</span><span class="p">,</span> <span class="n">T</span><span class="p">)(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">))</span>
+<span class="n">C3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">signals</span><span class="o">.</span><span class="n">psd2cov</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">ncomp</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mi">3</span><span class="p">)(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">))</span>
+<span class="n">axk</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lags</span><span class="p">,</span> <span class="n">C1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">C1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">'C0'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+         <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">'powerlaw $\gamma$=3, psd2cov (cutoff=1)'</span><span class="p">)</span>
+<span class="n">axk</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lags</span><span class="p">,</span> <span class="n">C3</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">C3</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">'C4'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+         <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">'powerlaw $\gamma$=3, psd2cov (cutoff=3)'</span><span class="p">)</span>
+
+<span class="n">taufine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">lags</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="mi">400</span><span class="p">)</span> <span class="o">*</span> <span class="mi">86400</span>
+<span class="k">for</span> <span class="n">kf</span><span class="p">,</span> <span class="n">kw</span><span class="p">,</span> <span class="n">lbl</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">signals</span><span class="o">.</span><span class="n">matern_kernel</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">log10_sigma_matern</span><span class="o">=-</span><span class="mf">7.</span><span class="p">,</span> <span class="n">log10_ell</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">600.</span><span class="p">)),</span>
+         <span class="sa">r</span><span class="s1">'matern $\nu$=3/2, $\ell$=600 d'</span><span class="p">,</span> <span class="s1">'C2'</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">signals</span><span class="o">.</span><span class="n">square_exponential_kernel</span><span class="p">,</span>
+         <span class="nb">dict</span><span class="p">(</span><span class="n">log10_sigma_sq_exp</span><span class="o">=-</span><span class="mf">7.</span><span class="p">,</span> <span class="n">log10_ell</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">600.</span><span class="p">)),</span>
+         <span class="sa">r</span><span class="s1">'sq. exponential, $\ell$=600 d'</span><span class="p">,</span> <span class="s1">'C1'</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">signals</span><span class="o">.</span><span class="n">quasi_periodic_kernel</span><span class="p">,</span>
+         <span class="nb">dict</span><span class="p">(</span><span class="n">log10_sigma_quasi_periodic</span><span class="o">=-</span><span class="mf">7.</span><span class="p">,</span> <span class="n">log10_ell</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">2500.</span><span class="p">),</span>
+              <span class="n">log10_gamma_p</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">log10_p</span><span class="o">=</span><span class="mf">0.</span><span class="p">),</span>
+         <span class="sa">r</span><span class="s1">'quasi-periodic, $P$=1 yr'</span><span class="p">,</span> <span class="s1">'C3'</span><span class="p">)]:</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">kf</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">)(</span><span class="n">taufine</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">row</span> <span class="o">-</span> <span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nb">list</span><span class="p">(</span><span class="n">kw</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">axk</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">taufine</span> <span class="o">/</span> <span class="mi">86400</span><span class="p">,</span> <span class="n">row</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.8</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">lbl</span><span class="p">)</span>
+<span class="n">axk</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'0.85'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">axk</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'lag $\tau$ (days)'</span><span class="p">)</span>
+<span class="n">axk</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$C(\tau)\,/\,C(0)$'</span><span class="p">)</span>
+<span class="n">axk</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'(b) the same priors, as time-domain covariances'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">axk</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">axk</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">lags</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+
+<span class="c1"># --- (c, d) one realization from each, at the same variance ---</span>
+<span class="n">rngr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">tn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">ncomp</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">365.25</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">)</span>
+<span class="n">a1</span> <span class="o">=</span> <span class="n">rngr</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ncomp</span><span class="p">),</span> <span class="n">C1</span> <span class="o">+</span> <span class="mf">1e-32</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">ncomp</span><span class="p">))</span>
+<span class="n">axr1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tn</span><span class="p">,</span> <span class="n">a1</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'C0'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.4</span><span class="p">)</span>
+<span class="n">axr1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">r</span><span class="s1">'(c) realization: powerlaw $\gamma$=3 through psd2cov'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="n">km</span> <span class="o">=</span> <span class="n">signals</span><span class="o">.</span><span class="n">matern_kernel</span><span class="p">(</span><span class="n">log10_sigma_matern</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">C1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])),</span>
+                           <span class="n">log10_ell</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">600.</span><span class="p">))</span>
+<span class="n">Ck</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">km</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tn</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">tn</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:])</span> <span class="o">*</span> <span class="mf">365.25</span> <span class="o">*</span> <span class="mi">86400</span><span class="p">))</span>
+<span class="n">a2</span> <span class="o">=</span> <span class="n">rngr</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ncomp</span><span class="p">),</span> <span class="n">Ck</span><span class="p">)</span>
+<span class="n">axr2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tn</span><span class="p">,</span> <span class="n">a2</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'C2'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.4</span><span class="p">)</span>
+<span class="n">axr2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">r</span><span class="s1">'(d) realization: matern $\nu$=3/2, $\ell$=600 d, same $\sigma$'</span><span class="p">,</span>
+               <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="n">ylim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">]))</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">*</span> <span class="mf">1e6</span> <span class="o">*</span> <span class="mf">1.15</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">axr1</span><span class="p">,</span> <span class="n">axr2</span><span class="p">):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">ylim</span><span class="p">,</span> <span class="n">ylim</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'time (yr)'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">'$\delta t$ ($\mu$s)'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'0.85'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="../_images/chromatic_noise-4.png" class="plot-directive" src="../_images/chromatic_noise-4.png" />
+</figure>
+<p>Panel (b) is worth dwelling on. The dashed kernels decay to zero and stay there: they
+have a finite correlation time, set explicitly by <span class="math notranslate nohighlight">\(\ell\)</span>. The power-law
+covariances do not — they stay correlated across the entire span, and they go <em>negative</em>
+at intermediate lags. That is not an artifact but a direct consequence of <code class="docutils literal notranslate"><span class="pre">psd2cov</span></code>’s
+<code class="docutils literal notranslate"><span class="pre">cutoff</span></code> argument, which zeroes the lowest <code class="docutils literal notranslate"><span class="pre">ceil(oversample/cutoff)</span></code> frequency bins
+before transforming. Removing power below <span class="math notranslate nohighlight">\(\sim 1/T\)</span> is what makes the covariance
+cross zero; a larger <code class="docutils literal notranslate"><span class="pre">cutoff</span></code> removes fewer bins and leaves a covariance that decays
+much more slowly. The quasi-periodic kernel, meanwhile, is the one shape here with no
+convenient spectral counterpart at all, and it is the natural way to write down annual
+or solar-cycle structure.</p>
+<p>Panels (c) and (d) draw one realization from each at the <em>same</em> variance. The power-law
+process wanders on all timescales; the Matérn process has visible short-timescale
+roughness but no long-term memory.</p>
+</section>
+</section>
+<section id="fixed-chromatic-parameters">
+<h2>Fixed chromatic parameters<a class="headerlink" href="#fixed-chromatic-parameters" title="Link to this heading">#</a></h2>
+<p>Chromatic hyperparameters are frequently <em>not</em> what an analysis is about. An available
+workflow for computational expediency is to run single-pulsar noise analyses first,
+then hold the chromatic noise at its measured values while sampling in the rest of the model.
+Discovery supports this directly: pass a noise dictionary to a GP factory,
+and if it supplies values for <strong>all</strong> of that GP’s hyperparameters, the factory evaluates
+the prior once at build time and returns a cached <a class="reference internal" href="../api/matrix.html#discovery.matrix.ConstantGP" title="discovery.matrix.ConstantGP"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConstantGP</span></code></a>
+instead of a sampled <a class="reference internal" href="../api/matrix.html#discovery.matrix.VariableGP" title="discovery.matrix.VariableGP"><code class="xref py py-class docutils literal notranslate"><span class="pre">VariableGP</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">noisedict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'B1855+09_dm_gp_log10_A'</span><span class="p">:</span> <span class="o">-</span><span class="mf">13.0</span><span class="p">,</span>
+    <span class="s1">'B1855+09_dm_gp_gamma'</span><span class="p">:</span>    <span class="mf">2.0</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">,</span> <span class="n">noisedict</span><span class="o">=</span><span class="n">noisedict</span><span class="p">)</span>
+
+<span class="nb">type</span><span class="p">(</span><span class="n">dm_gp</span><span class="p">)</span>          <span class="c1"># -&gt; discovery.matrix.ConstantGP</span>
+</pre></div>
+</div>
+<p>This is the same idea as the fixed white-noise path, where EFAC/EQUAD
+values from <code class="docutils literal notranslate"><span class="pre">psr.noisedict</span></code> are fixed in the measurement kernel rather than sampled.</p>
+<section id="supported-factories">
+<h3>Supported factories<a class="headerlink" href="#supported-factories" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">noisedict=</span></code> is accepted by <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a> (and therefore by
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fftcov" title="discovery.signals.makegp_fftcov"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fftcov()</span></code></a>,
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fftcov_dm" title="discovery.signals.makegp_fftcov_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fftcov_dm()</span></code></a> and
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fftcov_chrom" title="discovery.signals.makegp_fftcov_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fftcov_chrom()</span></code></a>, which are thin wrappers around it), by
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_timedomain_dm" title="discovery.signals.makegp_timedomain_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_timedomain_dm()</span></code></a>,
+<a class="reference internal" href="../api/solar.html#discovery.solar.makegp_timedomain_solar_dm" title="discovery.solar.makegp_timedomain_solar_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_timedomain_solar_dm()</span></code></a>,
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_improper_varF" title="discovery.signals.makegp_improper_varF"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a>, and by
+<a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier_variance" title="discovery.signals.makegp_fourier_variance"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier_variance()</span></code></a>.</p>
+<p>Because the dictionary is passed per signal rather than globally, any subset of signals
+can be held fixed while the rest stay free — fix DM and chromatic noise, sample red
+noise and the background:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+
+    <span class="c1"># free</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'red_noise'</span><span class="p">),</span>
+
+    <span class="c1"># fixed at measured values</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span>
+                      <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">,</span> <span class="n">noisedict</span><span class="o">=</span><span class="n">noisedict</span><span class="p">),</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_chrom</span><span class="p">,</span>
+                      <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">,</span> <span class="n">noisedict</span><span class="o">=</span><span class="n">noisedict</span><span class="p">),</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_improper_varF</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">chromatic_quad_basis</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">,</span>
+                            <span class="n">param_names</span><span class="o">=</span><span class="p">[</span><span class="s1">'alpha'</span><span class="p">],</span> <span class="n">noisedict</span><span class="o">=</span><span class="p">{</span><span class="s1">'alpha'</span><span class="p">:</span> <span class="mf">4.0</span><span class="p">}),</span>
+<span class="p">]</span>
+
+<span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span>
+<span class="c1"># ['B1855+09_red_noise_gamma', 'B1855+09_red_noise_log10_A']</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="example-code">
+<h2>Example code<a class="headerlink" href="#example-code" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ds</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">deterministic</span> <span class="k">as</span> <span class="n">det</span>
+
+<span class="n">psr</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">Pulsar</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">'data/v1p1_de440_pint_bipm2019-B1855+09.feather'</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">getspan</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>                                     <span class="c1"># data vector</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>      <span class="c1"># EFAC / EQUAD</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_ecorr</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>               <span class="c1"># ECORR</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>                   <span class="c1"># timing model</span>
+
+    <span class="c1"># achromatic red noise</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'red_noise'</span><span class="p">),</span>
+
+    <span class="c1"># DM noise, alpha = 2</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+                      <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">),</span>
+
+    <span class="c1"># solar wind: a stochastic density on top of a constant one</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solar'</span><span class="p">),</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+                      <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_solar_dm</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'sw_gp'</span><span class="p">),</span>
+
+    <span class="c1"># free chromatic noise, plus its chromatic quadratic sharing the same alpha</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+                      <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_chrom</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">),</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makegp_improper_varF</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">chromatic_quad_basis</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span>
+                            <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">,</span> <span class="n">param_names</span><span class="o">=</span><span class="p">[</span><span class="s1">'alpha'</span><span class="p">]),</span>
+
+    <span class="c1"># a deterministic chromatic event</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_exp'</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">psl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The resulting free parameters are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_chrom_exp_alpha</span>        <span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_dm_gp_gamma</span>
+<span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_chrom_exp_log10_Amp</span>    <span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_dm_gp_log10_A</span>
+<span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_chrom_exp_log10_tau</span>    <span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_red_noise_gamma</span>
+<span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_chrom_exp_sign_param</span>   <span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_red_noise_log10_A</span>
+<span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_chrom_exp_t0</span>           <span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_solar_n_earth</span>
+<span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_chrom_gp_alpha</span>         <span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_sw_gp_gamma</span>
+<span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_chrom_gp_gamma</span>         <span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_sw_gp_log10_A</span>
+<span class="n">B1855</span><span class="o">+</span><span class="mi">09</span><span class="n">_chrom_gp_log10_A</span>
+</pre></div>
+</div>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">B1855+09_chrom_gp_alpha</span></code> appears exactly once, even though two signals
+depend on it — that is the shared-<code class="docutils literal notranslate"><span class="pre">name</span></code> mechanism described above. Note also that
+<code class="docutils literal notranslate"><span class="pre">B1855+09_solar_n_earth</span></code> has no entry in
+<code class="xref py py-data docutils literal notranslate"><span class="pre">priordict_standard</span></code>, so sampling this model requires supplying
+one:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">priordict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'.*_solar_n_earth'</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">]}</span>       <span class="c1"># cm^-3</span>
+
+<span class="n">p0</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sample_uniform</span><span class="p">(</span><span class="n">psl</span><span class="o">.</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">priordict</span><span class="o">=</span><span class="n">priordict</span><span class="p">)</span>
+<span class="n">logL</span> <span class="o">=</span> <span class="n">psl</span><span class="o">.</span><span class="n">logL</span><span class="p">(</span><span class="n">p0</span><span class="p">)</span>
+
+<span class="n">logprior</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makelogprior_uniform</span><span class="p">(</span><span class="n">psl</span><span class="o">.</span><span class="n">logL</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">priordict</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To hold the chromatic pieces fixed instead, add a <code class="docutils literal notranslate"><span class="pre">noisedict</span></code> to each chromatic factory
+as shown in the previous section; the rest of the model is unchanged.</p>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="noise_signals.html"><span class="doc">Noise and Signal Components</span></a> — the general GP machinery, white noise, ECORR, timing model</p></li>
+<li><p><a class="reference internal" href="priors_spectra.html"><span class="doc">GP Priors and Spectra</span></a> — spectral priors and the prior function interface</p></li>
+<li><p><a class="reference internal" href="delays.html"><span class="doc">Deterministic Delays</span></a> — deterministic delays in general</p></li>
+<li><p><a class="reference internal" href="../api/signals.html"><span class="doc">signals</span></a>, <a class="reference internal" href="../api/solar.html"><span class="doc">solar</span></a>, <a class="reference internal" href="../api/deterministic.html"><span class="doc">deterministic</span></a> — API reference</p></li>
+<li><p><a class="reference internal" href="../guide/pulsar_data.html"><span class="doc">Pulsar Data</span></a> — what a <code class="docutils literal notranslate"><span class="pre">Pulsar</span></code> object carries</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Edwards, Hobbs &amp; Manchester (2006), the <span class="math notranslate nohighlight">\(1/r^2\)</span> solar wind model:
+<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2006MNRAS.372.1549E/abstract">https://ui.adsabs.harvard.edu/abs/2006MNRAS.372.1549E/abstract</a></p></li>
+<li><p>Hazboun et al. (2022), stochastic solar wind modelling in PTA data:
+<a class="reference external" href="https://iopscience.iop.org/article/10.3847/1538-4357/ac5829">https://iopscience.iop.org/article/10.3847/1538-4357/ac5829</a></p></li>
+<li><p>Hazboun et al. (2026), time-domain Gaussian processes in PTA analyses:
+<a class="reference external" href="https://iopscience.iop.org/article/10.3847/1538-4357/ae4ee0">https://iopscience.iop.org/article/10.3847/1538-4357/ae4ee0</a></p></li>
+<li><p>Rasmussen &amp; Williams, <em>Gaussian Processes for Machine Learning</em> (2006), for the
+kernels: <a class="reference external" href="https://gaussianprocess.org/gpml/">https://gaussianprocess.org/gpml/</a></p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="noise_signals.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Noise and Signal Components</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="priors_spectra.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">GP Priors and Spectra</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-actually-being-inferred">What is actually being inferred</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dispersion-measure-dm-noise">Dispersion measure (DM) noise</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solar-wind">Solar wind</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#free-chromatic-noise">Free chromatic noise</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#low-frequency-chromatic-structure">Low-frequency chromatic structure</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deterministic-chromatic-events">Deterministic chromatic events</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-a-basis">Choosing a basis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-a-prior">Choosing a prior</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fourier-basis-priors-psd">Fourier-basis priors (PSD)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#time-domain-kernels">Time-domain kernels</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spectra-and-kernels-are-two-descriptions-of-the-same-object">Spectra and kernels are two descriptions of the same object</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fixed-chromatic-parameters">Fixed chromatic parameters</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#supported-factories">Supported factories</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-code">Example code</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#see-also">See Also</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/components/chromatic_noise.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, Michele Vallisneri.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

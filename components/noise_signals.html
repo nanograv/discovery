@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -47,7 +48,7 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="GP Priors and Spectra" href="priors_spectra.html" />
+    <link rel="next" title="Chromatic noise analyses" href="chromatic_noise.html" />
     <link rel="prev" title="Simulations" href="../tutorials/simulations.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -199,6 +200,13 @@
 <li class=" current active">
   <a class="nav-link dropdown-item nav-internal" href="#">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -398,6 +406,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -586,9 +601,9 @@ outlier analysis (see <a class="reference external" href="https://arxiv.org/abs/
                           <span class="n">name</span><span class="o">=</span><span class="s1">'rednoise'</span><span class="p">)</span>
 
 <span class="c1"># DM variations</span>
-<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<span class="n">dm_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
                           <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_dm</span><span class="p">,</span>
-                          <span class="n">name</span><span class="o">=</span><span class="s1">'dmgp'</span><span class="p">)</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'dm_gp'</span><span class="p">)</span>
 
 <span class="c1"># Common process (shared parameters)</span>
 <span class="n">crn_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
@@ -716,20 +731,16 @@ for <code class="docutils literal notranslate"><span class="pre">k</span> <span 
 scaled by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**alpha</span></code> for any chromatic index <span class="math notranslate nohighlight">\(\\alpha\)</span>.
 This allows the chromatic index to be a free parameter in the model.</p>
 <p><strong>Example usage:</strong></p>
+<p><a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a> detects that the basis is callable and takes
+its argument as an extra hyperparameter, so the basis is passed directly:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create GP with variable chromatic index</span>
-<span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_chrom</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">chromatic_prior</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
-    <span class="c1"># alpha is a free parameter here</span>
-    <span class="k">return</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">log10_A</span><span class="p">,</span> <span class="n">gamma</span><span class="p">)</span>
-
-<span class="c1"># In the model, the basis will be evaluated at the sampled alpha value</span>
-<span class="n">chrom_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">chromatic_prior</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                             <span class="n">fourierbasis</span><span class="o">=</span><span class="k">lambda</span> <span class="n">psr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_func</span><span class="p">),</span>
-                             <span class="n">name</span><span class="o">=</span><span class="s1">'chromatic'</span><span class="p">)</span>
+<span class="n">chrom_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                             <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_chrom</span><span class="p">,</span>
+                             <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gp'</span><span class="p">)</span>
+<span class="c1"># -&gt; {psr}_chrom_gp_log10_A, {psr}_chrom_gp_gamma, {psr}_chrom_gp_alpha</span>
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis_chrom" title="discovery.signals.fourierbasis_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_chrom()</span></code></a>.</p>
+<p>See <a class="reference internal" href="../api/signals.html#discovery.signals.fourierbasis_chrom" title="discovery.signals.fourierbasis_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_chrom()</span></code></a> and <a class="reference internal" href="chromatic_noise.html"><span class="doc">Chromatic noise analyses</span></a>.</p>
 </section>
 </section>
 <section id="utility-functions">
@@ -750,6 +761,7 @@ This allows the chromatic index to be a free parameter in the model.</p>
 <section id="see-also">
 <h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading">#</a></h2>
 <ul class="simple">
+<li><p><a class="reference internal" href="chromatic_noise.html"><span class="doc">Chromatic noise analyses</span></a> - DM, solar wind, chromatic, and deterministic chromatic signals</p></li>
 <li><p><a class="reference internal" href="priors_spectra.html"><span class="doc">GP Priors and Spectra</span></a> - GP prior functions</p></li>
 <li><p><a class="reference internal" href="delays.html"><span class="doc">Deterministic Delays</span></a> - Deterministic delay models</p></li>
 <li><p><a class="reference internal" href="../tutorials/basic_likelihood.html"><span class="doc">Basic Likelihood</span></a> - Building likelihoods</p></li>
@@ -778,11 +790,11 @@ This allows the chromatic index to be a free parameter in the model.</p>
       </div>
     </a>
     <a class="right-next"
-       href="priors_spectra.html"
+       href="chromatic_noise.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">GP Priors and Spectra</p>
+        <p class="prev-next-title">Chromatic noise analyses</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

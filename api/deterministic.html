@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -199,6 +200,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../components/noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -398,6 +406,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../components/priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -575,7 +590,7 @@ state changes) with frequency-dependent amplitude scaling.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Pulsar object containing toas and freqs attributes</p></li>
-<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -602,7 +617,7 @@ Computes chromatic exponential delay:</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Pulsar object containing toas and freqs attributes</p></li>
-<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -629,7 +644,7 @@ DM variations, localized profile events) with frequency-dependent amplitude scal
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Pulsar object containing toas and freqs attributes</p></li>
-<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for normalization (default: 1400.0)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -669,7 +684,7 @@ Computes orthometric Shapiro delay (Equation 29 in Freire &amp; Wex 2010):</p>
 <dd class="field-odd"><p>callable</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If binphase shape does not match psr.toas shape</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If binphase shape does not match psr.toas shape</p>
 </dd>
 </dl>
 <p class="rubric">References</p>

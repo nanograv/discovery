@@ -113,19 +113,47 @@ For stochastic fluctuations on top of the deterministic model:
    delay = ds.makedelay(psr, solardm_func, name='solardm')
 
    # Add stochastic fluctuations
-   f, df, fmat_sw = ds.make_solardmfourierbasis(psr, components=30)
    sw_gp = ds.makegp_fourier(psr, ds.powerlaw, components=30,
-                              fourierbasis=lambda p, c, T: (f, df, fmat_sw),
-                              name='sw_gp')
+                             fourierbasis=ds.fourierbasis_solar_dm,
+                             name='sw_gp')
 
-See :func:`~discovery.solar.make_solardmfourierbasis`, :func:`~discovery.signals.makegp_fourier`,
+See :func:`~discovery.solar.fourierbasis_solar_dm`, :func:`~discovery.signals.makegp_fourier`,
 and :func:`~discovery.signals.powerlaw`.
 
-The ``make_solardmfourierbasis`` function creates a Fourier basis scaled by the solar wind
-geometry, so the GP represents fluctuations in :math:`n_{\mathrm{Earth}}` around the mean.
+The ``fourierbasis_solar_dm`` function creates a Fourier basis scaled by the solar wind
+geometry and the :math:`1/\nu^2` dispersion law, so the GP coefficients are fluctuations in
+:math:`n_{\mathrm{Earth}}` around the mean — a *density* in cm⁻³, not a delay in seconds.
+:func:`~discovery.solar.makegp_timedomain_solar_dm` builds the same signal from a
+time-domain kernel instead. See :doc:`chromatic_noise` for the difference.
 
 Chromatic Delays
 ----------------
+
+Discovery provides three parametric chromatic delays in :mod:`discovery.deterministic`.
+All three scale as :math:`(f_\mathrm{ref}/f)^\alpha` with a free chromatic index, and all
+are attached with :func:`~discovery.signals.makedelay`. For a fuller discussion of how
+these relate to the stochastic chromatic signals, see :doc:`chromatic_noise`.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 20 46
+
+   * - Factory
+     - Conventional ``name``
+     - Delay parameters
+   * - :func:`~discovery.deterministic.chromatic_exponential`
+     - ``chrom_exp``
+     - ``t0``, ``log10_Amp``, ``log10_tau``, ``sign_param``, ``alpha``
+   * - :func:`~discovery.deterministic.chromatic_gaussian`
+     - ``chrom_gauss``
+     - ``t0``, ``log10_Amp``, ``log10_sigma``, ``sign_param``, ``alpha``
+   * - :func:`~discovery.deterministic.chromatic_annual`
+     - ``chrom_1yr``
+     - ``log10_Amp``, ``phase``, ``alpha``
+
+The conventional names matter: :data:`~discovery.prior.priordict_standard` matches
+parameters by regular expression and knows these three prefixes, so a delay named
+otherwise needs its own ``priordict``.
 
 Exponential Dip Model
 ~~~~~~~~~~~~~~~~~~~~~
@@ -135,16 +163,19 @@ These events can impact measurements of time-correlated signals (see `Hazboun et
 
 .. code-block:: python
 
-   decay_func = ds.make_chromaticdelay(psr)
-   delay = ds.makedelay(psr, decay_func, name='chromatic')
+   from discovery import deterministic as det
 
-See :func:`~discovery.solar.make_chromaticdelay` and :func:`~discovery.signals.makedelay`.
+   decay_func = det.chromatic_exponential(psr)          # optionally fref=1400.0
+   delay = ds.makedelay(psr, decay_func, name='chrom_exp')
+
+See :func:`~discovery.deterministic.chromatic_exponential` and
+:func:`~discovery.signals.makedelay`.
 
 The delay function has signature:
 
 .. code-block:: python
 
-   decay_func(t0, log10_Amp, log10_tau, idx)
+   decay_func(t0, log10_Amp, log10_tau, sign_param, alpha)
 
 **Physical Model:**
 
@@ -153,35 +184,67 @@ Implements an exponential decay with chromatic scaling:
 .. math::
 
    \Delta t(t, f) = \begin{cases}
-   -10^{\log_{10}(A)} \cdot e^{-(t - t_0) / \tau} \cdot \left(\frac{1400}{f}\right)^\alpha & t > t_0 \\
-   0 & t \leq t_0
+   \mathrm{sign}(s) \cdot 10^{\log_{10}(A)} \cdot e^{-(t - t_0) / \tau} \cdot \left(\frac{f_\mathrm{ref}}{f}\right)^\alpha & t \geq t_0 \\
+   0 & t < t_0
    \end{cases}
 
 where:
 
 - :math:`t_0` is the event time (MJD)
-- :math:`A = 10^{\log_{10}(A)}` is the amplitude (seconds at 1400 MHz)
+- :math:`A = 10^{\log_{10}(A)}` is the amplitude (seconds at :math:`f_\mathrm{ref}` = 1400 MHz)
 - :math:`\tau = 10^{\log_{10}(\tau)}` is the decay timescale (days)
+- :math:`s` is ``sign_param``; only its sign is used, so a prior of :math:`[-1, 1]`
+  lets the sampler choose between a dip and a bump
 - :math:`\alpha` is the chromatic index (2 for DM, 4 for scattering)
 - :math:`f` is the observing frequency (MHz)
 
 **Parameters:**
 
-- ``{psrname}_chromatic_t0``: Event epoch (MJD)
-- ``{psrname}_chromatic_log10_Amp``: Log amplitude
-- ``{psrname}_chromatic_log10_tau``: Log decay timescale (days)
-- ``{psrname}_chromatic_idx``: Chromatic index
+- ``{psrname}_chrom_exp_t0``: Event epoch (MJD)
+- ``{psrname}_chrom_exp_log10_Amp``: Log amplitude
+- ``{psrname}_chrom_exp_log10_tau``: Log decay timescale (days)
+- ``{psrname}_chrom_exp_sign_param``: Sign of the event
+- ``{psrname}_chrom_exp_alpha``: Chromatic index
 
-**Fixed Chromatic Index:**
+**Fixing the chromatic index:**
 
-To fix the chromatic index:
+The index is a delay argument rather than a factory argument, so it is fixed the same way
+as any other parameter — by supplying it in the noise dictionary handed to the sampler,
+or by wrapping the delay to close over the value:
 
 .. code-block:: python
 
-   decay_func = ds.make_chromaticdelay(psr, idx=2.0)  # Fix to DM scaling
+   decay = det.chromatic_exponential(psr)
 
-This removes ``idx`` from the parameter list. See also :func:`~discovery.solar.chromaticdelay`
-for the underlying delay function.
+   def decay_dm(t0, log10_Amp, log10_tau, sign_param):
+       return decay(t0, log10_Amp, log10_tau, sign_param, alpha=2.0)
+
+   delay = ds.makedelay(psr, decay_dm, name='chrom_exp')
+
+:func:`~discovery.signals.makedelay` reads parameter names off the function signature, so
+this drops ``alpha`` from the parameter list.
+
+Transient and Annual Events
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:func:`~discovery.deterministic.chromatic_gaussian` models a transient event with a
+Gaussian profile in time, and :func:`~discovery.deterministic.chromatic_annual` a
+sinusoidal annual variation:
+
+.. math::
+
+   \Delta t(t, f) &= \mathrm{sign}(s) \cdot 10^{\log_{10}(A)} \cdot
+   e^{-(t - t_0)^2 / 2\sigma^2} \cdot \left(\frac{f_\mathrm{ref}}{f}\right)^\alpha \\
+   \Delta t(t, f) &= 10^{\log_{10}(A)} \cdot \sin(2\pi f_\mathrm{yr} t + \phi) \cdot
+   \left(\frac{f_\mathrm{ref}}{f}\right)^\alpha
+
+.. code-block:: python
+
+   event = ds.makedelay(psr, det.chromatic_gaussian(psr), name='chrom_gauss')
+   annual = ds.makedelay(psr, det.chromatic_annual(psr), name='chrom_1yr')
+
+As for the exponential dip, ``log10_sigma`` is in days and ``t0`` in MJD, while
+``log10_Amp`` is in seconds at :math:`f_\mathrm{ref}`.
 
 Binary Black Hole Signals
 --------------------------
@@ -305,12 +368,11 @@ Multiple Chromatic Events
 
 .. code-block:: python
 
-   # Model two separate DM events
-   decay1 = ds.make_chromaticdelay(psr, idx=2.0)
-   delay1 = ds.makedelay(psr, decay1, name='dm_event1')
+   from discovery import deterministic as det
 
-   decay2 = ds.make_chromaticdelay(psr, idx=2.0)
-   delay2 = ds.makedelay(psr, decay2, name='dm_event2')
+   # Model two separate chromatic events by giving them different names
+   delay1 = ds.makedelay(psr, det.chromatic_exponential(psr), name='chrom_exp1')
+   delay2 = ds.makedelay(psr, det.chromatic_exponential(psr), name='chrom_exp2')
 
    signals = [
        psr.residuals,
@@ -320,32 +382,37 @@ Multiple Chromatic Events
        delay2
    ]
 
-   logl = ds.PulsarLikelihood(signals)
+   psl = ds.PulsarLikelihood(signals)
 
-   # Parameters include: dm_event1_t0, dm_event1_log10_Amp, dm_event1_log10_tau
-   #                     dm_event2_t0, dm_event2_log10_Amp, dm_event2_log10_tau
+   # Parameters include: {psr}_chrom_exp1_t0, {psr}_chrom_exp1_log10_Amp, ...
+   #                     {psr}_chrom_exp2_t0, {psr}_chrom_exp2_log10_Amp, ...
+   # Note that the non-standard names need their own priordict entries.
 
 Common Solar Wind (PTA)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
-   # Shared n_earth across all pulsars
-   delays = []
+   # Shared n_earth across all pulsars: listing the argument in `common`
+   # strips the per-pulsar prefix from its parameter name.
+   psls = []
    for psr in psrs:
-       solardm_func = ds.make_solardm(psr)
-       delay = ds.makedelay(psr, solardm_func,
-                           common=['n_earth'], name='solardm')
-       delays.append(delay)
+       delay = ds.makedelay(psr, ds.make_solardm(psr),
+                            common=['n_earth'], name='solardm')
+       psls.append(ds.PulsarLikelihood([psr.residuals,
+                                        ds.makenoise_measurement(psr, psr.noisedict),
+                                        ds.makegp_timing(psr, svd=True),
+                                        delay]))
 
    # Build PTA likelihood
-   gbl = ds.GlobalLikelihood(psrs, noisedict, delays=delays)
+   gbl = ds.GlobalLikelihood(psls)
 
    # Single parameter: n_earth (shared across all pulsars)
 
 See Also
 --------
 
+- :doc:`chromatic_noise` - Chromatic noise analyses, stochastic and deterministic
 - :doc:`noise_signals` - Stochastic signal components
 - :doc:`priors_spectra` - GP prior functions
 - :doc:`/tutorials/basic_likelihood` - Building likelihoods

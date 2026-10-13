@@ -30,6 +30,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -195,6 +196,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../../components/noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../components/chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -392,6 +400,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../components/chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../components/priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -527,6 +542,8 @@
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">interpolate</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">const</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">matrix</span>
@@ -637,8 +654,9 @@
 <span class="sd">    psr : :class:`pulsar.Pulsar`</span>
 <span class="sd">        Discovery Pulsar object containing TOAs, frequencies, and solar system</span>
 <span class="sd">        ephemeris information.</span>
-<span class="sd">    components : int</span>
-<span class="sd">        Number of Fourier components to include in the model.</span>
+<span class="sd">    components : int or array-like</span>
+<span class="sd">        Number of Fourier components to include in the model, or an array of</span>
+<span class="sd">        explicit Fourier modes (frequencies in Hz) to use for the basis.</span>
 <span class="sd">    T : float, optional</span>
 <span class="sd">        Total timespan of the data in seconds. If None, will be computed from</span>
 <span class="sd">        the pulsar's TOAs.</span>
@@ -679,7 +697,7 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">.signals</span><span class="w"> </span><span class="kn">import</span> <span class="n">fourierbasis</span>
 
     <span class="c1"># get base Fourier design matrix and frequencies</span>
-    <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">=</span> <span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat</span> <span class="o">=</span> <span class="n">fourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">)</span>
     <span class="n">theta</span><span class="p">,</span> <span class="n">R_earth</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">theta_impact</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
     <span class="n">dm_sol_wind</span> <span class="o">=</span> <span class="n">dm_solar</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">R_earth</span><span class="p">)</span>
     <span class="n">dt_DM</span> <span class="o">=</span> <span class="n">dm_sol_wind</span> <span class="o">*</span> <span class="mf">4.148808e3</span> <span class="o">/</span> <span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
@@ -689,7 +707,7 @@
 
 <div class="viewcode-block" id="makegp_timedomain_solar_dm">
 <a class="viewcode-back" href="../../api/solar.html#discovery.solar.makegp_timedomain_solar_dm">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">makegp_timedomain_solar_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">covariance</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'timedomain_sw_gp'</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">makegp_timedomain_solar_dm</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">covariance</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">Umat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nodes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">common</span><span class="o">=</span><span class="p">[],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'timedomain_sw_gp'</span><span class="p">,</span> <span class="n">noisedict</span><span class="o">=</span><span class="p">{}):</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Construct a time-domain Gaussian process for solar wind dispersion measure variations.</span>
 
@@ -709,20 +727,34 @@
 <span class="sd">        tau is the time separation array.</span>
 <span class="sd">    dt : float, optional</span>
 <span class="sd">        Time bin width in seconds for quantizing TOAs. Default is 1.0.</span>
+<span class="sd">    Umat : ndarray, optional</span>
+<span class="sd">        Design matrix mapping the low-rank GP to the TOA residuals. If None,</span>
+<span class="sd">        it will be constructed by quantizing the TOAs and weighting by the solar wind DM signature.</span>
+<span class="sd">        Default is None.</span>
+<span class="sd">    nodes : ndarray, optional</span>
+<span class="sd">        Time in seconds of each column of ``Umat``. The GP covariance is evaluated</span>
+<span class="sd">        at the separations between nodes. Required if ``Umat`` is given. If</span>
+<span class="sd">        ``Umat`` is None, each node is the mean TOA of its bin, weighted by the</span>
+<span class="sd">        solar wind DM signature. Default is None.</span>
 <span class="sd">    common : list, optional</span>
 <span class="sd">        List of parameter names that should be treated as common (shared) across</span>
 <span class="sd">        pulsars rather than pulsar-specific. Default is [].</span>
 <span class="sd">    name : str, optional</span>
 <span class="sd">        Base name for the GP parameters. Used as prefix for parameter naming.</span>
 <span class="sd">        Default is 'timedomain_sw_gp'.</span>
+<span class="sd">    noisedict : dict, optional</span>
+<span class="sd">        If it supplies values for all of the GP's hyperparameters (fixed-point</span>
+<span class="sd">        analysis), the covariance is evaluated once and a :class:`matrix.ConstantGP`</span>
+<span class="sd">        is returned so its contribution to the covariance is cached rather than</span>
+<span class="sd">        sampled; otherwise a :class:`matrix.VariableGP` is returned. Default is {}.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    :class:`matrix.VariableGP`</span>
-<span class="sd">        A matrix.VariableGP object containing the noise covariance matrix (as a</span>
-<span class="sd">        NoiseMatrix2D_var) and the design matrix (Umat) that maps the GP</span>
-<span class="sd">        to the TOA residuals via solar wind DM delays. See :class:`matrix.VariableGP`</span>
-<span class="sd">        for details.</span>
+<span class="sd">    :class:`matrix.VariableGP` or :class:`matrix.ConstantGP`</span>
+<span class="sd">        A GP object containing the noise covariance matrix (as a NoiseMatrix2D_var,</span>
+<span class="sd">        or NoiseMatrix2D_novar when the hyperparameters are fixed via noisedict) and</span>
+<span class="sd">        the design matrix (Umat) that maps the GP to the TOA residuals via solar wind</span>
+<span class="sd">        DM delays. See :class:`matrix.VariableGP` / :class:`matrix.ConstantGP`.</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
@@ -742,20 +774,31 @@
     <span class="n">dm_sol_wind</span> <span class="o">=</span> <span class="n">dm_solar</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">R_earth</span><span class="p">)</span>
     <span class="n">dt_DM</span> <span class="o">=</span> <span class="n">dm_sol_wind</span> <span class="o">*</span> <span class="mf">4.148808e3</span> <span class="o">/</span> <span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">freqs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
-    <span class="n">bins</span> <span class="o">=</span> <span class="n">quantize</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
-    <span class="n">Umat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">bins</span> <span class="o">==</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'d'</span><span class="p">)</span>
-    <span class="n">Umat</span> <span class="o">=</span> <span class="n">Umat</span> <span class="o">*</span> <span class="n">dt_DM</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
-    <span class="n">toas</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">@</span> <span class="n">Umat</span> <span class="o">/</span> <span class="n">Umat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">Umat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bins</span> <span class="o">=</span> <span class="n">quantize</span><span class="p">(</span><span class="n">psr</span><span class="o">.</span><span class="n">toas</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="n">Umat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">bins</span> <span class="o">==</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bins</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'d'</span><span class="p">)</span>
+        <span class="n">Umat</span> <span class="o">=</span> <span class="n">Umat</span> <span class="o">*</span> <span class="n">dt_DM</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">psr</span><span class="o">.</span><span class="n">toas</span> <span class="o">@</span> <span class="n">Umat</span> <span class="o">/</span> <span class="n">Umat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Umat</span> <span class="o">=</span> <span class="n">Umat</span> <span class="o">*</span> <span class="n">dt_DM</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"If Umat is provided, nodes must also be provided."</span>
+    
 
     <span class="n">get_tmat</span> <span class="o">=</span> <span class="n">covariance</span>
-    <span class="n">tau</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">toas</span><span class="p">[:,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">-</span> <span class="n">toas</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">nodes</span><span class="p">[:,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">-</span> <span class="n">nodes</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:])</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">getphi</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">get_tmat</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="o">*</span><span class="p">[</span><span class="n">params</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">argmap</span><span class="p">])</span>
     <span class="n">getphi</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">argmap</span>
 
-    <span class="k">return</span> <span class="n">matrix</span><span class="o">.</span><span class="n">VariableGP</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">NoiseMatrix2D_var</span><span class="p">(</span><span class="n">getphi</span><span class="p">),</span> <span class="n">Umat</span><span class="p">)</span></div>
-
+    <span class="c1"># fixed noise parameter analysis: if all hyperparameters are supplied in noisedict,</span>
+    <span class="c1"># evaluate the covariance once and return a cached ConstantGP.</span>
+    <span class="k">if</span> <span class="n">noisedict</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">par</span> <span class="ow">in</span> <span class="n">noisedict</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">argmap</span><span class="p">):</span>
+        <span class="n">gp</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">ConstantGP</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">NoiseMatrix2D_novar</span><span class="p">(</span><span class="n">getphi</span><span class="p">(</span><span class="n">noisedict</span><span class="p">)),</span> <span class="n">Umat</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gp</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">VariableGP</span><span class="p">(</span><span class="n">matrix</span><span class="o">.</span><span class="n">NoiseMatrix2D_var</span><span class="p">(</span><span class="n">getphi</span><span class="p">),</span> <span class="n">Umat</span><span class="p">)</span>
+    <span class="n">gp</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">psr</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">_coefficients(</span><span class="si">{</span><span class="n">Umat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">)'</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Umat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])}</span>
+    <span class="k">return</span> <span class="n">gp</span></div>
 
 </pre></div>
 

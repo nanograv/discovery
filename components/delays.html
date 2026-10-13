@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -199,6 +200,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -393,6 +401,13 @@
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -611,62 +626,129 @@ variable parameters.</p>
 <span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solardm'</span><span class="p">)</span>
 
 <span class="c1"># Add stochastic fluctuations</span>
-<span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_sw</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardmfourierbasis</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 <span class="n">sw_gp</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makegp_fourier</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">powerlaw</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-                           <span class="n">fourierbasis</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">fmat_sw</span><span class="p">),</span>
-                           <span class="n">name</span><span class="o">=</span><span class="s1">'sw_gp'</span><span class="p">)</span>
+                          <span class="n">fourierbasis</span><span class="o">=</span><span class="n">ds</span><span class="o">.</span><span class="n">fourierbasis_solar_dm</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">'sw_gp'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">make_solardmfourierbasis()</span></code>, <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a>,
+<p>See <a class="reference internal" href="../api/solar.html#discovery.solar.fourierbasis_solar_dm" title="discovery.solar.fourierbasis_solar_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_solar_dm()</span></code></a>, <a class="reference internal" href="../api/signals.html#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a>,
 and <a class="reference internal" href="../api/signals.html#discovery.signals.powerlaw" title="discovery.signals.powerlaw"><code class="xref py py-func docutils literal notranslate"><span class="pre">powerlaw()</span></code></a>.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">make_solardmfourierbasis</span></code> function creates a Fourier basis scaled by the solar wind
-geometry, so the GP represents fluctuations in <span class="math notranslate nohighlight">\(n_{\mathrm{Earth}}\)</span> around the mean.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">fourierbasis_solar_dm</span></code> function creates a Fourier basis scaled by the solar wind
+geometry and the <span class="math notranslate nohighlight">\(1/\nu^2\)</span> dispersion law, so the GP coefficients are fluctuations in
+<span class="math notranslate nohighlight">\(n_{\mathrm{Earth}}\)</span> around the mean — a <em>density</em> in cm⁻³, not a delay in seconds.
+<a class="reference internal" href="../api/solar.html#discovery.solar.makegp_timedomain_solar_dm" title="discovery.solar.makegp_timedomain_solar_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_timedomain_solar_dm()</span></code></a> builds the same signal from a
+time-domain kernel instead. See <a class="reference internal" href="chromatic_noise.html"><span class="doc">Chromatic noise analyses</span></a> for the difference.</p>
 </section>
 </section>
 <section id="chromatic-delays">
 <h2>Chromatic Delays<a class="headerlink" href="#chromatic-delays" title="Link to this heading">#</a></h2>
+<p>Discovery provides three parametric chromatic delays in <a class="reference internal" href="../api/deterministic.html#module-discovery.deterministic" title="discovery.deterministic"><code class="xref py py-mod docutils literal notranslate"><span class="pre">discovery.deterministic</span></code></a>.
+All three scale as <span class="math notranslate nohighlight">\((f_\mathrm{ref}/f)^\alpha\)</span> with a free chromatic index, and all
+are attached with <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>. For a fuller discussion of how
+these relate to the stochastic chromatic signals, see <a class="reference internal" href="chromatic_noise.html"><span class="doc">Chromatic noise analyses</span></a>.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 34.0%" />
+<col style="width: 20.0%" />
+<col style="width: 46.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Factory</p></th>
+<th class="head"><p>Conventional <code class="docutils literal notranslate"><span class="pre">name</span></code></p></th>
+<th class="head"><p>Delay parameters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_exponential" title="discovery.deterministic.chromatic_exponential"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_exponential()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">chrom_exp</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">t0</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_Amp</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_tau</span></code>, <code class="docutils literal notranslate"><span class="pre">sign_param</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_gaussian" title="discovery.deterministic.chromatic_gaussian"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_gaussian()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">chrom_gauss</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">t0</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_Amp</span></code>, <code class="docutils literal notranslate"><span class="pre">log10_sigma</span></code>, <code class="docutils literal notranslate"><span class="pre">sign_param</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_annual" title="discovery.deterministic.chromatic_annual"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_annual()</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">chrom_1yr</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log10_Amp</span></code>, <code class="docutils literal notranslate"><span class="pre">phase</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The conventional names matter: <code class="xref py py-data docutils literal notranslate"><span class="pre">priordict_standard</span></code> matches
+parameters by regular expression and knows these three prefixes, so a delay named
+otherwise needs its own <code class="docutils literal notranslate"><span class="pre">priordict</span></code>.</p>
 <section id="exponential-dip-model">
 <h3>Exponential Dip Model<a class="headerlink" href="#exponential-dip-model" title="Link to this heading">#</a></h3>
 <p>Model chromatic exponential dips - sudden radio frequency-dependent advances of pulse arrival times.
 These events can impact measurements of time-correlated signals (see <a class="reference external" href="https://arxiv.org/abs/1909.08644">Hazboun et al. 2020</a>).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decay_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
-<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chromatic'</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">deterministic</span> <span class="k">as</span> <span class="n">det</span>
+
+<span class="n">decay_func</span> <span class="o">=</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>          <span class="c1"># optionally fref=1400.0</span>
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay_func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_exp'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">make_chromaticdelay()</span></code> and <a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>.</p>
+<p>See <a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_exponential" title="discovery.deterministic.chromatic_exponential"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_exponential()</span></code></a> and
+<a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a>.</p>
 <p>The delay function has signature:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decay_func</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decay_func</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">sign_param</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><strong>Physical Model:</strong></p>
 <p>Implements an exponential decay with chromatic scaling:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\Delta t(t, f) = \begin{cases}
--10^{\log_{10}(A)} \cdot e^{-(t - t_0) / \tau} \cdot \left(\frac{1400}{f}\right)^\alpha &amp; t &gt; t_0 \\
-0 &amp; t \leq t_0
+\mathrm{sign}(s) \cdot 10^{\log_{10}(A)} \cdot e^{-(t - t_0) / \tau} \cdot \left(\frac{f_\mathrm{ref}}{f}\right)^\alpha &amp; t \geq t_0 \\
+0 &amp; t &lt; t_0
 \end{cases}\end{split}\]</div>
 <p>where:</p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(t_0\)</span> is the event time (MJD)</p></li>
-<li><p><span class="math notranslate nohighlight">\(A = 10^{\log_{10}(A)}\)</span> is the amplitude (seconds at 1400 MHz)</p></li>
+<li><p><span class="math notranslate nohighlight">\(A = 10^{\log_{10}(A)}\)</span> is the amplitude (seconds at <span class="math notranslate nohighlight">\(f_\mathrm{ref}\)</span> = 1400 MHz)</p></li>
 <li><p><span class="math notranslate nohighlight">\(\tau = 10^{\log_{10}(\tau)}\)</span> is the decay timescale (days)</p></li>
+<li><p><span class="math notranslate nohighlight">\(s\)</span> is <code class="docutils literal notranslate"><span class="pre">sign_param</span></code>; only its sign is used, so a prior of <span class="math notranslate nohighlight">\([-1, 1]\)</span>
+lets the sampler choose between a dip and a bump</p></li>
 <li><p><span class="math notranslate nohighlight">\(\alpha\)</span> is the chromatic index (2 for DM, 4 for scattering)</p></li>
 <li><p><span class="math notranslate nohighlight">\(f\)</span> is the observing frequency (MHz)</p></li>
 </ul>
 <p><strong>Parameters:</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chromatic_t0</span></code>: Event epoch (MJD)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chromatic_log10_Amp</span></code>: Log amplitude</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chromatic_log10_tau</span></code>: Log decay timescale (days)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chromatic_idx</span></code>: Chromatic index</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chrom_exp_t0</span></code>: Event epoch (MJD)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chrom_exp_log10_Amp</span></code>: Log amplitude</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chrom_exp_log10_tau</span></code>: Log decay timescale (days)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chrom_exp_sign_param</span></code>: Sign of the event</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{psrname}_chrom_exp_alpha</span></code>: Chromatic index</p></li>
 </ul>
-<p><strong>Fixed Chromatic Index:</strong></p>
-<p>To fix the chromatic index:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decay_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>  <span class="c1"># Fix to DM scaling</span>
+<p><strong>Fixing the chromatic index:</strong></p>
+<p>The index is a delay argument rather than a factory argument, so it is fixed the same way
+as any other parameter — by supplying it in the noise dictionary handed to the sampler,
+or by wrapping the delay to close over the value:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">decay</span> <span class="o">=</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">decay_dm</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">sign_param</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">decay</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">log10_Amp</span><span class="p">,</span> <span class="n">log10_tau</span><span class="p">,</span> <span class="n">sign_param</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay_dm</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_exp'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>This removes <code class="docutils literal notranslate"><span class="pre">idx</span></code> from the parameter list. See also <code class="xref py py-func docutils literal notranslate"><span class="pre">chromaticdelay()</span></code>
-for the underlying delay function.</p>
+<p><a class="reference internal" href="../api/signals.html#discovery.signals.makedelay" title="discovery.signals.makedelay"><code class="xref py py-func docutils literal notranslate"><span class="pre">makedelay()</span></code></a> reads parameter names off the function signature, so
+this drops <code class="docutils literal notranslate"><span class="pre">alpha</span></code> from the parameter list.</p>
+</section>
+<section id="transient-and-annual-events">
+<h3>Transient and Annual Events<a class="headerlink" href="#transient-and-annual-events" title="Link to this heading">#</a></h3>
+<p><a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_gaussian" title="discovery.deterministic.chromatic_gaussian"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_gaussian()</span></code></a> models a transient event with a
+Gaussian profile in time, and <a class="reference internal" href="../api/deterministic.html#discovery.deterministic.chromatic_annual" title="discovery.deterministic.chromatic_annual"><code class="xref py py-func docutils literal notranslate"><span class="pre">chromatic_annual()</span></code></a> a
+sinusoidal annual variation:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\Delta t(t, f) &amp;= \mathrm{sign}(s) \cdot 10^{\log_{10}(A)} \cdot
+e^{-(t - t_0)^2 / 2\sigma^2} \cdot \left(\frac{f_\mathrm{ref}}{f}\right)^\alpha \\
+\Delta t(t, f) &amp;= 10^{\log_{10}(A)} \cdot \sin(2\pi f_\mathrm{yr} t + \phi) \cdot
+\left(\frac{f_\mathrm{ref}}{f}\right)^\alpha\end{split}\]</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">event</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_gaussian</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_gauss'</span><span class="p">)</span>
+<span class="n">annual</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_annual</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_1yr'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>As for the exponential dip, <code class="docutils literal notranslate"><span class="pre">log10_sigma</span></code> is in days and <code class="docutils literal notranslate"><span class="pre">t0</span></code> in MJD, while
+<code class="docutils literal notranslate"><span class="pre">log10_Amp</span></code> is in seconds at <span class="math notranslate nohighlight">\(f_\mathrm{ref}\)</span>.</p>
 </section>
 </section>
 <section id="binary-black-hole-signals">
@@ -775,12 +857,11 @@ likelihood computations.</p>
 </section>
 <section id="multiple-chromatic-events">
 <h3>Multiple Chromatic Events<a class="headerlink" href="#multiple-chromatic-events" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Model two separate DM events</span>
-<span class="n">decay1</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
-<span class="n">delay1</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dm_event1'</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">deterministic</span> <span class="k">as</span> <span class="n">det</span>
 
-<span class="n">decay2</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_chromaticdelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
-<span class="n">delay2</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">decay2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'dm_event2'</span><span class="p">)</span>
+<span class="c1"># Model two separate chromatic events by giving them different names</span>
+<span class="n">delay1</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_exp1'</span><span class="p">)</span>
+<span class="n">delay2</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">det</span><span class="o">.</span><span class="n">chromatic_exponential</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'chrom_exp2'</span><span class="p">)</span>
 
 <span class="n">signals</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
@@ -790,25 +871,29 @@ likelihood computations.</p>
     <span class="n">delay2</span>
 <span class="p">]</span>
 
-<span class="n">logl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">(</span><span class="n">signals</span><span class="p">)</span>
+<span class="n">psl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">(</span><span class="n">signals</span><span class="p">)</span>
 
-<span class="c1"># Parameters include: dm_event1_t0, dm_event1_log10_Amp, dm_event1_log10_tau</span>
-<span class="c1">#                     dm_event2_t0, dm_event2_log10_Amp, dm_event2_log10_tau</span>
+<span class="c1"># Parameters include: {psr}_chrom_exp1_t0, {psr}_chrom_exp1_log10_Amp, ...</span>
+<span class="c1">#                     {psr}_chrom_exp2_t0, {psr}_chrom_exp2_log10_Amp, ...</span>
+<span class="c1"># Note that the non-standard names need their own priordict entries.</span>
 </pre></div>
 </div>
 </section>
 <section id="common-solar-wind-pta">
 <h3>Common Solar Wind (PTA)<a class="headerlink" href="#common-solar-wind-pta" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Shared n_earth across all pulsars</span>
-<span class="n">delays</span> <span class="o">=</span> <span class="p">[]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Shared n_earth across all pulsars: listing the argument in `common`</span>
+<span class="c1"># strips the per-pulsar prefix from its parameter name.</span>
+<span class="n">psls</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">psr</span> <span class="ow">in</span> <span class="n">psrs</span><span class="p">:</span>
-    <span class="n">solardm_func</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">)</span>
-    <span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">solardm_func</span><span class="p">,</span>
-                        <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">'n_earth'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solardm'</span><span class="p">)</span>
-    <span class="n">delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+    <span class="n">delay</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">makedelay</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">make_solardm</span><span class="p">(</span><span class="n">psr</span><span class="p">),</span>
+                         <span class="n">common</span><span class="o">=</span><span class="p">[</span><span class="s1">'n_earth'</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'solardm'</span><span class="p">)</span>
+    <span class="n">psls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">PulsarLikelihood</span><span class="p">([</span><span class="n">psr</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
+                                     <span class="n">ds</span><span class="o">.</span><span class="n">makenoise_measurement</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">psr</span><span class="o">.</span><span class="n">noisedict</span><span class="p">),</span>
+                                     <span class="n">ds</span><span class="o">.</span><span class="n">makegp_timing</span><span class="p">(</span><span class="n">psr</span><span class="p">,</span> <span class="n">svd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                                     <span class="n">delay</span><span class="p">]))</span>
 
 <span class="c1"># Build PTA likelihood</span>
-<span class="n">gbl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">GlobalLikelihood</span><span class="p">(</span><span class="n">psrs</span><span class="p">,</span> <span class="n">noisedict</span><span class="p">,</span> <span class="n">delays</span><span class="o">=</span><span class="n">delays</span><span class="p">)</span>
+<span class="n">gbl</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">GlobalLikelihood</span><span class="p">(</span><span class="n">psls</span><span class="p">)</span>
 
 <span class="c1"># Single parameter: n_earth (shared across all pulsars)</span>
 </pre></div>
@@ -818,6 +903,7 @@ likelihood computations.</p>
 <section id="see-also">
 <h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading">#</a></h2>
 <ul class="simple">
+<li><p><a class="reference internal" href="chromatic_noise.html"><span class="doc">Chromatic noise analyses</span></a> - Chromatic noise analyses, stochastic and deterministic</p></li>
 <li><p><a class="reference internal" href="noise_signals.html"><span class="doc">Noise and Signal Components</span></a> - Stochastic signal components</p></li>
 <li><p><a class="reference internal" href="priors_spectra.html"><span class="doc">GP Priors and Spectra</span></a> - GP prior functions</p></li>
 <li><p><a class="reference internal" href="../tutorials/basic_likelihood.html"><span class="doc">Basic Likelihood</span></a> - Building likelihoods</p></li>
@@ -886,6 +972,7 @@ likelihood computations.</p>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#chromatic-delays">Chromatic Delays</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#exponential-dip-model">Exponential Dip Model</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#transient-and-annual-events">Transient and Annual Events</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#binary-black-hole-signals">Binary Black Hole Signals</a><ul class="nav section-nav flex-column">

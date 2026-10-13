@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -42,6 +43,7 @@
     <script src="../_static/documentation_options.js?v=db78e746"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/signals';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -198,6 +200,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../components/noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -397,6 +406,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../components/priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -555,8 +571,25 @@ in <code class="docutils literal notranslate"><span class="pre">noisedict</span>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.makenoise_measurement">
-<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makenoise_measurement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict={}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tnequad=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ecorr=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selection=&lt;function</span> <span class="pre">selection_backend_flags&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vectorize=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outliers=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enterprise=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makenoise_measurement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makenoise_measurement" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makenoise_measurement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict={}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tnequad=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ecorr=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chromequad=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chromequad_idx_per_backend=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selection=&lt;function</span> <span class="pre">selection_backend_flags&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vectorize=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outliers=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enterprise=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref=1400</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makenoise_measurement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makenoise_measurement" title="Link to this definition">#</a></dt>
+<dd><p>Build a measurement noise matrix for a pulsar.</p>
+<dl class="simple">
+<dt>The noise variance per TOA is (tnequad=True):</dt><dd><p>efac^2 * (scale * toaerr)^2 + (scale * EQUAD)^2 [+ (scale * CHROMEQUAD)^2 * (fref/freq)^chrom_idx]</p>
+</dd>
+<dt>or (tnequad=False, t2equad convention):</dt><dd><p>efac^2 * ((scale * toaerr)^2 + (scale * EQUAD)^2) [+ (scale * CHROMEQUAD)^2 * (fref/freq)^chrom_idx]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>chromequad</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If True, add a per-backend frequency-dependent noise floor term.</p></li>
+<li><p><strong>chromequad_idx_per_backend</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If True, float a separate chrom_idx for each backend.
+Default False uses a single per-pulsar chrom_idx (better constrained).</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Reference frequency in MHz for the chromatic scaling.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.quantize">
@@ -584,6 +617,36 @@ in <code class="docutils literal notranslate"><span class="pre">noisedict</span>
 <dd></dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.chromatic_quad_basis">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">chromatic_quad_basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chrom_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#chromatic_quad_basis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.chromatic_quad_basis" title="Link to this definition">#</a></dt>
+<dd><p>Normalized quadratic basis for a chromatic (radio-frequency dependent) process.</p>
+<p>Analogous to the DM, DM1, DM2 timing-model terms but for an arbitrary chromatic
+index. Adding it as a GP rather than through the timing model lets the chromatic
+index parameter be shared with a free chromatic Fourier GP (see
+<a class="reference internal" href="#discovery.signals.fourierbasis_chrom" title="discovery.signals.fourierbasis_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis_chrom()</span></code></a>) by giving both signals the same <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs and radio frequencies.</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for the chromatic scaling. Default is 1400.0.</p></li>
+<li><p><strong>chrom_idx</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Chromatic (radio-frequency) index. If <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) a callable
+<code class="docutils literal notranslate"><span class="pre">fmat(chrom_idx)</span> <span class="pre">-&gt;</span> <span class="pre">jnp.ndarray</span></code> is returned so the index can be a free
+parameter; if a value is given, the fixed <span class="math notranslate nohighlight">\(N_\mathrm{TOA} \times 3\)</span>
+basis matrix is returned directly.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>When <em>chrom_idx</em> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, a function <code class="docutils literal notranslate"><span class="pre">fmat(chrom_idx)</span></code> returning the
+normalized <span class="math notranslate nohighlight">\(N_\mathrm{TOA} \times 3\)</span> basis (with a <code class="docutils literal notranslate"><span class="pre">.ncol</span></code> attribute
+giving the column count). Otherwise the evaluated basis matrix.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable or jnp.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.getspan">
 <span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">getspan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psrs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#getspan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.getspan" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -597,6 +660,530 @@ in <code class="docutils literal notranslate"><span class="pre">noisedict</span>
 <dt class="sig sig-object py" id="discovery.signals.fourierbasis">
 <span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">fourierbasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#fourierbasis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.fourierbasis" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.log_fourierbasis">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">log_fourierbasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logmode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlog</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#log_fourierbasis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.log_fourierbasis" title="Link to this definition">#</a></dt>
+<dd><p>Fourier basis with optional log-spaced modes below the lowest linear mode.</p>
+<p>Drop-in replacement for <a class="reference internal" href="#discovery.signals.fourierbasis" title="discovery.signals.fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a> that can place <code class="docutils literal notranslate"><span class="pre">nlog</span></code> of the
+<code class="docutils literal notranslate"><span class="pre">components</span></code> modes on a logarithmic grid between <code class="docutils literal notranslate"><span class="pre">f_min</span></code> and the linear
+grid, to resolve low-frequency power with few extra modes. The binning is
+<a class="reference internal" href="#discovery.signals.linBinning" title="discovery.signals.linBinning"><code class="xref py py-func docutils literal notranslate"><span class="pre">linBinning()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs.</p></li>
+<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Total number of frequency modes, log-spaced plus linear, as for
+<a class="reference internal" href="#discovery.signals.fourierbasis" title="discovery.signals.fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a>. <code class="docutils literal notranslate"><span class="pre">nlog</span></code> of them are log-spaced and the remaining
+<code class="docutils literal notranslate"><span class="pre">components</span> <span class="pre">-</span> <span class="pre">nlog</span></code> are linear. Must be an int.</p></li>
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Time span in seconds that sets the linear grid spacing <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">T</span></code>. Defaults to
+the span of <code class="docutils literal notranslate"><span class="pre">psr</span></code>’s TOAs.</p></li>
+<li><p><strong>logmode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Index of the lowest linear mode, which sits at <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">+</span> <span class="pre">logmode)</span> <span class="pre">/</span> <span class="pre">T</span></code>; the
+log-spaced modes fill in below <code class="docutils literal notranslate"><span class="pre">(logmode</span> <span class="pre">+</span> <span class="pre">0.5)</span> <span class="pre">/</span> <span class="pre">T</span></code>. Default 0 gives the
+standard <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">/</span> <span class="pre">T</span></code> grid. Must be &gt;= 0.</p></li>
+<li><p><strong>f_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Lowest frequency covered by the log-spaced modes, in Hz. Required if
+<code class="docutils literal notranslate"><span class="pre">nlog</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, ignored otherwise.</p></li>
+<li><p><strong>nlog</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Number of log-spaced modes, between 0 and <code class="docutils literal notranslate"><span class="pre">components</span></code>. Default 0 gives a
+purely linear basis.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>f</strong> (<em>np.ndarray</em>) – Mode frequencies in Hz, log-spaced modes first, each repeated for the sine and
+cosine columns (length <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">components</span></code>).</p></li>
+<li><p><strong>df</strong> (<em>np.ndarray</em>) – Bin widths in Hz, repeated like <code class="docutils literal notranslate"><span class="pre">f</span></code>; see <a class="reference internal" href="#discovery.signals.linBinning" title="discovery.signals.linBinning"><code class="xref py py-func docutils literal notranslate"><span class="pre">linBinning()</span></code></a>.</p></li>
+<li><p><strong>fmat</strong> (<em>np.ndarray</em>) – <span class="math notranslate nohighlight">\(N_\mathrm{TOA} \times 2\,\mathrm{components}\)</span> design matrix of
+alternating sine and cosine columns.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">components</span></code> is not an int.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">nlog</span></code> is outside <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">components]</span></code>, <code class="docutils literal notranslate"><span class="pre">logmode</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>, or <code class="docutils literal notranslate"><span class="pre">nlog</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>
+and <code class="docutils literal notranslate"><span class="pre">f_min</span></code> is None.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This differs from enterprise_extensions, where <code class="docutils literal notranslate"><span class="pre">components</span></code> counts only the
+linear modes and the <code class="docutils literal notranslate"><span class="pre">nlog</span></code> log-spaced modes are added on top. Here
+<code class="docutils literal notranslate"><span class="pre">components</span></code> is the total, so the basis can be passed as <code class="docutils literal notranslate"><span class="pre">fourierbasis</span></code> to
+the GP builders (e.g. <a class="reference internal" href="#discovery.signals.makegp_fourier" title="discovery.signals.makegp_fourier"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a>) unchanged. To reproduce
+enterprise_extensions’ <code class="docutils literal notranslate"><span class="pre">model_general(logfreq=True,</span> <span class="pre">nmodes_log=m,</span>
+<span class="pre">common_components=n)</span></code>, use <code class="docutils literal notranslate"><span class="pre">components=n</span> <span class="pre">+</span> <span class="pre">m</span></code>, <code class="docutils literal notranslate"><span class="pre">nlog=m</span></code>, <code class="docutils literal notranslate"><span class="pre">logmode=m</span></code>
+and <code class="docutils literal notranslate"><span class="pre">f_min=1</span> <span class="pre">/</span> <span class="pre">(10</span> <span class="pre">*</span> <span class="pre">T)</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.log_fourierbasis_dm">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">log_fourierbasis_dm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logmode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlog</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#log_fourierbasis_dm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.log_fourierbasis_dm" title="Link to this definition">#</a></dt>
+<dd><p>DM (radio-frequency index 2) version of <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a>.</p>
+<p>The columns of <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a> are scaled by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**2</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs and radio frequencies.</p></li>
+<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Total number of frequency modes, log-spaced plus linear, as for
+<a class="reference internal" href="#discovery.signals.fourierbasis" title="discovery.signals.fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a>. <code class="docutils literal notranslate"><span class="pre">nlog</span></code> of them are log-spaced and the remaining
+<code class="docutils literal notranslate"><span class="pre">components</span> <span class="pre">-</span> <span class="pre">nlog</span></code> are linear. Must be an int.</p></li>
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Time span in seconds that sets the linear grid spacing <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">T</span></code>. Defaults to
+the span of <code class="docutils literal notranslate"><span class="pre">psr</span></code>’s TOAs.</p></li>
+<li><p><strong>logmode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Index of the lowest linear mode, which sits at <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">+</span> <span class="pre">logmode)</span> <span class="pre">/</span> <span class="pre">T</span></code>; the
+log-spaced modes fill in below <code class="docutils literal notranslate"><span class="pre">(logmode</span> <span class="pre">+</span> <span class="pre">0.5)</span> <span class="pre">/</span> <span class="pre">T</span></code>. Default 0 gives the
+standard <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">/</span> <span class="pre">T</span></code> grid. Must be &gt;= 0.</p></li>
+<li><p><strong>f_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Lowest frequency covered by the log-spaced modes, in Hz. Required if
+<code class="docutils literal notranslate"><span class="pre">nlog</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, ignored otherwise.</p></li>
+<li><p><strong>nlog</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Number of log-spaced modes, between 0 and <code class="docutils literal notranslate"><span class="pre">components</span></code>. Default 0 gives a
+purely linear basis.</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference radio frequency in MHz. Default 1400.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>f</strong> (<em>np.ndarray</em>) – Mode frequencies in Hz, log-spaced modes first, each repeated for the sine and
+cosine columns (length <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">components</span></code>).</p></li>
+<li><p><strong>df</strong> (<em>np.ndarray</em>) – Bin widths in Hz, repeated like <code class="docutils literal notranslate"><span class="pre">f</span></code>; see <a class="reference internal" href="#discovery.signals.linBinning" title="discovery.signals.linBinning"><code class="xref py py-func docutils literal notranslate"><span class="pre">linBinning()</span></code></a>.</p></li>
+<li><p><strong>fmat</strong> (<em>np.ndarray</em>) – <span class="math notranslate nohighlight">\(N_\mathrm{TOA} \times 2\,\mathrm{components}\)</span> design matrix of
+alternating sine and cosine columns, scaled by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**2</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p><code class="docutils literal notranslate"><span class="pre">components</span></code> is the total number of modes, unlike enterprise_extensions where
+the log-spaced modes are added on top; see <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.log_fourierbasis_chrom">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">log_fourierbasis_chrom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logmode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlog</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">800</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#log_fourierbasis_chrom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.log_fourierbasis_chrom" title="Link to this definition">#</a></dt>
+<dd><p>Chromatic version of <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a> with a free chromatic index.</p>
+<p>Returns the basis as a function of the chromatic index <code class="docutils literal notranslate"><span class="pre">alpha</span></code>, which scales
+the columns of <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a> by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**alpha</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs and radio frequencies.</p></li>
+<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Total number of frequency modes, log-spaced plus linear, as for
+<a class="reference internal" href="#discovery.signals.fourierbasis" title="discovery.signals.fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a>. <code class="docutils literal notranslate"><span class="pre">nlog</span></code> of them are log-spaced and the remaining
+<code class="docutils literal notranslate"><span class="pre">components</span> <span class="pre">-</span> <span class="pre">nlog</span></code> are linear. Must be an int.</p></li>
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Time span in seconds that sets the linear grid spacing <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">T</span></code>. Defaults to
+the span of <code class="docutils literal notranslate"><span class="pre">psr</span></code>’s TOAs.</p></li>
+<li><p><strong>logmode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Index of the lowest linear mode, which sits at <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">+</span> <span class="pre">logmode)</span> <span class="pre">/</span> <span class="pre">T</span></code>; the
+log-spaced modes fill in below <code class="docutils literal notranslate"><span class="pre">(logmode</span> <span class="pre">+</span> <span class="pre">0.5)</span> <span class="pre">/</span> <span class="pre">T</span></code>. Default 0 gives the
+standard <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">/</span> <span class="pre">T</span></code> grid. Must be &gt;= 0.</p></li>
+<li><p><strong>f_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Lowest frequency covered by the log-spaced modes, in Hz. Required if
+<code class="docutils literal notranslate"><span class="pre">nlog</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, ignored otherwise.</p></li>
+<li><p><strong>nlog</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Number of log-spaced modes, between 0 and <code class="docutils literal notranslate"><span class="pre">components</span></code>. Default 0 gives a
+purely linear basis.</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference radio frequency in MHz. Default 800.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>f</strong> (<em>np.ndarray</em>) – Mode frequencies in Hz, log-spaced modes first, each repeated for the sine and
+cosine columns (length <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">components</span></code>).</p></li>
+<li><p><strong>df</strong> (<em>np.ndarray</em>) – Bin widths in Hz, repeated like <code class="docutils literal notranslate"><span class="pre">f</span></code>; see <a class="reference internal" href="#discovery.signals.linBinning" title="discovery.signals.linBinning"><code class="xref py py-func docutils literal notranslate"><span class="pre">linBinning()</span></code></a>.</p></li>
+<li><p><strong>fmatfunc</strong> (<em>callable</em>) – <code class="docutils literal notranslate"><span class="pre">fmatfunc(alpha)</span></code> returns the <span class="math notranslate nohighlight">\(N_\mathrm{TOA} \times
+2\,\mathrm{components}\)</span> design matrix scaled by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**alpha</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p><code class="docutils literal notranslate"><span class="pre">components</span></code> is the total number of modes, unlike enterprise_extensions where
+the log-spaced modes are added on top; see <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.log_fourierbasis_chrom_fixed">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">log_fourierbasis_chrom_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logmode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlog</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">800</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#log_fourierbasis_chrom_fixed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.log_fourierbasis_chrom_fixed" title="Link to this definition">#</a></dt>
+<dd><p>Chromatic version of <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a> with a fixed chromatic index.</p>
+<p>The columns of <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a> are scaled by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**alpha</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs and radio frequencies.</p></li>
+<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Total number of frequency modes, log-spaced plus linear, as for
+<a class="reference internal" href="#discovery.signals.fourierbasis" title="discovery.signals.fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a>. <code class="docutils literal notranslate"><span class="pre">nlog</span></code> of them are log-spaced and the remaining
+<code class="docutils literal notranslate"><span class="pre">components</span> <span class="pre">-</span> <span class="pre">nlog</span></code> are linear. Must be an int.</p></li>
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Time span in seconds that sets the linear grid spacing <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">T</span></code>. Defaults to
+the span of <code class="docutils literal notranslate"><span class="pre">psr</span></code>’s TOAs.</p></li>
+<li><p><strong>alpha</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Chromatic index. Default 4.</p></li>
+<li><p><strong>logmode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Index of the lowest linear mode, which sits at <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">+</span> <span class="pre">logmode)</span> <span class="pre">/</span> <span class="pre">T</span></code>; the
+log-spaced modes fill in below <code class="docutils literal notranslate"><span class="pre">(logmode</span> <span class="pre">+</span> <span class="pre">0.5)</span> <span class="pre">/</span> <span class="pre">T</span></code>. Default 0 gives the
+standard <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">/</span> <span class="pre">T</span></code> grid. Must be &gt;= 0.</p></li>
+<li><p><strong>f_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Lowest frequency covered by the log-spaced modes, in Hz. Required if
+<code class="docutils literal notranslate"><span class="pre">nlog</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, ignored otherwise.</p></li>
+<li><p><strong>nlog</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Number of log-spaced modes, between 0 and <code class="docutils literal notranslate"><span class="pre">components</span></code>. Default 0 gives a
+purely linear basis.</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference radio frequency in MHz. Default 800.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>f</strong> (<em>np.ndarray</em>) – Mode frequencies in Hz, log-spaced modes first, each repeated for the sine and
+cosine columns (length <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">components</span></code>).</p></li>
+<li><p><strong>df</strong> (<em>np.ndarray</em>) – Bin widths in Hz, repeated like <code class="docutils literal notranslate"><span class="pre">f</span></code>; see <a class="reference internal" href="#discovery.signals.linBinning" title="discovery.signals.linBinning"><code class="xref py py-func docutils literal notranslate"><span class="pre">linBinning()</span></code></a>.</p></li>
+<li><p><strong>fmat</strong> (<em>np.ndarray</em>) – <span class="math notranslate nohighlight">\(N_\mathrm{TOA} \times 2\,\mathrm{components}\)</span> design matrix of
+alternating sine and cosine columns, scaled by <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)**alpha</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p><code class="docutils literal notranslate"><span class="pre">components</span></code> is the total number of modes, unlike enterprise_extensions where
+the log-spaced modes are added on top; see <a class="reference internal" href="#discovery.signals.log_fourierbasis" title="discovery.signals.log_fourierbasis"><code class="xref py py-func docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.linBinning">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">linBinning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logmode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlog</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#linBinning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.linBinning" title="Link to this definition">#</a></dt>
+<dd><p>Frequency binning for low-rank Fourier bases with log-spaced low end.</p>
+<p>Copied from enterprise_extensions. Credit: van Haasteren &amp; Vallisneri,
+MNRAS 446, 2 (2015).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Duration of the experiment in seconds.</p></li>
+<li><p><strong>logmode</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Index of the lowest linear mode, which sits at <code class="docutils literal notranslate"><span class="pre">(1</span> <span class="pre">+</span> <span class="pre">logmode)</span> <span class="pre">/</span> <span class="pre">T</span></code>.
+Log-spaced modes fill in below <code class="docutils literal notranslate"><span class="pre">(logmode</span> <span class="pre">+</span> <span class="pre">0.5)</span> <span class="pre">/</span> <span class="pre">T</span></code>. Must be &gt;= 0.</p></li>
+<li><p><strong>f_min</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Lowest frequency covered by the log-spaced modes, in Hz. Only used if
+<code class="docutils literal notranslate"><span class="pre">nlog</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>.</p></li>
+<li><p><strong>nlin</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of linearly spaced frequencies.</p></li>
+<li><p><strong>nlog</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of log-spaced frequencies.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>f</strong> (<em>jnp.ndarray</em>) – Mode frequencies in Hz, log-spaced modes first, at bin centres.</p></li>
+<li><p><strong>w</strong> (<em>jnp.ndarray</em>) – Square roots of the bin widths.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">logmode</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>, or if <code class="docutils literal notranslate"><span class="pre">nlog</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> and <code class="docutils literal notranslate"><span class="pre">f_min</span></code> is None.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Modes sit at bin centres and the weights are sqrt(bin width), so <code class="docutils literal notranslate"><span class="pre">w**2</span></code> is
+the volume element to apply to <span class="math notranslate nohighlight">\(S(f)\)</span>. <code class="docutils literal notranslate"><span class="pre">np.diff(f)</span></code> is not that: it
+measures back to the previous centre, and its lowest bin runs from DC rather
+than <code class="docutils literal notranslate"><span class="pre">f_min</span></code>, overstating band power by ~73% at <span class="math notranslate nohighlight">\(\gamma = 13/3\)</span>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.ridge_kernel">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">ridge_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log10_sigma_ridge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-7.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#ridge_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.ridge_kernel" title="Link to this definition">#</a></dt>
+<dd><p>Ridge (diagonal) covariance kernel factory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>log10_sigma_ridge</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the amplitude; diagonal entries are
+<span class="math notranslate nohighlight">\(\sigma^2 = 10^{2\,\texttt{log10\_sigma\_ridge}}\)</span>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A function <code class="docutils literal notranslate"><span class="pre">kernel(tau)</span> <span class="pre">-&gt;</span> <span class="pre">jnp.ndarray</span></code> returning the
+<span class="math notranslate nohighlight">\(N \times N\)</span> diagonal covariance matrix for an <em>N</em>-element
+lag vector <em>tau</em>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.square_exponential_kernel">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">square_exponential_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log10_sigma_sq_exp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-7.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_ell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#square_exponential_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.square_exponential_kernel" title="Link to this definition">#</a></dt>
+<dd><p>Squared-exponential (RBF) covariance kernel factory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>log10_sigma_sq_exp</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the amplitude.</p></li>
+<li><p><strong>log10_ell</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the length scale in <strong>days</strong>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A function <code class="docutils literal notranslate"><span class="pre">kernel(tau)</span> <span class="pre">-&gt;</span> <span class="pre">jnp.ndarray</span></code> returning the
+<span class="math notranslate nohighlight">\(N \times N\)</span> covariance matrix for an <em>N</em>-element lag vector
+<em>tau</em> in seconds.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<div class="math notranslate nohighlight">
+\[K(\tau) = \sigma^2 \exp\!\left(-\frac{\tau^2}{2\ell^2}\right)
+    + d\,\delta_{ij}\]</div>
+<p>where <span class="math notranslate nohighlight">\(d = (\sigma / 50000)^2\)</span> is a small diagonal regulariser.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.quasi_periodic_kernel">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">quasi_periodic_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log10_sigma_quasi_periodic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-7.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_ell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_gamma_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#quasi_periodic_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.quasi_periodic_kernel" title="Link to this definition">#</a></dt>
+<dd><p>Quasi-periodic (SE × periodic) covariance kernel factory.</p>
+<p>Matches the <code class="docutils literal notranslate"><span class="pre">periodic_kernel</span></code> convention in enterprise_extensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>log10_sigma_quasi_periodic</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the amplitude.</p></li>
+<li><p><strong>log10_ell</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the squared-exponential length scale in <strong>days</strong>.</p></li>
+<li><p><strong>log10_gamma_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the periodic damping amplitude (direct scale: larger →
+stronger periodic decay, matching enterprise convention).</p></li>
+<li><p><strong>log10_p</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the period in <strong>years</strong>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A function <code class="docutils literal notranslate"><span class="pre">kernel(tau)</span> <span class="pre">-&gt;</span> <span class="pre">jnp.ndarray</span></code> returning the
+<span class="math notranslate nohighlight">\(N \times N\)</span> covariance matrix for an <em>N</em>-element lag vector
+<em>tau</em> in seconds.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<div class="math notranslate nohighlight">
+\[K(\tau) = \sigma^2 \exp\!\left(
+    -\frac{\tau^2}{2\ell^2}
+    - \gamma_p \sin^2\!\left(\frac{\pi\tau}{p}\right)
+\right) + d\,\delta_{ij}\]</div>
+<p>where <span class="math notranslate nohighlight">\(d = (\sigma / 50000)^2\)</span> is a small diagonal regulariser.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.matern_kernel">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">matern_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log10_sigma_matern</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-7.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_ell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#matern_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.matern_kernel" title="Link to this definition">#</a></dt>
+<dd><p>Matérn covariance kernel factory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>log10_sigma_matern</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the amplitude.</p></li>
+<li><p><strong>log10_ell</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Log10 of the length scale in <strong>days</strong>.</p></li>
+<li><p><strong>nu</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Smoothness parameter; must be one of <code class="docutils literal notranslate"><span class="pre">{0.5,</span> <span class="pre">1.5,</span> <span class="pre">2.5}</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A function <code class="docutils literal notranslate"><span class="pre">kernel(tau)</span> <span class="pre">-&gt;</span> <span class="pre">jnp.ndarray</span></code> returning the
+<span class="math notranslate nohighlight">\(N \times N\)</span> covariance matrix for an <em>N</em>-element lag vector
+<em>tau</em> in seconds.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <em>nu</em> is not in <code class="docutils literal notranslate"><span class="pre">{0.5,</span> <span class="pre">1.5,</span> <span class="pre">2.5}</span></code>.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Supports the Matérn-½ (<code class="docutils literal notranslate"><span class="pre">nu=0.5</span></code>), Matérn-3/2 (<code class="docutils literal notranslate"><span class="pre">nu=1.5</span></code>), and
+Matérn-5/2 (<code class="docutils literal notranslate"><span class="pre">nu=2.5</span></code>) closed-form kernels.  A small diagonal
+regulariser <span class="math notranslate nohighlight">\(d = (\sigma / 50000)^2\)</span> is added for numerical
+stability.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.linear_blocked_interpolation_basis">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">linear_blocked_interpolation_basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">toas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_edges</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#linear_blocked_interpolation_basis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.linear_blocked_interpolation_basis" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.custom_blocked_interpolation_basis">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">custom_blocked_interpolation_basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">toas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#custom_blocked_interpolation_basis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.custom_blocked_interpolation_basis" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.makegp_improper_varF">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_improper_varF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e+40</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'improperGP_varF'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_improper_varF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_improper_varF" title="Link to this definition">#</a></dt>
+<dd><p>Improper GP with a parameter-dependent design matrix.</p>
+<p>Like <a class="reference internal" href="#discovery.signals.makegp_improper" title="discovery.signals.makegp_improper"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper()</span></code></a>, but the design matrix comes from a callable basis
+whose columns depend on fit parameters – for example <a class="reference internal" href="#discovery.signals.chrom_poly_basis" title="discovery.signals.chrom_poly_basis"><code class="xref py py-func docutils literal notranslate"><span class="pre">chrom_poly_basis()</span></code></a>,
+whose columns depend on the chromatic index. The varying parameter is named
+<code class="docutils literal notranslate"><span class="pre">{psr.name}_{name}_{param}</span></code>, so it is shared with any other signal carrying the
+same name, such as a chromatic Fourier GP.</p>
+<p>The timing-model column span is removed and the basis is orthonormalised at every
+evaluation. Neither is optional: the timing model carries an improper prior over its
+own directions, and an improper prior over a basis whose scale varies with the
+parameters scores them on that scale rather than on the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Discovery Pulsar object.</p></li>
+<li><p><strong>fmat</strong> (<em>callable</em>) – Basis factory, <code class="docutils literal notranslate"><span class="pre">fmat(*param_values)</span> <span class="pre">-&gt;</span> <span class="pre">(N_toa,</span> <span class="pre">N_col)</span></code> array. May carry an
+<code class="docutils literal notranslate"><span class="pre">ncol</span></code> attribute giving its column count; if absent, the width is found by
+evaluating it once.</p></li>
+<li><p><strong>constant</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Prior variance on each coefficient, in s^2. The basis columns are
+orthonormal, so this is the variance per unit-norm column. The default,
+1e40, is effectively flat and matches enterprise. See Notes before
+comparing models.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Base name for the GP parameters.</p></li>
+<li><p><strong>param_names</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Names of the parameters passed positionally to <code class="docutils literal notranslate"><span class="pre">fmat</span></code>.</p></li>
+<li><p><strong>noisedict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>, </em><em>optional</em>) – Fixed parameter values, keyed by full parameter name. If every parameter in
+<code class="docutils literal notranslate"><span class="pre">param_names</span></code> is present, the basis is evaluated once and a
+<a class="reference internal" href="matrix.html#discovery.matrix.ConstantGP" title="discovery.matrix.ConstantGP"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConstantGP</span></code></a> is returned.</p></li>
+<li><p><strong>project</strong> (<em>array</em><em>, </em><a class="reference internal" href="matrix.html#discovery.matrix.GP" title="discovery.matrix.GP"><em>GP</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><em>these</em><em>, </em><em>optional</em>) – Further bases to remove alongside the timing model. Each is an array or a GP
+with a non-callable <code class="docutils literal notranslate"><span class="pre">F</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">ConstantGP</span></code> if every parameter is fixed by <code class="docutils literal notranslate"><span class="pre">noisedict</span></code>, otherwise a
+<code class="docutils literal notranslate"><span class="pre">VariableGP</span></code> whose design matrix varies with the free parameters.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="matrix.html#discovery.matrix.ConstantGP" title="discovery.matrix.ConstantGP">ConstantGP</a> or <a class="reference internal" href="matrix.html#discovery.matrix.VariableGP" title="discovery.matrix.VariableGP">VariableGP</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a basis passed to <code class="docutils literal notranslate"><span class="pre">project</span></code> has a callable <code class="docutils literal notranslate"><span class="pre">F</span></code>.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p><code class="docutils literal notranslate"><span class="pre">constant</span></code> is harmless for parameter estimation, including the chromatic
+index: the posterior on the coefficients is set by the data, and the
+orthonormalisation keeps the Fisher determinant away from zero. It is not
+harmless for model selection. The log evidence includes an Occam term of
+roughly <span class="math notranslate nohighlight">\(-\tfrac{1}{2}\ln(\texttt{constant})\)</span> per column, so with the
+default 1e40 the model is penalised by tens of nats per column for prior volume
+the data never constrain. That biases Bayes factors against including this GP,
+for example when testing for a chromatic GP. For evidence comparisons, set
+<code class="docutils literal notranslate"><span class="pre">constant</span></code> to a physically motivated variance.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.normalise_tm_basis">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">normalise_tm_basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#normalise_tm_basis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.normalise_tm_basis" title="Link to this definition">#</a></dt>
+<dd><p>Timing-model design matrix with unit-norm columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Discovery Pulsar object.</p></li>
+<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Factor applied to <code class="docutils literal notranslate"><span class="pre">psr.Mmat</span></code> before normalising. Default is 1.0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(N_toa,</span> <span class="pre">N_col)</span></code> matrix whose columns have unit norm. <code class="docutils literal notranslate"><span class="pre">N_col</span></code> is the
+number of non-zero columns of <code class="docutils literal notranslate"><span class="pre">psr.Mmat</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>All-zero columns, which arise when a fitted par-file parameter has no TOAs
+behind it, are dropped and reported. Dividing by their zero norm would give
+NaNs, and they span nothing, so removing them leaves the column space
+unchanged.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.chrom_poly_basis">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">chrom_poly_basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#chrom_poly_basis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.chrom_poly_basis" title="Link to this definition">#</a></dt>
+<dd><p>Callable chromatic polynomial basis <code class="docutils literal notranslate"><span class="pre">U</span> <span class="pre">*</span> <span class="pre">(fref/freq)**alpha</span></code>.</p>
+<p>For use with <a class="reference internal" href="#discovery.signals.makegp_improper_varF" title="discovery.signals.makegp_improper_varF"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Discovery Pulsar object.</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz. Defaults to the geometric mean of the TOA
+frequencies.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">fmat(alpha)</span> <span class="pre">-&gt;</span> <span class="pre">(N_toa,</span> <span class="pre">3)</span></code> array, with attributes <code class="docutils literal notranslate"><span class="pre">ncol</span></code> (3), <code class="docutils literal notranslate"><span class="pre">fref</span></code>
+and <code class="docutils literal notranslate"><span class="pre">svd</span></code>, a dict of the temporal SVD factors <code class="docutils literal notranslate"><span class="pre">S</span></code> and <code class="docutils literal notranslate"><span class="pre">Vt</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p><code class="docutils literal notranslate"><span class="pre">U</span></code> is the SVD-orthonormalised [1, t, t**2] temporal design matrix. The SVD is a
+fixed right-multiplication of the raw polynomial, so it leaves the column span, and
+hence the marginal likelihood under an orthonormalising GP, unchanged.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.makegp_chrom_poly_svd">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_chrom_poly_svd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e+40</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'chrom_gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_chrom_poly_svd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_chrom_poly_svd" title="Link to this definition">#</a></dt>
+<dd><p>SVD-orthogonalised chromatic polynomial GP, marginalised analytically.</p>
+<p>A <a class="reference internal" href="#discovery.signals.chrom_poly_basis" title="discovery.signals.chrom_poly_basis"><code class="xref py py-func docutils literal notranslate"><span class="pre">chrom_poly_basis()</span></code></a> carried by <a class="reference internal" href="#discovery.signals.makegp_improper_varF" title="discovery.signals.makegp_improper_varF"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a>, so the timing
+model is projected out and the basis orthonormalised at every alpha.
+Shares <code class="docutils literal notranslate"><span class="pre">alpha</span></code> with a companion chromatic Fourier (or FFTint) GP via the
+parameter name <code class="docutils literal notranslate"><span class="pre">{psr.name}_{name}_alpha</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<a class="reference internal" href="pulsar.html#discovery.pulsar.Pulsar" title="discovery.pulsar.Pulsar"><em>Pulsar</em></a>) – Discovery Pulsar object.</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz. Defaults to the geometric mean of the TOA
+frequencies.</p></li>
+<li><p><strong>constant</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Prior variance on each coefficient, in s^2. Default is 1e40. See the Notes of
+<a class="reference internal" href="#discovery.signals.makegp_improper_varF" title="discovery.signals.makegp_improper_varF"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a> before comparing models.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Base name for the GP parameters. Default is ‘chrom_gp’.</p></li>
+<li><p><strong>project</strong> (<em>array</em><em>, </em><a class="reference internal" href="matrix.html#discovery.matrix.GP" title="discovery.matrix.GP"><em>GP</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><em>these</em><em>, </em><em>optional</em>) – Further bases to remove alongside the timing model. Each is an array or a GP
+with a non-callable <code class="docutils literal notranslate"><span class="pre">F</span></code>.</p></li>
+<li><p><strong>noisedict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>, </em><em>optional</em>) – Fixed parameter values. If <code class="docutils literal notranslate"><span class="pre">{psr.name}_{name}_alpha</span></code> is present, the basis
+is evaluated once and a <a class="reference internal" href="matrix.html#discovery.matrix.ConstantGP" title="discovery.matrix.ConstantGP"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConstantGP</span></code></a> is returned.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The GP from <a class="reference internal" href="#discovery.signals.makegp_improper_varF" title="discovery.signals.makegp_improper_varF"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a>, with an extra <code class="docutils literal notranslate"><span class="pre">svd</span></code> attribute
+holding the temporal SVD factors from <a class="reference internal" href="#discovery.signals.chrom_poly_basis" title="discovery.signals.chrom_poly_basis"><code class="xref py py-func docutils literal notranslate"><span class="pre">chrom_poly_basis()</span></code></a>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="matrix.html#discovery.matrix.ConstantGP" title="discovery.matrix.ConstantGP">ConstantGP</a> or <a class="reference internal" href="matrix.html#discovery.matrix.VariableGP" title="discovery.matrix.VariableGP">VariableGP</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.makegp_timedomain_dm">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_timedomain_dm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Umat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dm_gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_timedomain_dm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_timedomain_dm" title="Link to this definition">#</a></dt>
+<dd><p>Construct a time-domain Gaussian process for dispersion measure variations.</p>
+<p>This function builds a GP model for DM variations by combining
+a covariance function in the time domain with a model for the DM variations.
+The TOAs are quantized into time bins, and the GP is constructed using the time separations
+between bins weighted by the DM signature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psr</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pulsar.Pulsar</span></code>) – Discovery Pulsar object containing TOAs and radio frequencies.</p></li>
+<li><p><strong>covariance</strong> (<em>callable</em>) – Function that returns the time domain autocorrelation for a given
+separation (tau). Must have signature <cite>covariance(tau, *params)</cite> where
+tau is the time separation array.</p></li>
+<li><p><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Time bin width in seconds for quantizing TOAs. Default is 1.0.</p></li>
+<li><p><strong>Umat</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Design matrix mapping the low-rank GP to the TOA residuals. If None,
+it will be constructed by quantizing the TOAs and weighting by the DM signature.
+Default is None.</p></li>
+<li><p><strong>nodes</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Time in seconds of each column of <code class="docutils literal notranslate"><span class="pre">Umat</span></code>. The GP covariance is evaluated
+at the separations between nodes. Required if <code class="docutils literal notranslate"><span class="pre">Umat</span></code> is given. If
+<code class="docutils literal notranslate"><span class="pre">Umat</span></code> is None, each node is the mean TOA of its bin, weighted by the
+DM signature. Default is None.</p></li>
+<li><p><strong>common</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>, </em><em>optional</em>) – List of parameter names that should be treated as common (shared) across
+pulsars rather than pulsar-specific. Default is [].</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Base name for the GP parameters. Used as prefix for parameter naming.
+Default is ‘dm_gp’.</p></li>
+<li><p><strong>fref</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Reference frequency in MHz for scaling the DM signature. Default is 1400 MHz.</p></li>
+<li><p><strong>noisedict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a><em>, </em><em>optional</em>) – If it supplies values for all of the GP’s hyperparameters (fixed-point
+analysis), the covariance is evaluated once and a <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.ConstantGP</span></code>
+is returned so its contribution to the covariance is cached rather than
+sampled; otherwise a <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code> is returned. Default is {}.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A GP object containing the noise covariance matrix (as a NoiseMatrix2D_var,
+or NoiseMatrix2D_novar when the hyperparameters are fixed via noisedict) and
+the design matrix (Umat) that maps the GP to the TOA residuals via DM delays.
+See <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code> / <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.ConstantGP</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.ConstantGP</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The design matrix Umat maps the low-rank GP (evaluated at quantized TOAs)
+to the full TOA residuals, scaled by the frequency-dependent DM signature.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.fourierbasis_dm">
@@ -651,18 +1238,13 @@ fixed-index chromatic process; for DM use <a class="reference internal" href="#d
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="discovery.signals.dmfourierbasis_solar">
-<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">dmfourierbasis_solar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#dmfourierbasis_solar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.dmfourierbasis_solar" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.make_dmfourierbasis">
 <span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">make_dmfourierbasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tndm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#make_dmfourierbasis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.make_dmfourierbasis" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.makegp_fourier">
-<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">psr,</span> <span class="pre">prior,</span> <span class="pre">components,</span> <span class="pre">T=None,</span> <span class="pre">mean=None,</span> <span class="pre">fourierbasis=&lt;function</span> <span class="pre">fourierbasis&gt;,</span> <span class="pre">common=[],</span> <span class="pre">exclude=['f',</span> <span class="pre">'df'],</span> <span class="pre">name='fourierGP'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_fourier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_fourier" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_fourier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">psr,</span> <span class="pre">prior,</span> <span class="pre">components,</span> <span class="pre">T=None,</span> <span class="pre">mean=None,</span> <span class="pre">fourierbasis=&lt;function</span> <span class="pre">fourierbasis&gt;,</span> <span class="pre">common=[],</span> <span class="pre">exclude=['f',</span> <span class="pre">'df'],</span> <span class="pre">name='fourierGP',</span> <span class="pre">noisedict={}</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_fourier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_fourier" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
@@ -762,23 +1344,25 @@ with <code class="docutils literal notranslate"><span class="pre">alpha</span></
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.makegp_fftcov">
-<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_fftcov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fourierbasis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fftcovGP'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_fftcov"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_fftcov" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_fftcov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fourierbasis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fftcovGP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_fftcov"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_fftcov" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.makegp_fftcov_dm">
-<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_fftcov_dm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dm_gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_fftcov_dm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_fftcov_dm" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_fftcov_dm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dm_gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_fftcov_dm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_fftcov_dm" title="Link to this definition">#</a></dt>
 <dd><p>FFT-covariance (time-domain) GP for DM noise (fixed chromatic index alpha = 2).</p>
 <p>DM counterpart of <a class="reference internal" href="#discovery.signals.makegp_fftcov" title="discovery.signals.makegp_fftcov"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fftcov()</span></code></a>: the achromatic time-interpolation basis
 is replaced by <a class="reference internal" href="#discovery.signals.make_timeinterpbasis_dm" title="discovery.signals.make_timeinterpbasis_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_timeinterpbasis_dm()</span></code></a>, scaling each row by the cold-plasma
 dispersion factor <code class="docutils literal notranslate"><span class="pre">(fref</span> <span class="pre">/</span> <span class="pre">psr.freqs)</span> <span class="pre">**</span> <span class="pre">2</span></code>. <code class="docutils literal notranslate"><span class="pre">prior</span></code> is a power-spectral-density
 function (e.g. <a class="reference internal" href="#discovery.signals.powerlaw" title="discovery.signals.powerlaw"><code class="xref py py-func docutils literal notranslate"><span class="pre">powerlaw()</span></code></a>) that is converted to a time-domain covariance via
 <a class="reference internal" href="#discovery.signals.psd2cov" title="discovery.signals.psd2cov"><code class="xref py py-func docutils literal notranslate"><span class="pre">psd2cov()</span></code></a>. For a free chromatic index use <a class="reference internal" href="#discovery.signals.makegp_fftcov_chrom" title="discovery.signals.makegp_fftcov_chrom"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fftcov_chrom()</span></code></a>.</p>
+<p>Passing a <code class="docutils literal notranslate"><span class="pre">noisedict</span></code> with all the prior hyperparameters (fixed hyperparameter analysis)
+returns a cached <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.ConstantGP</span></code> instead of a <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code>.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.makegp_fftcov_chrom">
-<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_fftcov_chrom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'chrom_gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_fftcov_chrom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_fftcov_chrom" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">makegp_fftcov_chrom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">common</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'chrom_gp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noisedict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#makegp_fftcov_chrom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.makegp_fftcov_chrom" title="Link to this definition">#</a></dt>
 <dd><p>FFT-covariance (time-domain) GP for chromatic noise with a variable index.</p>
 <p>Chromatic counterpart of <a class="reference internal" href="#discovery.signals.makegp_fftcov" title="discovery.signals.makegp_fftcov"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fftcov()</span></code></a>: the achromatic time-interpolation
 basis is replaced by <a class="reference internal" href="#discovery.signals.make_timeinterpbasis_chromatic" title="discovery.signals.make_timeinterpbasis_chromatic"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_timeinterpbasis_chromatic()</span></code></a>, scaling each row by
@@ -786,6 +1370,9 @@ basis is replaced by <a class="reference internal" href="#discovery.signals.make
 <code class="docutils literal notranslate"><span class="pre">prior</span></code> is a power-spectral-density function (e.g. <a class="reference internal" href="#discovery.signals.powerlaw" title="discovery.signals.powerlaw"><code class="xref py py-func docutils literal notranslate"><span class="pre">powerlaw()</span></code></a>) converted to a
 time-domain covariance via <a class="reference internal" href="#discovery.signals.psd2cov" title="discovery.signals.psd2cov"><code class="xref py py-func docutils literal notranslate"><span class="pre">psd2cov()</span></code></a>. For the alpha = 2 (DM) case use
 <a class="reference internal" href="#discovery.signals.makegp_fftcov_dm" title="discovery.signals.makegp_fftcov_dm"><code class="xref py py-func docutils literal notranslate"><span class="pre">makegp_fftcov_dm()</span></code></a>.</p>
+<p>Passing a <code class="docutils literal notranslate"><span class="pre">noisedict</span></code> with all the prior hyperparameters and the chromatic index
+(fixed hyperparameter analysis) returns a cached <code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.ConstantGP</span></code> instead of a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">matrix.VariableGP</span></code>.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -819,6 +1406,11 @@ time-domain covariance via <a class="reference internal" href="#discovery.signal
 <dd></dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="discovery.signals.powerlaw_cutoff">
+<span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">powerlaw_cutoff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Nfreq_cutoff</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#powerlaw_cutoff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.powerlaw_cutoff" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="discovery.signals.brokenpowerlaw">
 <span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">brokenpowerlaw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_fb</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#brokenpowerlaw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.brokenpowerlaw" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -828,7 +1420,7 @@ time-domain covariance via <a class="reference internal" href="#discovery.signal
 <span class="sig-prename descclassname"><span class="pre">discovery.signals.</span></span><span class="sig-name descname"><span class="pre">freespectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log10_rho</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/signals.html#freespectrum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.signals.freespectrum" title="Link to this definition">#</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>log10_rho</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.14)"><em>Sequence</em></a>)</p>
+<dd class="field-odd"><p><strong>log10_rho</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.15)"><em>Sequence</em></a>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -844,7 +1436,7 @@ while the common red noise PSD is added only to the first
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of shared Fourier frequency components used by the CRN model.
+<li><p><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of shared Fourier frequency components used by the CRN model.
 This determines how many low-frequency bins of the intrinsic basis
 receive the CRN contribution (specifically, the first
 <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">components</span></code> entries, corresponding to sine/cosine pairs).
@@ -857,7 +1449,7 @@ and return a PSD array over the full basis.</p></li>
 <li><p><strong>crn_psd</strong> (<em>callable</em>) – PSD function for the common red noise. Must accept <code class="docutils literal notranslate"><span class="pre">(f,</span> <span class="pre">df,</span> <span class="pre">...)</span></code>
 and return a PSD array. Will only be called on the first
 <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">components</span></code> frequency bins.</p></li>
-<li><p><strong>crn_prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>None</em>) – Prefix applied to CRN parameter names that overlap with IRN names.
+<li><p><strong>crn_prefix</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><em>None</em>) – Prefix applied to CRN parameter names that overlap with IRN names.
 For example, if both PSDs have <code class="docutils literal notranslate"><span class="pre">log10_A</span></code> and <code class="docutils literal notranslate"><span class="pre">crn_prefix='crn_'</span></code>,
 the combined function will have <code class="docutils literal notranslate"><span class="pre">log10_A</span></code> (IRN) and
 <code class="docutils literal notranslate"><span class="pre">crn_log10_A</span></code> (CRN) as separate parameters.
@@ -997,16 +1589,32 @@ per-pulsar names.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makegp_ecorr"><code class="docutils literal notranslate"><span class="pre">makegp_ecorr()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makegp_improper"><code class="docutils literal notranslate"><span class="pre">makegp_improper()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makegp_timing"><code class="docutils literal notranslate"><span class="pre">makegp_timing()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.chromatic_quad_basis"><code class="docutils literal notranslate"><span class="pre">chromatic_quad_basis()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.getspan"><code class="docutils literal notranslate"><span class="pre">getspan()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.getstart"><code class="docutils literal notranslate"><span class="pre">getstart()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.fourierbasis"><code class="docutils literal notranslate"><span class="pre">fourierbasis()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.log_fourierbasis"><code class="docutils literal notranslate"><span class="pre">log_fourierbasis()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.log_fourierbasis_dm"><code class="docutils literal notranslate"><span class="pre">log_fourierbasis_dm()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.log_fourierbasis_chrom"><code class="docutils literal notranslate"><span class="pre">log_fourierbasis_chrom()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.log_fourierbasis_chrom_fixed"><code class="docutils literal notranslate"><span class="pre">log_fourierbasis_chrom_fixed()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.linBinning"><code class="docutils literal notranslate"><span class="pre">linBinning()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.ridge_kernel"><code class="docutils literal notranslate"><span class="pre">ridge_kernel()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.square_exponential_kernel"><code class="docutils literal notranslate"><span class="pre">square_exponential_kernel()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.quasi_periodic_kernel"><code class="docutils literal notranslate"><span class="pre">quasi_periodic_kernel()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.matern_kernel"><code class="docutils literal notranslate"><span class="pre">matern_kernel()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.linear_blocked_interpolation_basis"><code class="docutils literal notranslate"><span class="pre">linear_blocked_interpolation_basis()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.custom_blocked_interpolation_basis"><code class="docutils literal notranslate"><span class="pre">custom_blocked_interpolation_basis()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makegp_improper_varF"><code class="docutils literal notranslate"><span class="pre">makegp_improper_varF()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.normalise_tm_basis"><code class="docutils literal notranslate"><span class="pre">normalise_tm_basis()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.chrom_poly_basis"><code class="docutils literal notranslate"><span class="pre">chrom_poly_basis()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makegp_chrom_poly_svd"><code class="docutils literal notranslate"><span class="pre">makegp_chrom_poly_svd()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makegp_timedomain_dm"><code class="docutils literal notranslate"><span class="pre">makegp_timedomain_dm()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.fourierbasis_dm"><code class="docutils literal notranslate"><span class="pre">fourierbasis_dm()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.fourierbasis_chrom"><code class="docutils literal notranslate"><span class="pre">fourierbasis_chrom()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.make_fourierbasis_dm"><code class="docutils literal notranslate"><span class="pre">make_fourierbasis_dm()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.make_fourierbasis_chrom"><code class="docutils literal notranslate"><span class="pre">make_fourierbasis_chrom()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.dmfourierbasis"><code class="docutils literal notranslate"><span class="pre">dmfourierbasis()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.dmfourierbasis_alpha"><code class="docutils literal notranslate"><span class="pre">dmfourierbasis_alpha()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.dmfourierbasis_solar"><code class="docutils literal notranslate"><span class="pre">dmfourierbasis_solar()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.make_dmfourierbasis"><code class="docutils literal notranslate"><span class="pre">make_dmfourierbasis()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makegp_fourier"><code class="docutils literal notranslate"><span class="pre">makegp_fourier()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makecommongp_fourier"><code class="docutils literal notranslate"><span class="pre">makecommongp_fourier()</span></code></a></li>
@@ -1035,6 +1643,7 @@ per-pulsar names.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makecommongp_intcov"><code class="docutils literal notranslate"><span class="pre">makecommongp_intcov()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.makeglobalgp_intcov"><code class="docutils literal notranslate"><span class="pre">makeglobalgp_intcov()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.powerlaw"><code class="docutils literal notranslate"><span class="pre">powerlaw()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.powerlaw_cutoff"><code class="docutils literal notranslate"><span class="pre">powerlaw_cutoff()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.brokenpowerlaw"><code class="docutils literal notranslate"><span class="pre">brokenpowerlaw()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.freespectrum"><code class="docutils literal notranslate"><span class="pre">freespectrum()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#discovery.signals.make_combined_crn"><code class="docutils literal notranslate"><span class="pre">make_combined_crn()</span></code></a></li>

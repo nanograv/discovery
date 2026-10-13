@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -198,6 +199,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="../components/noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -397,6 +405,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../components/chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../components/priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -539,14 +554,23 @@ Look in <cite>attrs</cite> for priors, runtime_info, and noisedict.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="discovery.pulsar.save_chain">
-<span class="sig-prename descclassname"><span class="pre">discovery.pulsar.</span></span><span class="sig-name descname"><span class="pre">save_chain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/pulsar.html#save_chain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.pulsar.save_chain" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">discovery.pulsar.</span></span><span class="sig-name descname"><span class="pre">save_chain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zstd'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/discovery/pulsar.html#save_chain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.pulsar.save_chain" title="Link to this definition">#</a></dt>
 <dd><p>Saves Pandas chain table to Feather, preserving <cite>attrs</cite> in <cite>schema.metadata[‘json’]</cite>.</p>
+<dl>
+<dt>Args:</dt><dd><p>df: pandas DataFrame to save.
+filename: output path.
+compression: Feather v2 codec passed to <code class="docutils literal notranslate"><span class="pre">pyarrow.feather.write_feather</span></code>.</p>
+<blockquote>
+<div><p>Default <code class="docutils literal notranslate"><span class="pre">'zstd'</span></code>. Use <code class="docutils literal notranslate"><span class="pre">'uncompressed'</span></code> to disable.</p>
+</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="discovery.pulsar.Pulsar">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">discovery.pulsar.</span></span><span class="sig-name descname"><span class="pre">Pulsar</span></span><a class="reference internal" href="../_modules/discovery/pulsar.html#Pulsar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#discovery.pulsar.Pulsar" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="discovery.pulsar.Pulsar.columns">
 <span class="sig-name descname"><span class="pre">columns</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['toas',</span> <span class="pre">'stoas',</span> <span class="pre">'toaerrs',</span> <span class="pre">'residuals',</span> <span class="pre">'freqs',</span> <span class="pre">'backend_flags']</span></em><a class="headerlink" href="#discovery.pulsar.Pulsar.columns" title="Link to this definition">#</a></dt>

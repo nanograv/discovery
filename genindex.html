@@ -30,6 +30,7 @@
 <link href="_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
   
   <!-- So that users can add custom icons -->
@@ -195,6 +196,13 @@
 <li class=" ">
   <a class="nav-link dropdown-item nav-internal" href="components/noise_signals.html">
     Noise and Signal Components
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="components/chromatic_noise.html">
+    Chromatic noise analyses
   </a>
 </li>
 
@@ -392,6 +400,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="components/chromatic_noise.html">
+    Chromatic noise analyses
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="components/priors_spectra.html">
     GP Priors and Spectra
   </a>
@@ -551,11 +566,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/likelihood.html#discovery.likelihood.ArrayLikelihood.cglogL">cglogL() (discovery.likelihood.ArrayLikelihood method)</a>
 </li>
+      <li><a href="api/signals.html#discovery.signals.chrom_poly_basis">chrom_poly_basis() (in module discovery.signals)</a>
+</li>
       <li><a href="api/deterministic.html#discovery.deterministic.chromatic_annual">chromatic_annual() (in module discovery.deterministic)</a>
 </li>
       <li><a href="api/deterministic.html#discovery.deterministic.chromatic_exponential">chromatic_exponential() (in module discovery.deterministic)</a>
 </li>
       <li><a href="api/deterministic.html#discovery.deterministic.chromatic_gaussian">chromatic_gaussian() (in module discovery.deterministic)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.chromatic_quad_basis">chromatic_quad_basis() (in module discovery.signals)</a>
 </li>
       <li><a href="api/likelihood.html#discovery.likelihood.ArrayLikelihood.clogL">clogL (discovery.likelihood.ArrayLikelihood property)</a>
 
@@ -567,10 +586,10 @@
 </li>
       <li><a href="api/matrix.html#discovery.matrix.CompoundDelay">CompoundDelay() (in module discovery.matrix)</a>
 </li>
-      <li><a href="api/matrix.html#discovery.matrix.CompoundGlobalGP">CompoundGlobalGP() (in module discovery.matrix)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/matrix.html#discovery.matrix.CompoundGlobalGP">CompoundGlobalGP() (in module discovery.matrix)</a>
+</li>
       <li><a href="api/matrix.html#discovery.matrix.CompoundGP">CompoundGP() (in module discovery.matrix)</a>
 </li>
       <li><a href="api/likelihood.html#discovery.likelihood.GlobalLikelihood.conditional">conditional (discovery.likelihood.GlobalLikelihood property)</a>
@@ -590,6 +609,8 @@
       <li><a href="api/deterministic.html#discovery.deterministic.cos2comp">cos2comp() (in module discovery.deterministic)</a>
 </li>
       <li><a href="api/signals.html#discovery.signals.cov2cov">cov2cov() (in module discovery.signals)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.custom_blocked_interpolation_basis">custom_blocked_interpolation_basis() (in module discovery.signals)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -662,8 +683,6 @@
       <li><a href="api/signals.html#discovery.signals.dmfourierbasis">dmfourierbasis() (in module discovery.signals)</a>
 </li>
       <li><a href="api/signals.html#discovery.signals.dmfourierbasis_alpha">dmfourierbasis_alpha() (in module discovery.signals)</a>
-</li>
-      <li><a href="api/signals.html#discovery.signals.dmfourierbasis_solar">dmfourierbasis_solar() (in module discovery.signals)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -767,6 +786,20 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/signals.html#discovery.signals.linBinning">linBinning() (in module discovery.signals)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.linear_blocked_interpolation_basis">linear_blocked_interpolation_basis() (in module discovery.signals)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.log_fourierbasis">log_fourierbasis() (in module discovery.signals)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.log_fourierbasis_chrom">log_fourierbasis_chrom() (in module discovery.signals)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/signals.html#discovery.signals.log_fourierbasis_chrom_fixed">log_fourierbasis_chrom_fixed() (in module discovery.signals)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.log_fourierbasis_dm">log_fourierbasis_dm() (in module discovery.signals)</a>
+</li>
       <li><a href="api/likelihood.html#discovery.likelihood.ArrayLikelihood.logL">logL (discovery.likelihood.ArrayLikelihood property)</a>
 
       <ul>
@@ -923,8 +956,6 @@
         <li><a href="api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_solve_1d">(discovery.matrix.WoodburyKernel_varNP method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_solve_1d_vary">make_solve_1d_vary() (discovery.matrix.WoodburyKernel_varP method)</a>
 </li>
       <li><a href="api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.make_solve_2d">make_solve_2d() (discovery.matrix.NoiseMatrix1D_novar method)</a>
@@ -943,6 +974,8 @@
         <li><a href="api/matrix.html#discovery.matrix.WoodburyKernel_varNP.make_solve_2d">(discovery.matrix.WoodburyKernel_varNP method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/matrix.html#discovery.matrix.WoodburyKernel_varP.make_solve_2d_vary">make_solve_2d_vary() (discovery.matrix.WoodburyKernel_varP method)</a>
 </li>
       <li><a href="api/matrix.html#discovery.matrix.NoiseMatrix1D_novar.make_sqrt">make_sqrt() (discovery.matrix.NoiseMatrix1D_novar method)</a>
@@ -989,6 +1022,8 @@
 </li>
       <li><a href="api/signals.html#discovery.signals.makegp_avgcov">makegp_avgcov() (in module discovery.signals)</a>
 </li>
+      <li><a href="api/signals.html#discovery.signals.makegp_chrom_poly_svd">makegp_chrom_poly_svd() (in module discovery.signals)</a>
+</li>
       <li><a href="api/signals.html#discovery.signals.makegp_ecorr">makegp_ecorr() (in module discovery.signals)</a>
 </li>
       <li><a href="api/signals.html#discovery.signals.makegp_ecorr_simple">makegp_ecorr_simple() (in module discovery.signals)</a>
@@ -1011,7 +1046,11 @@
 </li>
       <li><a href="api/signals.html#discovery.signals.makegp_improper">makegp_improper() (in module discovery.signals)</a>
 </li>
+      <li><a href="api/signals.html#discovery.signals.makegp_improper_varF">makegp_improper_varF() (in module discovery.signals)</a>
+</li>
       <li><a href="api/signals.html#discovery.signals.makegp_intcov">makegp_intcov() (in module discovery.signals)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.makegp_timedomain_dm">makegp_timedomain_dm() (in module discovery.signals)</a>
 </li>
       <li><a href="api/solar.html#discovery.solar.makegp_timedomain_solar_dm">makegp_timedomain_solar_dm() (in module discovery.solar)</a>
 </li>
@@ -1028,6 +1067,8 @@
       <li><a href="api/signals.html#discovery.signals.makenoise_measurement_simple">makenoise_measurement_simple() (in module discovery.signals)</a>
 </li>
       <li><a href="api/signals.html#discovery.signals.makepowerlaw_crn">makepowerlaw_crn() (in module discovery.signals)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.matern_kernel">matern_kernel() (in module discovery.signals)</a>
 </li>
       <li><a href="api/pulsar.html#discovery.pulsar.Pulsar.metadata">metadata (discovery.pulsar.Pulsar attribute)</a>
 </li>
@@ -1062,6 +1103,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/matrix.html#discovery.matrix.NoiseMatrix">NoiseMatrix (class in discovery.matrix)</a>
 </li>
+      <li><a href="api/matrix.html#discovery.matrix.NoiseMatrix12D_novar">NoiseMatrix12D_novar() (in module discovery.matrix)</a>
+</li>
       <li><a href="api/matrix.html#discovery.matrix.NoiseMatrix12D_var">NoiseMatrix12D_var() (in module discovery.matrix)</a>
 </li>
       <li><a href="api/matrix.html#discovery.matrix.NoiseMatrix1D_novar">NoiseMatrix1D_novar (class in discovery.matrix)</a>
@@ -1077,6 +1120,8 @@
       <li><a href="api/matrix.html#discovery.matrix.NoiseMatrixSM_novar">NoiseMatrixSM_novar (class in discovery.matrix)</a>
 </li>
       <li><a href="api/matrix.html#discovery.matrix.NoiseMatrixSM_var">NoiseMatrixSM_var (class in discovery.matrix)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.normalise_tm_basis">normalise_tm_basis() (in module discovery.signals)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1100,6 +1145,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/signals.html#discovery.signals.powerlaw_cutoff">powerlaw_cutoff() (in module discovery.signals)</a>
+</li>
       <li><a href="api/signals.html#discovery.signals.psd2cov">psd2cov() (in module discovery.signals)</a>
 </li>
       <li><a href="api/pulsar.html#discovery.pulsar.Pulsar">Pulsar (class in discovery.pulsar)</a>
@@ -1115,6 +1162,10 @@
       <li><a href="api/signals.html#discovery.signals.quantize">quantize() (in module discovery.signals)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/signals.html#discovery.signals.quasi_periodic_kernel">quasi_periodic_kernel() (in module discovery.signals)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="R">R</h2>
@@ -1127,6 +1178,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/signals.html#discovery.signals.residuals">residuals() (in module discovery.signals)</a>
+</li>
+      <li><a href="api/signals.html#discovery.signals.ridge_kernel">ridge_kernel() (in module discovery.signals)</a>
 </li>
       <li><a href="api/matrix.html#discovery.matrix.rngkey">rngkey() (in module discovery.matrix)</a>
 </li>
@@ -1194,6 +1247,8 @@
         <li><a href="api/matrix.html#discovery.matrix.WoodburyKernel_novar.solve_2d">(discovery.matrix.WoodburyKernel_novar method)</a>
 </li>
       </ul></li>
+      <li><a href="api/signals.html#discovery.signals.square_exponential_kernel">square_exponential_kernel() (in module discovery.signals)</a>
+</li>
   </ul></td>
 </tr></table>
 
