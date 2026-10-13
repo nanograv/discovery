@@ -22,6 +22,8 @@ import discovery as ds
 from discovery import prior
 from discovery.models.nanograv_single_pulsar_outlier import (
     priordict_outlier_default,
+    _designmatrix_fn,
+    _n_coeffs,
     make_outlier_likelihood,
     _partition_params,
     assemble_pardict,
@@ -376,7 +378,7 @@ def test_outlier_model_registers_expected_sites(j0437_psr):
     model = make_outlier_model(psrl)
     parts = _partition_params(psrl)
     N = j0437_psr.residuals.size
-    n_coeffs = psrl.N.F.shape[-1]
+    n_coeffs = _n_coeffs(psrl.N)
 
     seeded = numpyro.handlers.seed(model, rng_seed=0)
     trace  = numpyro.handlers.trace(seeded).get_trace()
@@ -449,7 +451,7 @@ def j0437_gibbs_state(j0437_psr):
     parts = _partition_params(psrl)
     nd = j0437_psr.noisedict
     N = j0437_psr.residuals.size
-    n_coeffs = psrl.N.F.shape[-1]
+    n_coeffs = _n_coeffs(psrl.N)
 
     gibbs_sites = {
         "coeffs":  jnp.zeros(n_coeffs),       # overwritten on first call
@@ -607,3 +609,167 @@ def test_assemble_pardict_works_under_jit():
         "ecorrs": jnp.array([4.0]),
     }
     assert float(f(hmc_sites)) == 10.0
+
+
+# ---- parameter-dependent design matrix (free chromatic GP) ----
+
+def _chrom_outlier_likelihood(psr, Tspan):
+    """Outlier likelihood with a free-index chromatic GP bolted on.
+
+    `signals.fourierbasis_chrom` returns a design-matrix *factory* rather
+    than an array, so `psrl.N.F` comes out callable — the case that broke
+    every `psrl.N.F.shape` / `psrl.N.F @ x` in this module.
+    `make_outlier_likelihood` doesn't take extra GPs, so build the stack
+    by hand (still `outliers=True` + `variable=True`, as its docstring
+    allows).
+    """
+    return ds.likelihood.PulsarLikelihood([
+        psr.residuals,
+        ds.signals.makenoise_measurement(psr, noisedict={}, outliers=True),
+        ds.signals.makegp_timing(psr, svd=True, variable=True),
+        ds.signals.makegp_ecorr(psr, variable=True),
+        ds.signals.makegp_fourier(psr, ds.signals.freespectrum, 30, T=Tspan,
+                                  name="red_noise"),
+        ds.signals.makegp_fourier(psr, ds.signals.powerlaw, 10, T=Tspan,
+                                  fourierbasis=ds.signals.fourierbasis_chrom,
+                                  name="chrom_gp"),
+    ])
+
+
+@pytest.fixture(scope="module")
+def j0437_chrom(j0437_psr):
+    """(psrl, parts, hmc_sites, gibbs_sites) for the callable-F likelihood."""
+    psr = j0437_psr
+    psrl = _chrom_outlier_likelihood(psr, 20 * 86400 * 365.25)
+    parts = _partition_params(psrl)
+
+    nd = psr.noisedict
+    N = psr.residuals.size
+    hmc_sites = {
+        "efacs":  jnp.array([nd[p] for p in parts["efac"]]),
+        "equads": jnp.array([nd[p] for p in parts["equad"]]),
+        "ecorrs": jnp.array([nd[p] for p in parts["ecorr"]]),
+        "nu":     jnp.array(5.0),
+    }
+    for gp_param in parts["red_noise"]:
+        m = re.search(r"\((\d+)\)$", gp_param)
+        size = int(m.group(1)) if m else 1
+        if gp_param.endswith("chrom_gp_alpha"):
+            hmc_sites[gp_param] = jnp.array(4.0)     # inside the [2.5, 14] prior
+        elif "log10_A" in gp_param:
+            hmc_sites[gp_param] = jnp.array(-14.0)
+        elif "gamma" in gp_param:
+            hmc_sites[gp_param] = jnp.array(3.0)
+        else:
+            hmc_sites[gp_param] = jnp.full(size, -7.0)
+
+    gibbs_sites = {
+        "coeffs":  jnp.zeros(_n_coeffs(psrl.N)),
+        "theta":   jnp.array(0.05),
+        "z_i":     jnp.zeros(N, dtype=jnp.int32),
+        "alpha_i": jnp.ones(N),
+        "q":       jnp.zeros(N),
+    }
+    return psrl, parts, hmc_sites, gibbs_sites
+
+
+def test_chrom_likelihood_really_has_callable_F(j0437_chrom):
+    # Guards the premise of every test below: without this the fixture
+    # would silently exercise the ordinary array path.
+    psrl, parts, _, _ = j0437_chrom
+    assert callable(psrl.N.F)
+    assert any(p.endswith("chrom_gp_alpha") for p in psrl.N.F.params)
+    # the chromatic index must reach the HMC sites, via the GP-hyper bucket
+    assert any(p.endswith("chrom_gp_alpha") for p in parts["red_noise"])
+
+
+def test_designmatrix_fn_passthrough_for_array_F(j0437_psr):
+    psrl = make_outlier_likelihood(j0437_psr, Tspan=20 * 86400 * 365.25)
+    assert not callable(psrl.N.F)
+    Ffunc = _designmatrix_fn(psrl.N)
+    assert Ffunc.params == []
+    assert jnp.allclose(Ffunc({}), jnp.asarray(psrl.N.F))
+
+
+def test_designmatrix_fn_tracks_chromatic_index(j0437_chrom):
+    psrl, parts, hmc_sites, _ = j0437_chrom
+    Ffunc = _designmatrix_fn(psrl.N)
+    alpha_par = next(p for p in parts["red_noise"]
+                     if p.endswith("chrom_gp_alpha"))
+
+    F4 = Ffunc(hmc_sites)
+    F6 = Ffunc({**hmc_sites, alpha_par: jnp.array(6.0)})
+
+    assert F4.shape[0] == psrl.y.size
+    assert not jnp.allclose(F4, F6), "columns must move with the chromatic index"
+
+
+def test_n_coeffs_matches_evaluated_width(j0437_chrom):
+    # `_n_coeffs` reads `N.index`; check it agrees with the real basis.
+    psrl, _, hmc_sites, _ = j0437_chrom
+    assert _n_coeffs(psrl.N) == _designmatrix_fn(psrl.N)(hmc_sites).shape[-1]
+
+
+def test_n_coeffs_matches_F_shape_for_array_F(j0437_psr):
+    psrl = make_outlier_likelihood(j0437_psr, Tspan=20 * 86400 * 365.25)
+    assert _n_coeffs(psrl.N) == psrl.N.F.shape[-1]
+
+
+def test_outlier_model_builds_with_callable_F(j0437_chrom):
+    psrl, parts, _, _ = j0437_chrom
+    model = make_outlier_model(psrl)
+    trace = numpyro.handlers.trace(
+        numpyro.handlers.seed(model, jax.random.key(1))).get_trace()
+
+    alpha_par = next(p for p in parts["red_noise"]
+                     if p.endswith("chrom_gp_alpha"))
+    assert alpha_par in trace
+    assert trace["coeffs"]["value"].shape == (_n_coeffs(psrl.N),)
+    assert np.isfinite(float(trace["loglike"]["value"]))
+
+
+def test_gibbs_fn_runs_with_callable_F(j0437_chrom):
+    psrl, _, hmc_sites, gibbs_sites = j0437_chrom
+    gibbs_fn = make_outlier_gibbs_fn(psrl)
+    out = gibbs_fn(jax.random.key(0), gibbs_sites, hmc_sites)
+    for site in ["coeffs", "theta", "z_i", "alpha_i", "q"]:
+        assert site in out
+        assert bool(jnp.all(jnp.isfinite(out[site]))), f"NaN at site {site}"
+    assert out["coeffs"].shape == (_n_coeffs(psrl.N),)
+
+
+def test_gibbs_fn_responds_to_chromatic_index(j0437_chrom):
+    # Different chromatic index -> different design matrix -> different
+    # coefficients and different `yprime = y - F @ b` feeding the z_i
+    # draw. If `F` were frozen at build time these two sweeps would be
+    # identical.
+    #
+    # `alpha_i` must be off 1 for the q assertion to have teeth: at
+    # alpha_i == 1 the scaled and unit noise diagonals coincide, the
+    # likelihood ratio in `draw_z` is exactly 1, and q collapses to theta
+    # regardless of the residuals.
+    psrl, parts, hmc_sites, gibbs_sites = j0437_chrom
+    gibbs_fn = make_outlier_gibbs_fn(psrl)
+    alpha_par = next(p for p in parts["red_noise"]
+                     if p.endswith("chrom_gp_alpha"))
+
+    state = {**gibbs_sites,
+             "alpha_i": jnp.full(psrl.y.size, 2.0)}
+
+    key = jax.random.key(3)
+    out4 = gibbs_fn(key, state, hmc_sites)
+    out6 = gibbs_fn(key, state, {**hmc_sites, alpha_par: jnp.array(6.0)})
+
+    assert not jnp.allclose(out4["coeffs"], out6["coeffs"])
+    assert not jnp.allclose(out4["q"], out6["q"])
+
+
+def test_conditional_params_include_chromatic_index(j0437_chrom):
+    # `sample_conditional` inherits `conditional.params`; callers that
+    # build a pardict from it would KeyError inside the basis factory if
+    # the chromatic index were missing.
+    psrl, parts, _, _ = j0437_chrom
+    alpha_par = next(p for p in parts["red_noise"]
+                     if p.endswith("chrom_gp_alpha"))
+    assert alpha_par in psrl.conditional.params
+    assert alpha_par in psrl.sample_conditional.params

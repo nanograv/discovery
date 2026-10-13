@@ -79,9 +79,9 @@ Create GPs with Fourier basis (for red noise, DM variations, etc.):
                              name='rednoise')
 
    # DM variations
-   dm_gp = ds.makegp_fourier(psr, ds.powerlaw, components=30,
+   dm_gp = ds.makegp_fourier(psr, ds.powerlaw, components=100,
                              fourierbasis=ds.fourierbasis_dm,
-                             name='dmgp')
+                             name='dm_gp')
 
    # Common process (shared parameters)
    crn_gp = ds.makegp_fourier(psr, ds.powerlaw, components=14,
@@ -238,21 +238,18 @@ This allows the chromatic index to be a free parameter in the model.
 
 **Example usage:**
 
+:func:`~discovery.signals.makegp_fourier` detects that the basis is callable and takes
+its argument as an extra hyperparameter, so the basis is passed directly:
+
 .. code-block:: python
 
    # Create GP with variable chromatic index
-   f, df, fmat_func = ds.fourierbasis_chrom(psr, components=30)
+   chrom_gp = ds.makegp_fourier(psr, ds.powerlaw, components=100,
+                                fourierbasis=ds.fourierbasis_chrom,
+                                name='chrom_gp')
+   # -> {psr}_chrom_gp_log10_A, {psr}_chrom_gp_gamma, {psr}_chrom_gp_alpha
 
-   def chromatic_prior(f, df, log10_A, gamma, alpha):
-       # alpha is a free parameter here
-       return ds.powerlaw(f, df, log10_A, gamma)
-
-   # In the model, the basis will be evaluated at the sampled alpha value
-   chrom_gp = ds.makegp_fourier(psr, chromatic_prior, components=30,
-                                fourierbasis=lambda psr, c, T: (f, df, fmat_func),
-                                name='chromatic')
-
-See :func:`~discovery.signals.fourierbasis_chrom`.
+See :func:`~discovery.signals.fourierbasis_chrom` and :doc:`chromatic_noise`.
 
 Utility Functions
 -----------------
@@ -275,6 +272,7 @@ See :func:`~discovery.signals.getspan`.
 See Also
 --------
 
+- :doc:`chromatic_noise` - DM, solar wind, chromatic, and deterministic chromatic signals
 - :doc:`priors_spectra` - GP prior functions
 - :doc:`delays` - Deterministic delay models
 - :doc:`/tutorials/basic_likelihood` - Building likelihoods

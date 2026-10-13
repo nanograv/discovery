@@ -88,25 +88,43 @@ def _partition_params(psrl):
         dict with sorted lists under keys `efac`, `equad`, `ecorr`,
         `red_noise`, plus a single string under `alpha_scaling`.
 
+        The ``red_noise`` bucket contains *all* GP hyperparameters that
+        are not white-noise or ``alpha_scaling`` — i.e. red noise, DM GP,
+        solar-wind GP, chromatic GP, etc. The key name is kept as
+        ``"red_noise"`` for backward compatibility; downstream code that
+        iterates over it by parameter name is unaffected.
+
     Raises:
         ValueError: if there isn't exactly one `alpha_scaling` parameter
             (usually means `outliers=True` was not passed to
             `makenoise_measurement`).
     """
     params = psrl.logL.params
-    parts = {
-        "efac":      sorted(p for p in params if "efac" in p),
-        "equad":     sorted(p for p in params if "equad" in p),
-        "ecorr":     sorted(p for p in params if "log10_ecorr" in p),
-        "red_noise": sorted(p for p in params if "red_noise" in p),
-    }
+
+    efac  = sorted(p for p in params if "efac"          in p)
+    equad = sorted(p for p in params if "equad"         in p)
+    ecorr = sorted(p for p in params if "log10_ecorr"   in p)
     alpha = [p for p in params if "alpha_scaling" in p]
+
     if len(alpha) != 1:
         raise ValueError(
             f"expected exactly one alpha_scaling param, found {alpha}; "
             "did you pass outliers=True to makenoise_measurement?")
-    parts["alpha_scaling"] = alpha[0]
-    return parts
+
+    # Everything that is not a WN parameter or alpha_scaling is a GP
+    # hyperparameter (red noise, DM GP, SW GP, chromatic GP, …).  Using
+    # set-difference keeps the classifier future-proof without any
+    # hard-coded name patterns.
+    _classified = set(efac) | set(equad) | set(ecorr) | {alpha[0]}
+    gp_hypers = sorted(p for p in params if p not in _classified)
+
+    return {
+        "efac":         efac,
+        "equad":        equad,
+        "ecorr":        ecorr,
+        "red_noise":    gp_hypers,   # key kept for backward compatibility
+        "alpha_scaling": alpha[0],
+    }
 
 
 def assemble_pardict(hmc_sites: dict, partition: dict) -> dict:
@@ -128,6 +146,53 @@ def assemble_pardict(hmc_sites: dict, partition: dict) -> dict:
     pardict.update(zip(partition["equad"], hmc_sites["equads"]))
     pardict.update(zip(partition["ecorr"], hmc_sites["ecorrs"]))
     return pardict
+
+
+def _designmatrix_fn(N):
+    """Return `F(params) -> design matrix` for the GP stack `N`.
+
+    `N.F` is a plain array for the usual GPs, but a callable when any GP
+    in the stack has a parameter-dependent basis — e.g. a chromatic GP
+    built on `signals.fourierbasis_chrom`, whose columns are scaled by
+    `(fref / freqs) ** alpha` with a free `alpha`. Wrapping the fixed
+    case in a constant closure lets callers treat both alike.
+
+    Args:
+        N: the GP stack, i.e. `psrl.N`.
+
+    Returns:
+        Callable `params -> jnp array (n_toa, n_coeffs)`, carrying a
+        `.params` list of the parameters its columns depend on (empty
+        for a fixed basis).
+    """
+    F = N.F
+    if callable(F):
+        return F
+
+    Fmat = jnp.asarray(F)
+
+    def Ffunc(params):
+        return Fmat
+    Ffunc.params = []
+
+    return Ffunc
+
+
+def _n_coeffs(N):
+    """Total width of the GP coefficient vector for the GP stack `N`.
+
+    Taken from `N.index` rather than `N.F.shape[-1]`, since a
+    parameter-dependent `F` has no shape until it is evaluated. `index`
+    maps each coefficient parameter name to its slice of the flattened
+    vector and is built with the correct widths in either case.
+
+    Args:
+        N: the GP stack, i.e. `psrl.N`.
+
+    Returns:
+        int, the length of the flattened coefficient vector.
+    """
+    return max(sli.stop for sli in N.index.values())
 
 
 # ---- Gibbs draws ----
@@ -288,7 +353,7 @@ def make_outlier_model(psrl, *, priordict=None):
     partition  = _partition_params(psrl)
     alpha_key  = partition["alpha_scaling"]
     N          = psrl.y.size
-    n_coeffs   = psrl.N.F.shape[-1]
+    n_coeffs   = _n_coeffs(psrl.N)
 
     # Resolve the WN ranges from the first param in each group (all share a
     # pattern in practice, e.g. `(.*_)?efac`).
@@ -375,7 +440,7 @@ def make_outlier_gibbs_fn(psrl):
     sample_cond_fn = psrl.sample_conditional
     cvars          = list(psrl.N.index.keys())
 
-    T = psrl.N.F
+    Ffunc = _designmatrix_fn(psrl.N)
     y = psrl.y
     N = y.size
     ones_N = jnp.ones(N)
@@ -390,7 +455,9 @@ def make_outlier_gibbs_fn(psrl):
         pardict[alpha_key] = gibbs_sites["alpha_i"] ** gibbs_sites["z_i"]
         _, coeffs_flat = draw_coeffs(k_c, pardict, sample_cond_fn, cvars)
 
-        means  = T @ coeffs_flat
+        # F may depend on sampled parameters (free chromatic index), so it
+        # has to be rebuilt from the current pardict on every sweep.
+        means  = Ffunc(pardict) @ coeffs_flat
         yprime = y - means
 
         # 2. theta (Tak/Ellis/Ghosh prior strength k = N)
@@ -485,7 +552,7 @@ class OutlierFitResult:
         params = {k: np.asarray(v[sample_idx])
                   for k, v in self.samples["params"].items()}
         coeffs, _ = self.psrl.conditional(params)
-        mean = self.psrl.N.F @ coeffs
+        mean = _designmatrix_fn(self.psrl.N)(params) @ coeffs
         yp = self.psr.residuals - mean
 
         partition = _partition_params(self.psrl)

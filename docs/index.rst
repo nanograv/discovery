@@ -28,6 +28,7 @@ Discovery is a next-generation PTA data analysis package built on JAX.
    :caption: Component Reference
 
    components/noise_signals
+   components/chromatic_noise
    components/priors_spectra
    components/delays
 

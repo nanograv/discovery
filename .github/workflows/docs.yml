@@ -3,14 +3,20 @@ name: Build and Deploy Documentation
 on:
   push:
     branches:
-      - main
-      - sphinx_docs  # Add branches you want to build docs for
+      - '**'        # build docs for every branch, not just main
+      - '!gh-pages' # never build from the published site itself
   pull_request:
     branches:
       - main
 
 permissions:
   contents: write
+
+# gh-pages is a single branch: serialize deploys so two branches pushed at
+# once do not race each other's commits.
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
@@ -41,6 +47,7 @@ jobs:
           publish_dir: ./docs/_build/html
           publish_branch: gh-pages
           destination_dir: .
+          keep_files: true
 
       - name: Deploy to GitHub Pages (feature branches)
         if: github.ref != 'refs/heads/main' && github.event_name == 'push'
@@ -51,6 +58,21 @@ jobs:
           publish_branch: gh-pages
           destination_dir: branches/${{ github.ref_name }}
           keep_files: true
+
+      - name: Link to the rendered docs
+        if: github.event_name == 'push'
+        run: |
+          base="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            url="$base/"
+          else
+            url="$base/branches/${{ github.ref_name }}/"
+          fi
+          echo "### Rendered documentation" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "[$url]($url)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "_Pages can take a minute to refresh after the deploy._" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload artifact (for PRs)
         if: github.event_name == 'pull_request'

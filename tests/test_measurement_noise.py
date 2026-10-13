@@ -288,6 +288,25 @@ def test_makenoise_measurement_outliers():
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize('tnequad', [False, True])
+@pytest.mark.parametrize('vectorize', [True, False])
+def test_makenoise_measurement_outliers_scale_variance(tnequad, vectorize):
+    """alpha_scaling multiplies the variance, not the error, on every code path"""
+    psr = MockPulsar('J0437-4715', ntoas=50, nbackends=1)
+    backend = sorted(set(psr.backend_flags))[0]
+    equad = 'tnequad' if tnequad else 't2equad'
+
+    noise = signals.makenoise_measurement(psr, noisedict={}, outliers=True,
+                                          tnequad=tnequad, vectorize=vectorize)
+    alpha = 2.5 * np.ones(psr.toas.size)
+    params = {f'{psr.name}_{backend}_efac': 1.0,
+              f'{psr.name}_{backend}_log10_{equad}': -20.0,
+              f'{psr.name}_alpha_scaling({psr.toas.size})': alpha}
+
+    np.testing.assert_allclose(noise.getN(params), alpha * psr.toaerrs**2 + 1e-40, rtol=1e-10)
+
+
+@pytest.mark.unit
 def test_makenoise_measurement_outliers_error_fixed():
     """Test that outliers=True raises error when noise is fixed"""
     psr = MockPulsar('J0437-4715', ntoas=50, nbackends=1)
@@ -663,3 +682,333 @@ def test_missing_bin_zero_bug(data_dir):
             f"but got {gp_ecorr.F.shape[1]}. This indicates bin 0 is being skipped by "
             f"range(1, bins.max() + 1)."
         )
+
+# ---------------------------------------------------------------------------
+# Chromatic EQUAD (chromequad) regression tests
+# ---------------------------------------------------------------------------
+
+class ChromMockPulsar:
+    """Deterministic mock pulsar with radio frequencies and multi-TOA epochs.
+
+    TOAs come in epochs of ``ntoas_per_epoch`` (spread over a few seconds, at
+    different frequencies) so that ECORR quantization produces real epochs.
+    Each epoch is assigned to a single backend, cycling through the backends.
+    """
+    def __init__(self, name='J1234+5678', nepochs=12, ntoas_per_epoch=4, nbackends=2, seed=0):
+        rng = np.random.default_rng(seed)
+        self.name = name
+
+        epochs = np.arange(nepochs) * 86400.0 * 30.0
+        self.toas = (epochs[:, None] + np.arange(ntoas_per_epoch)[None, :] * 0.1).ravel()
+        ntoas = self.toas.size
+
+        self.toaerrs = rng.uniform(1e-7, 1e-6, ntoas)
+        self.freqs = rng.uniform(700.0, 2000.0, ntoas)
+
+        backends = np.array([f'backend{i}' for i in range(nbackends)])
+        self.backend_flags = np.repeat(backends[np.arange(nepochs) % nbackends], ntoas_per_epoch)
+
+        self.pos = np.array([1.0, 0.0, 0.0])
+        self.residuals = 1e-6 * rng.standard_normal(ntoas)
+
+
+def _chrom_noisedict(psr, tnequad=False, per_backend=False, ecorr=False):
+    """Noise dictionary with distinct per-backend values for a chromequad model."""
+    backends = sorted(set(psr.backend_flags))
+    equad = 'log10_tnequad' if tnequad else 'log10_t2equad'
+
+    nd = {}
+    for i, b in enumerate(backends):
+        nd[f'{psr.name}_{b}_efac'] = 1.1 + 0.2 * i
+        nd[f'{psr.name}_{b}_{equad}'] = -6.3 - 0.4 * i
+        nd[f'{psr.name}_{b}_log10_chromequad'] = -6.1 - 0.3 * i
+        if per_backend:
+            nd[f'{psr.name}_{b}_chromequad_idx'] = 2.0 + 1.5 * i
+        if ecorr:
+            nd[f'{psr.name}_{b}_log10_ecorr'] = -6.6 - 0.2 * i
+    if not per_backend:
+        nd[f'{psr.name}_chromequad_idx'] = 3.7
+
+    return nd
+
+
+def _expected_noise(psr, nd, tnequad=False, per_backend=False, scale=1.0, fref=1400, chromequad=True):
+    """Independent per-TOA reference implementation of the measurement-noise variance.
+
+    tnequad=True:  efac^2 (scale sigma)^2 + scale^2 EQUAD^2           [+ scale^2 CQ^2 (fref/f)^idx]
+    tnequad=False: efac^2 ((scale sigma)^2 + scale^2 EQUAD^2)         [+ scale^2 CQ^2 (fref/f)^idx]
+
+    The chromatic term sits outside the EFAC and is multiplied by ``scale**2`` like EQUAD.
+    """
+    equad = 'log10_tnequad' if tnequad else 'log10_t2equad'
+    sigma2 = (scale * psr.toaerrs)**2
+
+    N = np.zeros_like(psr.toaerrs)
+    for b in sorted(set(psr.backend_flags)):
+        m = psr.backend_flags == b
+        efac2 = nd[f'{psr.name}_{b}_efac']**2
+        equad2 = scale**2 * 10.0**(2 * nd[f'{psr.name}_{b}_{equad}'])
+
+        if tnequad:
+            val = efac2 * sigma2 + equad2
+        else:
+            val = efac2 * (sigma2 + equad2)
+
+        if chromequad:
+            idx = nd[f'{psr.name}_{b}_chromequad_idx'] if per_backend else nd[f'{psr.name}_chromequad_idx']
+            val = val + scale**2 * 10.0**(2 * nd[f'{psr.name}_{b}_log10_chromequad']) * (fref / psr.freqs)**idx
+
+        N[m] = val[m]
+
+    return N
+
+
+_TNEQUAD_PERBACKEND = pytest.mark.parametrize('tnequad,per_backend',
+                                              [(False, False), (False, True), (True, False), (True, True)])
+
+
+@pytest.mark.unit
+@_TNEQUAD_PERBACKEND
+@pytest.mark.parametrize('fref', [1400, 820])
+def test_chromequad_fixed_matches_formula(tnequad, per_backend, fref):
+    """Fixed chromequad noise matches the hand-computed variance for both EQUAD conventions."""
+    psr = ChromMockPulsar(nbackends=3)
+    nd = _chrom_noisedict(psr, tnequad=tnequad, per_backend=per_backend)
+
+    noise = signals.makenoise_measurement(psr, noisedict=nd, tnequad=tnequad, chromequad=True,
+                                          chromequad_idx_per_backend=per_backend, fref=fref)
+
+    assert isinstance(noise, matrix.NoiseMatrix1D_novar)
+    expected = _expected_noise(psr, nd, tnequad=tnequad, per_backend=per_backend, fref=fref)
+    np.testing.assert_allclose(noise.N, expected, rtol=1e-12)
+
+
+@pytest.mark.unit
+@_TNEQUAD_PERBACKEND
+def test_chromequad_variable_params(tnequad, per_backend):
+    """Variable chromequad model exposes exactly the expected parameters, in order."""
+    psr = ChromMockPulsar(nbackends=3)
+    backends = sorted(set(psr.backend_flags))
+    equad = 'log10_tnequad' if tnequad else 'log10_t2equad'
+
+    expected = ([f'{psr.name}_{b}_efac' for b in backends]
+                + [f'{psr.name}_{b}_{equad}' for b in backends]
+                + [f'{psr.name}_{b}_log10_chromequad' for b in backends])
+    if per_backend:
+        expected += [f'{psr.name}_{b}_chromequad_idx' for b in backends]
+    else:
+        expected += [f'{psr.name}_chromequad_idx']
+
+    for vectorize in (True, False):
+        noise = signals.makenoise_measurement(psr, noisedict={}, tnequad=tnequad, chromequad=True,
+                                              chromequad_idx_per_backend=per_backend, vectorize=vectorize)
+        assert isinstance(noise, matrix.NoiseMatrix1D_var)
+        assert noise.params == expected
+
+
+@pytest.mark.unit
+def test_chromequad_partial_noisedict_is_fully_variable():
+    """A noisedict with EFAC/EQUAD but no chromequad entries makes *all* white-noise params variable."""
+    psr = ChromMockPulsar()
+    nd = _chrom_noisedict(psr)
+    partial = {k: v for k, v in nd.items() if 'chromequad' not in k}
+
+    noise = signals.makenoise_measurement(psr, noisedict=partial, chromequad=True)
+
+    assert isinstance(noise, matrix.NoiseMatrix1D_var)
+    assert set(noise.params) == set(nd)
+
+
+@pytest.mark.unit
+@_TNEQUAD_PERBACKEND
+def test_chromequad_fixed_and_variable_paths_agree(tnequad, per_backend):
+    """Fixed, vectorized-variable and looped-variable chromequad paths give identical noise."""
+    psr = ChromMockPulsar(nbackends=3)
+    nd = _chrom_noisedict(psr, tnequad=tnequad, per_backend=per_backend)
+    kwargs = dict(tnequad=tnequad, chromequad=True, chromequad_idx_per_backend=per_backend, fref=820)
+
+    fixed = signals.makenoise_measurement(psr, noisedict=nd, **kwargs).N
+    vec = signals.makenoise_measurement(psr, noisedict={}, vectorize=True, **kwargs).getN(nd)
+    loop = signals.makenoise_measurement(psr, noisedict={}, vectorize=False, **kwargs).getN(nd)
+
+    expected = _expected_noise(psr, nd, tnequad=tnequad, per_backend=per_backend, fref=820)
+    np.testing.assert_allclose(fixed, expected, rtol=1e-12)
+    np.testing.assert_allclose(vec, expected, rtol=1e-12)
+    np.testing.assert_allclose(loop, expected, rtol=1e-12)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('tnequad', [False, True])
+def test_chromequad_negligible_amplitude_recovers_plain_model(tnequad):
+    """With a vanishing chromequad amplitude the model reduces to chromequad=False."""
+    psr = ChromMockPulsar(nbackends=3)
+    nd = _chrom_noisedict(psr, tnequad=tnequad)
+    for k in nd:
+        if k.endswith('_log10_chromequad'):
+            nd[k] = -30.0
+    plain_nd = {k: v for k, v in nd.items() if 'chromequad' not in k}
+
+    chrom = signals.makenoise_measurement(psr, noisedict=nd, tnequad=tnequad, chromequad=True)
+    plain = signals.makenoise_measurement(psr, noisedict=plain_nd, tnequad=tnequad, chromequad=False)
+    np.testing.assert_allclose(chrom.N, plain.N, rtol=1e-12)
+
+    for vectorize in (True, False):
+        chrom_var = signals.makenoise_measurement(psr, tnequad=tnequad, chromequad=True, vectorize=vectorize)
+        plain_var = signals.makenoise_measurement(psr, tnequad=tnequad, chromequad=False, vectorize=vectorize)
+        np.testing.assert_allclose(chrom_var.getN(nd), plain_var.getN(plain_nd), rtol=1e-12)
+
+
+@pytest.mark.unit
+def test_chromequad_zero_index_is_constant_offset():
+    """With chromequad_idx=0 the chromatic term is a frequency-independent per-backend offset."""
+    psr = ChromMockPulsar(nbackends=3)
+    nd = _chrom_noisedict(psr, per_backend=True)
+    for k in nd:
+        if k.endswith('_chromequad_idx'):
+            nd[k] = 0.0
+    plain_nd = {k: v for k, v in nd.items() if 'chromequad' not in k}
+
+    chrom = signals.makenoise_measurement(psr, noisedict=nd, chromequad=True, chromequad_idx_per_backend=True)
+    plain = signals.makenoise_measurement(psr, noisedict=plain_nd)
+
+    for b in sorted(set(psr.backend_flags)):
+        m = psr.backend_flags == b
+        np.testing.assert_allclose((chrom.N - plain.N)[m],
+                                   10.0**(2 * nd[f'{psr.name}_{b}_log10_chromequad']), rtol=1e-10)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('fref', [1400, 820])
+def test_chromequad_at_reference_frequency(fref):
+    """At freq == fref the chromatic term is exactly CHROMEQUAD^2, independent of the index."""
+    psr = ChromMockPulsar()
+    psr.freqs = np.full_like(psr.freqs, float(fref))
+    nd = _chrom_noisedict(psr)
+    plain_nd = {k: v for k, v in nd.items() if 'chromequad' not in k}
+
+    plain = signals.makenoise_measurement(psr, noisedict=plain_nd).N
+    for idx in (0.0, 2.0, 4.4):
+        nd[f'{psr.name}_chromequad_idx'] = idx
+        chrom = signals.makenoise_measurement(psr, noisedict=nd, chromequad=True, fref=fref).N
+        for b in sorted(set(psr.backend_flags)):
+            m = psr.backend_flags == b
+            np.testing.assert_allclose((chrom - plain)[m],
+                                       10.0**(2 * nd[f'{psr.name}_{b}_log10_chromequad']), rtol=1e-10)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('tnequad', [False, True])
+def test_chromequad_scaled_like_equad(tnequad):
+    """``scale`` rescales TOA errors, EQUAD and the chromatic term alike."""
+    psr = ChromMockPulsar()
+    nd = _chrom_noisedict(psr, tnequad=tnequad)
+    plain_nd = {k: v for k, v in nd.items() if 'chromequad' not in k}
+    scale = 2.5
+
+    unscaled_chrom = (signals.makenoise_measurement(psr, noisedict=nd, tnequad=tnequad, chromequad=True).N
+                      - signals.makenoise_measurement(psr, noisedict=plain_nd, tnequad=tnequad).N)
+
+    kwargs = dict(tnequad=tnequad, scale=scale)
+    fixed = signals.makenoise_measurement(psr, noisedict=nd, chromequad=True, **kwargs).N
+    vec = signals.makenoise_measurement(psr, chromequad=True, vectorize=True, **kwargs).getN(nd)
+    loop = signals.makenoise_measurement(psr, chromequad=True, vectorize=False, **kwargs).getN(nd)
+    plain = signals.makenoise_measurement(psr, noisedict=plain_nd, **kwargs).N
+
+    expected = _expected_noise(psr, nd, tnequad=tnequad, scale=scale)
+    for N in (fixed, vec, loop):
+        np.testing.assert_allclose(N, expected, rtol=1e-12)
+        np.testing.assert_allclose(N - plain, scale**2 * unscaled_chrom, rtol=1e-8)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('ecorr', [False, True])
+@pytest.mark.parametrize('tnequad', [False, True])
+def test_chromequad_likelihood_fixed_equals_variable(ecorr, tnequad):
+    """Fixed-white-noise logL equals the variable-white-noise logL evaluated at the same point."""
+    import jax
+    import discovery as ds
+
+    psr = ChromMockPulsar(nbackends=2)
+    nd = _chrom_noisedict(psr, tnequad=tnequad, ecorr=ecorr)
+    kwargs = dict(tnequad=tnequad, chromequad=True, ecorr=ecorr)
+
+    # NoiseMatrixSM_novar has no make_kernelproduct of its own, so with ECORR in the
+    # noise matrix the likelihood needs a GP on top; use a shared variable red-noise GP.
+    def components():
+        return [ds.makegp_fourier(psr, ds.powerlaw, components=5, name='rednoise')] if ecorr else []
+
+    fixed = ds.PulsarLikelihood([psr.residuals, ds.makenoise_measurement(psr, noisedict=nd, **kwargs),
+                                 *components()])
+    variable = ds.PulsarLikelihood([psr.residuals, ds.makenoise_measurement(psr, noisedict={}, **kwargs),
+                                    *components()])
+
+    gp_params = {f'{psr.name}_rednoise_log10_A': -14.0, f'{psr.name}_rednoise_gamma': 4.0} if ecorr else {}
+    assert set(fixed.logL.params) == set(gp_params)
+    assert set(variable.logL.params) == set(nd) | set(gp_params)
+
+    p0 = {**nd, **gp_params}
+    l_fixed = fixed.logL(gp_params)
+    l_var = variable.logL(p0)
+
+    np.testing.assert_allclose(l_var, l_fixed, rtol=1e-12)
+    np.testing.assert_allclose(jax.jit(variable.logL)(p0), l_fixed, rtol=1e-12)
+
+    # direct Gaussian log-likelihood with the reference (diagonal) covariance;
+    # discovery drops the constant -n/2 log(2 pi)
+    if not ecorr:
+        N = _expected_noise(psr, nd, tnequad=tnequad)
+        r = psr.residuals
+        expected = -0.5 * np.sum(r**2 / N) - 0.5 * np.sum(np.log(N))
+        np.testing.assert_allclose(l_fixed, expected, rtol=1e-12)
+
+
+class _SnapshotPulsar:
+    """Tiny hard-coded pulsar for stored-value regression snapshots."""
+    name = 'J0000+0000'
+    toas = np.array([0.0, 0.1, 0.2, 86400.0, 86400.1, 86400.2])
+    toaerrs = np.array([2e-7, 5e-7, 1e-6, 3e-7, 8e-7, 4e-7])
+    freqs = np.array([800.0, 1400.0, 2100.0, 430.0, 1200.0, 1700.0])
+    backend_flags = np.array(['A', 'A', 'B', 'B', 'A', 'B'])
+
+
+# (tnequad, chromequad, chromequad_idx_per_backend, scale, fref) -> N, values from the
+# implementation at commit 89273c1 (cross-checked against _expected_noise)
+_MEASUREMENT_NOISE_SNAPSHOTS = {
+    'plain_t2': ((False, False, False, 1.0, 1400),
+                 [3.5233825821265947e-13, 6.0643825821265947e-13, 1.7572801118235412e-12,
+                  2.1938011182354098e-13, 1.0783382582126593e-12, 3.3768011182354094e-13]),
+    'plain_tn': ((True, False, False, 1.0, 1400),
+                 [2.9958864315095823e-13, 5.5368864315095822e-13, 1.7298107170553498e-12,
+                  1.9191071705534969e-13, 1.0255886431509582e-12, 3.1021071705534968e-13]),
+    'chrom_t2_shared': ((False, True, False, 1.0, 1400),
+                        [5.3554566518872142e-12, 1.2373956026928536e-12, 1.7926360480197365e-12,
+                         1.2717377983240866e-11, 2.1944382929038565e-12, 4.1495043397905899e-13]),
+    'chrom_tn_perbe': ((True, True, True, 1.0, 820),
+                       [9.6248820319546216e-13, 7.7014564234916369e-13, 1.7357070357876545e-12,
+                        1.7096909373884335e-12, 1.3202106698374043e-12, 3.2256385407288269e-13]),
+    # chromatic term scaled by scale**2 like EQUAD: the 89273c1 values with that term x 2.5**2
+    'chrom_t2_scaled': ((False, True, True, 2.5, 1400),
+                        [1.4279032035520334e-11, 7.7337225168303326e-12, 1.1222641416078636e-11,
+                         6.3057400989912977e-11, 1.2107133190136329e-11, 2.6125621967100034e-12]),
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('case', sorted(_MEASUREMENT_NOISE_SNAPSHOTS))
+def test_measurement_noise_snapshot(case):
+    """Stored-value regression for makenoise_measurement, with and without chromequad."""
+    (tnequad, chromequad, per_backend, scale, fref), snapshot = _MEASUREMENT_NOISE_SNAPSHOTS[case]
+    psr = _SnapshotPulsar()
+
+    nd = _chrom_noisedict(psr, tnequad=tnequad, per_backend=per_backend)
+    if not chromequad:
+        nd = {k: v for k, v in nd.items() if 'chromequad' not in k}
+
+    kwargs = dict(tnequad=tnequad, chromequad=chromequad, chromequad_idx_per_backend=per_backend,
+                  scale=scale, fref=fref)
+    fixed = signals.makenoise_measurement(psr, noisedict=nd, **kwargs).N
+    vec = signals.makenoise_measurement(psr, vectorize=True, **kwargs).getN(nd)
+    loop = signals.makenoise_measurement(psr, vectorize=False, **kwargs).getN(nd)
+
+    for N in (fixed, vec, loop):
+        np.testing.assert_allclose(N, snapshot, rtol=1e-12)

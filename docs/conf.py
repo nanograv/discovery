@@ -24,6 +24,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.mathjax',
+    'matplotlib.sphinxext.plot_directive',
     'sphinx.ext.intersphinx',
     'sphinx_autodoc_typehints',
     'numpydoc',
@@ -52,6 +53,12 @@ numpydoc_class_members_toctree = False
 
 # MyST-NB settings
 nb_execution_mode = 'off'
+
+# matplotlib plot_directive settings
+plot_include_source = True
+plot_html_show_source_link = False
+plot_html_show_formats = False
+plot_formats = [('png', 110)]
 
 # Autodoc settings
 autodoc_typehints = 'description'

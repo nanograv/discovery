@@ -70,6 +70,7 @@ flow = [
 
 docs = [
     "sphinx>=7.0",
+    "matplotlib>=3.7",
     "pydata-sphinx-theme>=0.15",
     "sphinx-autodoc-typehints>=1.25",
     "numpydoc>=1.6",
