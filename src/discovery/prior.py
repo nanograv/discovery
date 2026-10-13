@@ -21,6 +21,7 @@ priordict_standard = {
     "(.*_)?t2equad": [-8.5, -5],
     "(.*_)?tnequad": [-8.5, -5],
     "(.*_)?log10_ecorr": [-8.5, -5],
+    r"(.*_)?ecorr_corr_k[0-9]+k[0-9]+": [-1, 1],
     "(.*_)?rednoise_log10_A.*": [-20, -11],
     "(.*_)?rednoise_gamma.*": [0, 7],
     "(.*_)?rednoise_log10_fb.*": [-9, -6],

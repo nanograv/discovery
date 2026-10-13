@@ -209,14 +209,72 @@ def makegp_ecorr_simple(psr, noisedict={}):
 
 # nanograv backends
 def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selection_backend_flags, variable=False, name='ecorrGP'):
-    log10_ecorrs, Umats = [], []
+    """Per-backend ECORR: one jitter amplitude per epoch, shared by all its TOAs.
+
+    This is :func:`makegp_decorr` with ``nmodes=1``, sampling ``{psr}_{backend}_log10_ecorr``;
+    the parameters are those of :func:`makegp_decorr`.
+    """
+    return makegp_decorr(psr, noisedict=noisedict, enterprise=enterprise, scale=scale,
+                         selection=selection, variable=variable, nmodes=1, name=name)
+
+
+def makegp_decorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selection_backend_flags, variable=False,
+                  nmodes=1, correlated=False, name='decorrGP'):
+    """Frequency-resolved ECORR: per-epoch jitter as a low-order Legendre series in log frequency.
+
+    Within each backend the TOA frequencies are mapped to
+    ``y = (ln nu - (ln nu_max + ln nu_min) / 2) / ((ln nu_max - ln nu_min) / 2)`` in [-1, 1],
+    with nu_min and nu_max the backend's lowest and highest TOA frequencies. Epoch e of the
+    backend carries the delay ``sum_m j_em P_m(y)``, m = 0 .. nmodes - 1, so the basis column
+    for (e, m) is the epoch indicator times P_m(y). Columns are ordered by backend, then
+    epoch, then mode.
+
+    With ``correlated=False`` the amplitudes are independent, ``j_em ~ N(0, sigma_m^2)``. With
+    ``correlated=True`` each epoch's amplitude vector has covariance ``M = D R D``, the same
+    for all epochs of a backend, where ``D = diag(sigma_0, ..., sigma_{nmodes-1})`` and R is
+    the correlation matrix built from partial correlations rho_ab by the canonical-vine
+    Cholesky construction (rho_a0 the correlation of modes a and 0, rho_ab for b > 0 the
+    partial correlation given modes 0 .. b-1). The prior of a backend's coefficients is then
+    ``I_epoch (x) M``.
+    All rho_ab = 0 gives the independent model, and ``nmodes=1`` is :func:`makegp_ecorr`, whose
+    default ``name`` is ``'ecorrGP'``. A backend whose TOAs share one frequency has y = 0
+    throughout.
+
+    psr:        Pulsar
+    noisedict:  fixed parameter values; all of the GP's parameters must be present to fix them
+    enterprise: count only epochs with more than one TOA, as enterprise does
+    scale:      multiplies every sigma_m
+    selection:  callable psr -> per-TOA labels, one set of parameters per label
+    variable:   with every parameter fixed, return a VariableGP rather than a ConstantGP
+    nmodes:     number of Legendre modes, an integer >= 1
+    correlated: give the modes the full covariance M rather than independent amplitudes
+    name:       GP name, used in the coefficient index ``{psr.name}_{name}_coefficients(N)``
+
+    Parameters, for each label ``lab``: ``{psr.name}_{lab}_log10_ecorr`` (log10 sigma_0),
+    ``{psr.name}_{lab}_log10_ecorr_k{m}`` (log10 sigma_m, m >= 1) and, with
+    ``correlated=True``, ``{psr.name}_{lab}_ecorr_corr_k{a}k{b}`` (rho_ab, a > b), in [-1, 1].
+
+    Example::
+
+        gp = makegp_decorr(psr, nmodes=5, correlated=True)
+        model = PulsarLikelihood([psr.residuals, makegp_timing(psr, svd=True),
+                                  makenoise_measurement(psr), gp])
+    """
+    if isinstance(nmodes, bool) or not isinstance(nmodes, (int, np.integer)) or nmodes < 1:
+        raise ValueError('makegp_decorr: nmodes must be an integer >= 1')
+
+    k = nmodes = int(nmodes)
+    freqs = np.asarray(psr.freqs) if k > 1 else None
+    log10_ecorrs, corrs, Umats = [], [], []
 
     backend_flags = selection(psr)
     backends = [b for b in sorted(set(backend_flags)) if b != '']
     masks = [np.array(backend_flags == backend) for backend in backends]
     for backend, mask in zip(backends, masks):
-        log10_ecorrs.append(f'{psr.name}_{backend}_log10_ecorr')
-
+        log10_ecorrs.append([f'{psr.name}_{backend}_log10_ecorr' + ('' if m == 0 else f'_k{m}')
+                             for m in range(k)])
+        corrs.append({(a, b): f'{psr.name}_{backend}_ecorr_corr_k{a}k{b}'
+                      for a in range(1, k) for b in range(a)})
 
         # For handling the single backend case
         if len(np.unique(masks)) == 1:
@@ -246,19 +304,115 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
             Umats.append(U_backend)
         else:
             Umats.append(np.vstack([bins == i for i in range(first_valid_bin, bins.max() + 1)]).T)
+
+        if k > 1:
+            # per-backend reference frequency (controls the centring of x)
+            fref_b = float(np.mean(freqs[mask]))
+            x = np.log(freqs / fref_b)
+
+            # rescale x linearly to y in [-1, 1] across this backend's TOAs
+            x_backend = x[mask]
+            x_min, x_max = float(x_backend.min()), float(x_backend.max())
+            half_range = 0.5 * (x_max - x_min)
+            if half_range == 0.0:
+                y = np.zeros_like(freqs)
+            else:
+                y = (x - 0.5 * (x_max + x_min)) / half_range
+            y = np.where(mask, y, 0.0)
+
+            # columns of legvander are P_0(y) ... P_{nmodes-1}(y)
+            P = np.polynomial.legendre.legvander(y, nmodes - 1)
+
+            U0 = Umats[-1].astype(np.float64)
+            nep = U0.shape[1]
+
+            # columns ordered (epoch e outer, mode o inner) so the per-backend Phi
+            # block is exactly kron(I_nep, M) below
+            cols = np.empty((U0.shape[0], nep * k), dtype=np.float64)
+            for e in range(nep):
+                for o in range(k):
+                    cols[:, e * k + o] = U0[:, e] * P[:, o]
+            Umats[-1] = cols
     Umatall = np.hstack(Umats)
-    params = log10_ecorrs
+    amplitudes = [a for amps in log10_ecorrs for a in amps]
+    params = amplitudes
 
     pmasks, cnt = [], 0
     for Umat in Umats:
-        z = np.zeros(Umatall.shape[1], dtype=np.float64)
-        z[cnt:cnt+Umat.shape[1]] = 1.0
-        pmasks.append(z)
+        for m in range(k):
+            z = np.zeros(Umatall.shape[1], dtype=np.float64)
+            z[cnt+m:cnt+Umat.shape[1]:k] = 1.0
+            pmasks.append(z)
         cnt = cnt + Umat.shape[1]
     logscale = np.log10(scale)
 
+    if correlated and k > 1:
+        params = []
+        for amps in log10_ecorrs:
+            params.extend(amps)
+        for corr in corrs:
+            params.extend(corr.values())
+
+        jnp_ = matrix.jnp
+
+        def build_M(p):
+            mblocks = []
+            for amps, corr in zip(log10_ecorrs, corrs):
+                d = jnp_.stack([10.0 ** (logscale + p[a]) for a in amps])  # (k,) marginal std per mode
+                # partial-correlation (C-vine) Cholesky factor L of the mode
+                # correlation matrix R = L L^T. The parameters p[corr[(i, j)]] in
+                # (-1, 1) are correlations (j == 0) / partial correlations (j > 0),
+                # so R -- and hence M -- is PSD with unit diagonal for any values.
+                L_rows = []
+                for i in range(k):
+                    row = [0.0] * k
+                    acc = 0.0  # sum of squares of the entries already placed in this row
+                    for j in range(i):
+                        Lij = p[corr[(i, j)]] * jnp_.sqrt(jnp_.clip(1.0 - acc, 1e-12, None))
+                        row[j] = Lij
+                        acc = acc + Lij ** 2
+                    row[i] = jnp_.sqrt(jnp_.clip(1.0 - acc, 1e-12, None))  # unit row norm
+                    L_rows.append(jnp_.stack([jnp_.asarray(v, dtype=jnp_.float64) for v in row]))
+                L = jnp_.stack(L_rows)                                 # (k, k) lower-triangular
+                R = L @ L.T
+                M = (d[:, None] * d[None, :]) * R                      # (k, k) PSD covariance
+                mblocks.append(M)
+            return mblocks
+        nepochs = [U.shape[1] // k for U in Umats]
+
+        def build_phi(p):
+            return matrix.jsp.linalg.block_diag(*[jnp_.kron(jnp_.eye(n), M) for n, M in zip(nepochs, build_M(p))])
+
+        if all(par in noisedict for par in params):
+            phi = np.asarray(build_phi(noisedict), dtype=np.float64)
+
+            if variable:
+                def getphi(params):
+                    return phi
+                getphi.params = []
+
+                gp = matrix.VariableGP(matrix.NoiseMatrix2D_var(getphi), Umatall)
+                gp.index = {f'{psr.name}_{name}_coefficients({Umatall.shape[1]})': slice(0, Umatall.shape[1])}
+                gp.name, gp.pos = psr.name, psr.pos
+                gp.gpname, gp.gpcommon = name, []
+
+                return gp
+            else:
+                return matrix.ConstantGP(matrix.NoiseMatrix2D_novar(phi), Umatall)
+        else:
+            def getphi(params):
+                return build_phi(params)
+            getphi.params = params
+
+            gp = matrix.VariableGP(matrix.NoiseMatrix2D_var(getphi), Umatall)
+            gp.index = {f'{psr.name}_{name}_coefficients({Umatall.shape[1]})': slice(0, Umatall.shape[1])}
+            gp.name, gp.pos = psr.name, psr.pos
+            gp.gpname, gp.gpcommon = name, []
+
+            return gp
+
     if all(par in noisedict for par in params):
-        phi = sum(10.0**(2 * (logscale + noisedict[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(log10_ecorrs, pmasks))
+        phi = sum(10.0**(2 * (logscale + noisedict[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(amplitudes, pmasks))
 
         if variable:
             def getphi(params):
@@ -276,7 +430,7 @@ def makegp_ecorr(psr, noisedict={}, enterprise=False, scale=1.0, selection=selec
     else:
         pmasks = [matrix.jnparray(pmask) for pmask in pmasks]
         def getphi(params):
-            return sum(10.0**(2 * (logscale + params[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(log10_ecorrs, pmasks))
+            return sum(10.0**(2 * (logscale + params[log10_ecorr])) * pmask for (log10_ecorr, pmask) in zip(amplitudes, pmasks))
         getphi.params = params
 
         gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), Umatall)
