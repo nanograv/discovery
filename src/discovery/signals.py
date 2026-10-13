@@ -895,6 +895,208 @@ def _fd_powerlaw_correlation(q, f_lo, f_hi, nf):
     return corr
 
 
+# parallactic angle
+
+# ITRF geocentric coordinates in metres, verbatim from tempo2's observatories.dat
+OBSERVATORY_ITRF = {
+    'pks':     (-4554231.500,  2816759.100, -3454036.300),   # PARKES / MURRIYANG
+    'meerkat': ( 5109360.133,  2006852.586, -3238948.127),   # MEERKAT
+}
+
+_WGS84_A = 6378137.0
+_WGS84_E2 = (1.0 / 298.257223563) * (2.0 - 1.0 / 298.257223563)
+
+
+def _itrf_to_geodetic(x, y, z):
+    """Geodetic latitude and longitude, in radians, from ITRF metres on WGS84.
+
+    The latitude is geodetic, i.e. measured from the local vertical.
+    """
+    lon = np.arctan2(y, x)
+    p = np.hypot(x, y)
+    lat = np.arctan2(z, p * (1.0 - _WGS84_E2))
+    for _ in range(8):
+        N = _WGS84_A / np.sqrt(1.0 - _WGS84_E2 * np.sin(lat)**2)
+        h = p / np.cos(lat) - N
+        lat = np.arctan2(z, p * (1.0 - _WGS84_E2 * N / (N + h)))
+
+    return lat, lon
+
+
+def observatory_location(site):
+    """Geodetic latitude and longitude in radians for an observing site.
+
+    site: tempo2 observatory code, matched case-insensitively against
+          :data:`OBSERVATORY_ITRF`, or an explicit ``(latitude, longitude)`` pair
+          in degrees
+    """
+    if not isinstance(site, str):
+        lat, lon = site
+        return np.deg2rad(float(lat)), np.deg2rad(float(lon))
+
+    key = site.strip().lower()
+    xyz = OBSERVATORY_ITRF.get(key)
+    if xyz is None:
+        raise KeyError(
+            f'observatory_location: no coordinates for site {site!r}. Known sites are '
+            f'{sorted(OBSERVATORY_ITRF)}; for any other, pass '
+            f'site=(latitude_deg, longitude_deg).')
+
+    return _itrf_to_geodetic(*xyz)
+
+
+def greenwich_sidereal_angle(mjd_utc):
+    """Greenwich mean sidereal time in radians, from a UTC MJD.
+
+    UT1 is approximated by UTC and the equation of the equinoxes is dropped, together
+    worth under 0.01 degrees of hour angle.
+    """
+    d = np.asarray(mjd_utc, dtype=np.float64) + (2400000.5 - 2451545.0)
+    T = d / 36525.0
+    deg = 280.46061837 + 360.98564736629 * d + 0.000387933 * T**2 - T**3 / 38710000.0
+
+    return np.deg2rad(np.mod(deg, 360.0))
+
+
+def parallactic_angle(psr, site):
+    """Parallactic angle at each TOA, in radians, in ``(-pi, pi]``.
+
+    The angle between the great circle from the source to the zenith and the great
+    circle from the source to the north celestial pole,
+
+        tan(psi) = sin(H) cos(lat) / [sin(lat) cos(dec) - cos(lat) sin(dec) cos(H)]
+
+    with ``H`` the local hour angle and ``lat`` the geodetic latitude of the site.
+
+    Computed from ``psr.stoas``, the site arrival times in seconds, not from the barycentric
+    ``psr.toas``. The source position is used as given, without precession or
+    nutation to the date, and the sidereal time is the mean one
+    (:func:`greenwich_sidereal_angle`).
+
+    psr:  Discovery Pulsar object, carrying ``stoas`` and the source position in
+          ``phi`` and ``theta``
+    site: observing site, a code in :data:`OBSERVATORY_ITRF` or a ``(latitude, longitude)``
+          pair in degrees
+    """
+    if not hasattr(psr, 'stoas'):
+        raise AttributeError(
+            f'parallactic_angle: {psr.name} has no stoas, the site arrival times. The '
+            f'barycentric toas are not a substitute -- they carry the Roemer delay, '
+            f'which is degrees of hour angle. Rebuild the feather with the stoas column.')
+
+    mjd = np.asarray(psr.stoas, dtype=np.float64) / 86400.0
+    ra, dec = float(psr.phi), 0.5 * np.pi - float(psr.theta)
+
+    lat, lon = observatory_location(site)
+    H = greenwich_sidereal_angle(mjd) + lon - ra
+
+    return np.arctan2(np.sin(H) * np.cos(lat),
+                      np.sin(lat) * np.cos(dec) - np.cos(lat) * np.sin(dec) * np.cos(H))
+
+
+def makegp_pa(psr, site, bins='chan', selection=None, project=None, name='pa_gp'):
+    """Parallactic-angle (PA) delay with a free amplitude and phase per frequency bin.
+
+    The feeds of an altitude-azimuth telescope turn with the parallactic angle ``psi``, so
+    polarisation leakage that the calibration leaves shifts the arrival time in a bin by
+    ``A cos(2 psi - phi_0)``, with ``A`` and ``phi_0`` differing from bin to bin. Each bin therefore
+    gets a coefficient on ``sin(2 psi)`` and one on ``cos(2 psi)``::
+
+        n_PA = F_PA p,   F_PA = [ F_FD * sin(2 psi) | F_FD * cos(2 psi) ]
+
+    where ``F_FD`` is the indicator basis of :func:`makegp_fd_powerlaw` over the same ``bins``, ``*``
+    multiplies each column element-wise by the sinusoid at the TOAs (with ``selection``, the bins
+    of each label in turn), and ``p`` holds the
+    ``2 N_bin`` coefficients, the sin block then the cos block. ``psi`` is
+    :func:`parallactic_angle` at ``site``.
+
+    The prior is ``Phi = sigma_PA**2 I``, sampling ``{psr}_{name}_log10_sigma``, so that a bin of
+    amplitude ``A`` has ``<A**2> = 2 sigma_PA**2`` and a uniform phase. The timing-model span is
+    projected out of the basis, ``F_PA <- (I - Q Q^T) F_PA``, and ``Phi`` is left alone, so
+    ``sigma_PA**2 F_PA F_PA^T`` is the prior that the unprojected model induces on what remains;
+    columns the projection annihilates are kept. The basis can overlap a static per-bin delay:
+
+    - ``project=None``: the PA basis keeps that static part, and can take up a static delay in
+      each bin;
+    - ``project=fd``, a GP from :func:`makegp_fd_powerlaw`: its ``project_basis`` is projected out
+      as well, and only the part of the delay that varies with ``psi`` is left to this GP.
+
+    ``gp.pa_rank`` is the rank of the projected basis (singular values above ``1e-8`` of the
+    largest) and ``gp.pa_retained`` the fraction of the basis power, its squared Frobenius norm,
+    that the projections leave.
+
+    Example, with the static delay projected out::
+
+        fd = makegp_fd_powerlaw(psr, bins='chan')
+        pa = makegp_pa(psr, bins='chan', site='meerkat', project=fd)
+
+    psr:     Discovery Pulsar object with ``stoas`` in seconds
+    site:    observing site, a code in :data:`OBSERVATORY_ITRF` or a ``(latitude, longitude)``
+             pair in degrees
+    bins:    as :func:`makegp_fd_powerlaw`
+    selection: as :func:`makegp_fd_powerlaw`; each label gets its own bins
+    project: None, or a GP from :func:`makegp_fd_powerlaw`
+    name:    parameter-name stem; :data:`prior.priordict_standard` has boxes for the default only
+    """
+    psi = parallactic_angle(psr, site=site)
+    if selection is None:
+        ind, q = _fd_bins(psr, bins, what='makegp_pa')
+    else:
+        labels = np.asarray(selection(psr)).astype(str)
+        mats, qs = [], []
+        for label in sorted(set(labels.tolist())):
+            try:
+                F_b, q_b = _fd_bins(psr, bins, what='makegp_pa', sel=labels == label)
+            except _FewBins as err:
+                warnings.warn(f"makegp_pa: {psr.name}: selection {label!r} gets no PA bins: {err}")
+                continue
+            mats.append(F_b)
+            qs.append(q_b)
+        if not mats:
+            raise ValueError(f"makegp_pa: {psr.name}: no selection supports two or more bins.")
+        ind, q = np.hstack(mats), np.concatenate(qs)
+
+    Q_null = np.linalg.qr(normalise_tm_basis(psr))[0]
+    if project is not None:
+        P = getattr(project, 'project_basis', None)
+        if P is None:
+            raise TypeError(f'makegp_pa: project must be None or an FD GP from makegp_fd_powerlaw, '
+                            f'which carries project_basis; got {type(project).__name__}.')
+        P = np.asarray(P, dtype=np.float64)
+        if P.shape[0] != len(psi) or getattr(project, 'name', psr.name) != psr.name:
+            raise ValueError(f'makegp_pa: {psr.name}: project is an FD GP for '
+                             f'{getattr(project, "name", "?")} with {P.shape[0]} TOAs, not this pulsar.')
+        P = P - Q_null @ (Q_null.T @ P)
+        Up, Sp, _ = np.linalg.svd(P, full_matrices=False)
+        keep = Up[:, Sp > 1e-10 * Sp[0]]
+        Q_null = np.hstack([Q_null, keep])
+
+    fmat = np.hstack([ind * np.sin(2 * psi)[:, None],
+                      ind * np.cos(2 * psi)[:, None]])
+
+    before = np.linalg.svd(fmat, compute_uv=False)
+    fmat = fmat - Q_null @ (Q_null.T @ fmat)
+    after = np.linalg.svd(fmat, compute_uv=False)
+    rank = int(np.sum(after > 1e-8 * after[0])) if after[0] > 0 else 0
+
+    signame = f'{psr.name}_{name}_log10_sigma'
+    ones = matrix.jnparray(np.ones(fmat.shape[1]))
+
+    def getphi(params):
+        return 10.0**(2.0 * params[signame]) * ones
+    getphi.params = [signame]
+
+    gp = matrix.VariableGP(matrix.NoiseMatrix1D_var(getphi), fmat)
+    gp.index = {f'{psr.name}_{name}_coefficients({fmat.shape[1]})': slice(0, fmat.shape[1])}
+    gp.name, gp.pos, gp.gpname, gp.gpcommon = psr.name, psr.pos, name, []
+    gp.pa_bins = np.exp(q)
+    gp.pa_angle = psi
+    gp.pa_rank = rank
+    gp.pa_retained = float(np.sum(after**2) / np.sum(before**2))
+
+    return gp
+
+
 # Fourier GP
 
 def getspan(psrs):

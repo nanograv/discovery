@@ -78,7 +78,8 @@ priordict_standard = {
     "(.*_)?h3": [0.0, 10**-5],
     "(.*_)?stig": [0.0, 1.0],
     "(.*_)?fd_gp_log10_sigma": [-10, -4],
-    "(.*_)?fd_gp_gamma": [0, 7]
+    "(.*_)?fd_gp_gamma": [0, 7],
+    "(.*_)?pa_gp_log10_sigma": [-10, -6]
 }
 
 def getprior_uniform(par, priordict={}):
