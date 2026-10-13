@@ -1188,6 +1188,49 @@ def make_fourierbasis_chrom(alpha=4.0, tndm=False):
     """
     return make_fourierbasis_dm(alpha=alpha, tndm=tndm)
 
+def _band_envelope(psr, fcenter, log10_bw, scale=None):
+    """Band-pass envelope over ``psr.freqs``, normalised to unit rms across the TOAs.
+
+    The product of two sigmoids,
+    ``E(nu) = 1 / (1 + exp((nu_lo - nu) / s)) / (1 + exp((nu - nu_hi) / s))``, with edges
+    ``nu_lo, nu_hi = fcenter -+ 10**log10_bw / 2`` in MHz and roll-off ``s``, by default a tenth
+    of the bandwidth, divided by its rms over the TOAs.
+
+    psr:      Discovery Pulsar object
+    fcenter:  band centre in MHz
+    log10_bw: log10 of the bandwidth in MHz
+    scale:    sigmoid roll-off in MHz; None for a tenth of the bandwidth
+    """
+    freqs = matrix.jnparray(psr.freqs)
+    bw = 10.0 ** log10_bw
+    flow, fhigh = fcenter - 0.5 * bw, fcenter + 0.5 * bw
+    s = 0.1 * bw if scale is None else scale
+    env = jnp.reciprocal(1.0 + jnp.exp((flow - freqs) / s)) * jnp.reciprocal(1.0 + jnp.exp((freqs - fhigh) / s))
+    return env / jnp.sqrt(jnp.mean(env ** 2) + 1e-12)
+
+
+def fourierbasis_band(psr, components, T=None, scale=None):
+    """Fourier basis confined to a band of radio frequency.
+
+    Returns ``(f, df, fmatfunc)``, with ``fmatfunc(fcenter, log10_bw)`` the columns of
+    :func:`fourierbasis` multiplied row-wise by :func:`_band_envelope`. For use as
+    ``makegp_fourier(..., fourierbasis=fourierbasis_band)``, which samples ``fcenter`` and
+    ``log10_bw``.
+
+    psr:        Discovery Pulsar object
+    components: number of Fourier frequencies
+    T:          timespan in seconds; None for the pulsar's span
+    scale:      sigmoid roll-off of the band edges in MHz; None for a tenth of the bandwidth
+    """
+    f, df, fmat = fourierbasis(psr, components, T)
+
+    fmat = matrix.jnparray(fmat)
+    def fmatfunc(fcenter, log10_bw):
+        return fmat * _band_envelope(psr, fcenter, log10_bw, scale)[:, None]
+
+    return f, df, fmatfunc
+
+
 def dmfourierbasis(psr, components, T=None, fref=1400.0):
     warnings.warn("dmfourierbasis is deprecated; use fourierbasis_dm instead.",
                   DeprecationWarning, stacklevel=2)
@@ -1611,6 +1654,27 @@ def make_timeinterpbasis_chromatic(start_time=None, order=1, fref=1400.0):
 
     return timeinterpbasis_chrom
 
+def make_timeinterpbasis_band(start_time=None, order=1, scale=None):
+    """Time-interpolation basis confined to a band of radio frequency.
+
+    The basis of :func:`make_timeinterpbasis` multiplied row-wise by :func:`_band_envelope`,
+    as a function of ``(fcenter, log10_bw)``. Used by :func:`makegp_fftcov_band`.
+
+    start_time: start of the interpolation grid, as :func:`make_timeinterpbasis`
+    order:      interpolation order, as :func:`make_timeinterpbasis`
+    scale:      sigmoid roll-off of the band edges in MHz; None for a tenth of the bandwidth
+    """
+    timeinterpbasis_achrom = make_timeinterpbasis(start_time=start_time, order=order)
+
+    def timeinterpbasis_band(psr, nmodes, T):
+        t_coarse, dt_coarse, Bmat = timeinterpbasis_achrom(psr, nmodes, T)
+        def Bmat_func(fcenter, log10_bw):
+            return Bmat * _band_envelope(psr, fcenter, log10_bw, scale)[:, None]
+        return t_coarse, dt_coarse, Bmat_func
+
+    return timeinterpbasis_band
+
+
 def make_dmtimeinterpbasis(alpha=2.0, tndm=False, start_time=None, order=1):
     warnings.warn("make_dmtimeinterpbasis is deprecated; use make_timeinterpbasis_dm "
                   "(alpha=2 DM) or make_timeinterpbasis_chromatic (variable alpha) instead.",
@@ -1706,6 +1770,46 @@ def makegp_fftcov_chrom(psr, prior, components, T=None, t0=None, order=1, oversa
     T = getspan(psr) if T is None else T
     return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
                           components, T=T, fourierbasis=make_timeinterpbasis_chromatic(start_time=t0, order=order, fref=fref), common=common, name=name)
+
+def makegp_fftcov_band(psr, prior, components, T=None, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, common=[], name='band_gp', scale=None):
+    """Band noise: a red process confined to a range of radio frequency.
+
+    A time-domain (FFT-covariance) GP, as :func:`makegp_fftcov`, on the basis of
+    :func:`make_timeinterpbasis_band`: the delay is ``E(nu) x(t)``, with ``x(t)`` a red process
+    of power spectrum ``prior`` and ``E`` the unit-rms band envelope of :func:`_band_envelope`,
+    centred on ``fcenter`` (MHz) with bandwidth ``10**log10_bw`` (MHz). With
+    :func:`powerlaw` it samples ``{psr}_{name}_log10_A`` and ``{psr}_{name}_gamma``, and the
+    basis samples ``{psr}_{name}_fcenter`` and ``{psr}_{name}_log10_bw``, whose priors the
+    caller supplies.
+
+    The posterior in ``(fcenter, log10_bw)`` can be multimodal, with a mode on each part of
+    the band that carries excess power, and gradient-based samplers such as NUTS stay in
+    whichever mode they start in. Sample it with nested sampling.
+
+    Example, with the band anywhere in the observed range and at least 20 MHz wide::
+
+        band = makegp_fftcov_band(psr, powerlaw, components=101)
+        fmin, fmax = float(psr.freqs.min()), float(psr.freqs.max())
+        priordict = {f'{psr.name}_band_gp_fcenter': [fmin, fmax],
+                     f'{psr.name}_band_gp_log10_bw': [np.log10(20.0), np.log10(fmax - fmin)]}
+
+    psr:         Discovery Pulsar object
+    prior:       power spectrum, e.g. :func:`powerlaw`
+    components:  number of interpolation knots (odd)
+    T:           timespan in seconds; None for the pulsar's span
+    t0:          start of the interpolation grid; None for the first TOA
+    order:       interpolation order
+    oversample, fmax_factor, cutoff: frequency grid of the spectrum-to-covariance
+                 transform, as :func:`psd2cov`
+    common:      parameters shared with other pulsars
+    name:        parameter-name stem; :data:`prior.priordict_standard` has boxes for the
+                 default only
+    scale:       sigmoid roll-off of the band edges in MHz; None for a tenth of the bandwidth
+    """
+    T = getspan(psr) if T is None else T
+    return makegp_fourier(psr, psd2cov(prior, components, T, oversample, fmax_factor, cutoff),
+                          components, T=T, fourierbasis=make_timeinterpbasis_band(start_time=t0, order=order, scale=scale), common=common, name=name)
+
 
 def makecommongp_fftcov(psrs, prior, components, T, t0=None, order=1, oversample=4, fmax_factor=1, cutoff=4, fourierbasis=None, common=[], vector=False, name='fftcovCommonGP'):
     return makecommongp_fourier(psrs, psd2cov(prior, components, T, oversample, fmax_factor, cutoff), components, T,
