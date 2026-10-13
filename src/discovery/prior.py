@@ -21,6 +21,7 @@ priordict_standard = {
     "(.*_)?t2equad": [-8.5, -5],
     "(.*_)?tnequad": [-8.5, -5],
     "(.*_)?log10_ecorr": [-8.5, -5],
+    r"(.*_)?ecorr_corr_k[0-9]+k[0-9]+": [-1, 1],
     "(.*_)?rednoise_log10_A.*": [-20, -11],
     "(.*_)?rednoise_gamma.*": [0, 7],
     "(.*_)?rednoise_log10_fb.*": [-9, -6],
@@ -75,7 +76,12 @@ priordict_standard = {
     "(.*_)?chrom_gauss_sign_param": [-1, 1],
     "(.*_)?chrom_gauss_alpha": [0, 7],
     "(.*_)?h3": [0.0, 10**-5],
-    "(.*_)?stig": [0.0, 1.0]
+    "(.*_)?stig": [0.0, 1.0],
+    "(.*_)?fd_gp_log10_sigma": [-10, -4],
+    "(.*_)?fd_gp_gamma": [0, 7],
+    "(.*_)?pa_gp_log10_sigma": [-10, -6],
+    "(.*_)?band_gp_log10_A": [-18, -11],
+    "(.*_)?band_gp_gamma": [0, 7]
 }
 
 def getprior_uniform(par, priordict={}):
