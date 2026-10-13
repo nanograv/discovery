@@ -155,7 +155,7 @@ def run_nuts_with_checkpoints(
 
     if checkpoint_file.is_file() and samples_file.is_file() and resume:
         df = pd.read_feather(samples_file)
-        num_samples_saved = df.shape[0]
+        num_samples_saved = df.shape[0] // sampler.num_chains
 
         with checkpoint_file.open("rb") as f:
             checkpoint = pickle.load(f)

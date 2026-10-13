@@ -210,8 +210,10 @@ def normal_model():
 normal_model.to_df = lambda samples: pd.DataFrame(np.asarray(samples["x"]), columns=["x0", "x1"])
 
 
-def normal_sampler(num_samples):
-    return ds_numpyro.makesampler_nuts(normal_model, num_warmup=200, num_samples=num_samples, progress_bar=False)
+def normal_sampler(num_samples, num_chains=1):
+    return ds_numpyro.makesampler_nuts(
+        normal_model, num_warmup=200, num_samples=num_samples, num_chains=num_chains, progress_bar=False
+    )
 
 
 def test_run_nuts_with_checkpoints_matches_single_run(tmp_path):
@@ -227,12 +229,18 @@ def test_run_nuts_with_checkpoints_matches_single_run(tmp_path):
     pd.testing.assert_frame_equal(df.reset_index(drop=True), expected, check_exact=True)
 
 
-def test_run_nuts_with_checkpoints_resume_continues_chain(tmp_path):
+@pytest.mark.parametrize("num_chains", [1, 2])
+def test_run_nuts_with_checkpoints_resume_continues_chain(tmp_path, num_chains):
     key = jax.random.PRNGKey(0)
 
-    expected = ds_numpyro.run_nuts_with_checkpoints(normal_sampler(30), 10, key, outdir=tmp_path / "full")
+    expected = ds_numpyro.run_nuts_with_checkpoints(
+        normal_sampler(30, num_chains), 10, key, outdir=tmp_path / "full"
+    )
+    assert len(expected) == 30 * num_chains
 
-    ds_numpyro.run_nuts_with_checkpoints(normal_sampler(10), 10, key, outdir=tmp_path / "resumed")
-    df = ds_numpyro.run_nuts_with_checkpoints(normal_sampler(30), 10, key, outdir=tmp_path / "resumed", resume=True)
+    ds_numpyro.run_nuts_with_checkpoints(normal_sampler(10, num_chains), 10, key, outdir=tmp_path / "resumed")
+    df = ds_numpyro.run_nuts_with_checkpoints(
+        normal_sampler(30, num_chains), 10, key, outdir=tmp_path / "resumed", resume=True
+    )
 
     pd.testing.assert_frame_equal(df.reset_index(drop=True), expected.reset_index(drop=True), check_exact=True)
