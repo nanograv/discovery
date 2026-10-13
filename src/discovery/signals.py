@@ -72,6 +72,59 @@ def selection_backend_flags(psr):
     return psr.backend_flags
 
 
+def selection_flags(flags, sep='_', warn_below=10):
+    """Return a selection splitting the TOAs on one or more per-TOA flags.
+
+    Functions taking a selection, such as :func:`makenoise_measurement` and
+    :func:`makegp_ecorr`, split on the backend by default; this splits on any entry of
+    ``psr.flags`` instead, so a per-channel efac and equad is ``selection_flags('chan')``.
+    Labels carry the flag name, giving parameters like ``J0437-4715_chan15_efac``.
+
+    Raises if a named flag is absent, or if any TOA carries an empty value for one.
+
+    flags:      flag name, or a sequence of names whose values are combined into one
+                label
+    sep:        separator between the parts of a combined label
+    warn_below: warn about groups holding fewer than this many TOAs
+    """
+    names = [flags] if isinstance(flags, str) else list(flags)
+
+    def selection(psr):
+        missing = [n for n in names if n not in psr.flags]
+        if missing:
+            raise KeyError(f'selection_flags: {psr.name} has no flag(s) {missing}; '
+                           f'available flags are {sorted(psr.flags)}.')
+
+        cols = []
+        for n in names:
+            v = np.asarray(psr.flags[n]).astype(str)
+            nempty = int((v == '').sum())
+            if nempty:
+                raise ValueError(
+                    f'selection_flags: {psr.name} has {nempty} TOAs with an empty {n!r} '
+                    f'flag. Those TOAs would be dropped from the selection and left with '
+                    f'zero measurement noise, so fix the flag rather than proceeding.')
+            cols.append(np.char.add(n, v))
+
+        labels = cols[0] if len(cols) == 1 else np.array(
+            [sep.join(parts) for parts in zip(*cols)])
+
+        counts = {lab: int((labels == lab).sum()) for lab in set(labels.tolist())}
+        thin = {k: v for k, v in counts.items() if v < warn_below}
+        if thin:
+            warnings.warn(f'selection_flags on {names} for {psr.name} gives '
+                          f'{len(counts)} groups, of which {len(thin)} hold fewer than '
+                          f'{warn_below} TOAs: {dict(sorted(thin.items())[:6])}'
+                          f'{" ..." if len(thin) > 6 else ""}')
+
+        return labels
+
+    selection.__name__ = 'selection_' + '_'.join(names)
+    selection.flags = names
+
+    return selection
+
+
 def makenoise_measurement(psr, noisedict={}, scale=1.0, tnequad=False, ecorr=False, selection=selection_backend_flags, vectorize=True,
                           outliers=False, enterprise=False):
     backend_flags = selection(psr)
