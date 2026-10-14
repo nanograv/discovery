@@ -1,7 +1,7 @@
 import functools
 
 import numpy as np
-import scipy.integrate
+import quadax
 
 from . import matrix
 from . import signals
@@ -24,6 +24,43 @@ def monopole_orfa(z):
 
 def make2d(array):
     return matrix.jnp.diag(array) if array.ndim == 1 else array
+
+
+def ridge_cholesky(Pinv, FFt, FTt, TTt):
+    """Cholesky factor ``A`` (``S = A @ A.T``) and the raw matrix ``S`` of the
+    GW-space matrix
+
+        S = TTt - FTt.T @ (diag(Pinv) + FFt)^-1 @ FTt
+          = G̃.T @ (I + F̃ B F̃.T)^-1 @ G̃          (B = diag(1/Pinv))
+
+    The GW Fourier basis lies inside the red-noise span (its frequencies are a
+    subset of the red-noise frequencies on the same baseline), so ``S`` is the
+    difference of two large, nearly equal PSD matrices. For high-precision
+    pulsars its condition number runs past float64 and several eigenvalues come
+    out genuinely negative (e.g. J0437-4715: min eig ~ -19, cond ~ 1e15). An
+    adaptive ridge -- lift the smallest eigenvalue just past zero -- is required
+    before the Cholesky.
+
+    NB: a plain Cholesky-Schur factorization is *not* sufficient here. We tried
+    reading ``A`` off the Cholesky of the joint matrix [[diag(Pinv)+FFt, FTt],
+    [FTt.T, TTt]] to avoid forming the difference; that is exact in real
+    arithmetic but ``jnp.linalg.cholesky`` returns NaN (no exception) on the
+    numerically indefinite blocks, silently poisoning Q / gx2cdf for ~half the
+    NANOGrav-15 pulsars. See dev_architectures/os_memory_improvements/.
+
+    The raw (unridged) ``S`` is returned for the pairwise normalization ``bs``.
+    """
+    c = matrix.jsp.linalg.cho_factor(matrix.jnp.diag(Pinv) + FFt)
+    S = TTt - FTt.T @ matrix.jsp.linalg.cho_solve(c, FTt)
+    S = 0.5 * (S + S.T)  # enforce symmetry
+
+    # add only what is needed to make the smallest eigenvalue positive
+    eigs = matrix.jnp.linalg.eigvalsh(S)
+    ridge = (matrix.jnp.maximum(0.0, -matrix.jnp.min(eigs))
+             + 1e-12 * matrix.jnp.maximum(matrix.jnp.max(matrix.jnp.abs(eigs)), 1.0))
+
+    A = matrix.jnp.linalg.cholesky(S + ridge * matrix.jnp.eye(S.shape[0]))
+    return A, S
 
 class OS:
     def __init__(self, gbl):
@@ -67,15 +104,15 @@ class OS:
         def get_Q(params, orf=hd_orfa):
             sPhi = matrix.jnp.sqrt(Phivar(params))
 
-            cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1.0 / Pvar(params)) + FFt) for Pvar, FFt in zip(Pvars, FFts)]
-            Ss = [TTt - FTt.T @ matrix.jsp.linalg.cho_solve(c, FTt) for c, TTt, FTt in zip(cs, TTts, FTts)]
-
-            Ss = [0.5 * (S + S.T) for S in Ss]  # ensure symmetry
-            As = [matrix.jnp.linalg.cholesky(S + (1e-10 * matrix.jnp.trace(S) / S.shape[0]) * matrix.jnp.eye(S.shape[0]))
-                for S in Ss]
+            # S = G̃.T (I + F̃ B F̃.T)^-1 G̃; genuinely indefinite for
+            # high-precision pulsars, factored with an adaptive ridge (see
+            # ridge_cholesky). bs uses the raw (unridged) S.
+            As, Ss = zip(*[ridge_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
+                           for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)])
 
             Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
-            bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+            # Ds are symmetric, so tr(Ds[i] @ Ds[j]) == sum(Ds[i] * Ds[j]) (O(m^2), no m x m temporary)
+            bs = [matrix.jnp.sum(Ds[i] * Ds[j]) for (i,j) in self.pairs]
 
             orfs = orf(matrix.jnparray(self.angles))
             # note the 2 to get OS = x^T Q x
@@ -118,15 +155,11 @@ class OS:
         def get_opQ(params, orf=hd_orfa):
             sPhi = matrix.jnp.sqrt(Phivar(params))
 
-            cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1.0 / Pvar(params)) + FFt) for Pvar, FFt in zip(Pvars, FFts)]
-            Ss = [TTt - FTt.T @ matrix.jsp.linalg.cho_solve(c, FTt) for c, TTt, FTt in zip(cs, TTts, FTts)]
-
-            Ss = [0.5 * (S + S.T) for S in Ss]  # ensure symmetry
-            As = [matrix.jnp.linalg.cholesky(S + (1e-10 * matrix.jnp.trace(S) / S.shape[0]) * matrix.jnp.eye(S.shape[0]))
-                for S in Ss]
+            As, Ss = zip(*[ridge_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
+                           for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)])
 
             Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
-            bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+            bs = [matrix.jnp.sum(Ds[i] * Ds[j]) for (i,j) in self.pairs]  # Ds symmetric: tr(A@B)==sum(A*B)
 
             orfs = orf(matrix.jnparray(self.angles))
             # note the 2 to get OS = x^T Q x
@@ -172,16 +205,11 @@ class OS:
         def get_sample(key, params, orf=hd_orfa):
             sPhi = matrix.jnp.sqrt(Phivar(params))
 
-            # TO DO: should probably close on Ft.T @ Ft, Tt.T @ Tt, and Tt.T @ Ft (and Ft.T @ Tt) rather than on Fts and Tts
-            cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1.0 / Pvar(params)) + FFt) for Pvar, FFt in zip(Pvars, FFts)]
-            Ss = [TTt - FTt.T @ matrix.jsp.linalg.cho_solve(c, FTt) for c, TTt, FTt in zip(cs, TTts, FTts)]
-
-            Ss = [0.5 * (S + S.T) for S in Ss]  # ensure symmetry
-            As = [matrix.jnp.linalg.cholesky(S + (1e-10 * matrix.jnp.trace(S) / S.shape[0]) * matrix.jnp.eye(S.shape[0]))
-                  for S in Ss]
+            As, Ss = zip(*[ridge_cholesky(1.0 / Pvar(params), FFt, FTt, TTt)
+                           for Pvar, FFt, FTt, TTt in zip(Pvars, FFts, FTts, TTts)])
 
             Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
-            bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+            bs = [matrix.jnp.sum(Ds[i] * Ds[j]) for (i,j) in self.pairs]  # Ds symmetric: tr(A@B)==sum(A*B)
 
             xs = matrix.jnpnormal(key, cnt)
             uks = [sPhi * (A @ xs[ind]) for A, ind in zip(As, inds)]
@@ -213,29 +241,13 @@ class OS:
         Fts = [LNm[:,None] * Fmat for LNm, Fmat in zip(LNms, Fmats)]
         Tts = [LNm[:,None] * Tmat for LNm, Tmat in zip(LNms, Tmats)] # this is GW-only
 
-        cs = [matrix.jsp.linalg.cho_factor(matrix.jnp.diag(1/Pmat) + Ft.T @ Ft) for Pmat, Ft in zip(Pmats, Fts)]
-        Xs = [Tt - Ft @ matrix.jsp.linalg.cho_solve(c, Ft.T @ Tt) for c, Ft, Tt in zip(cs, Fts, Tts)]
-
-        Ss = [Tt.T @ X for Tt, X in zip(Tts, Xs)]
-
-        # alternative formulation (numerically unstable?):
-        # R = chol(Pmat^-1 + Ft.T @ Ft)
-        # Y = R^-1 @ Ft.T @ Tt
-        # S = Tt.T @ Tt - Y.T @ Y
-        #
-        # Rs = [matrix.jnp.linalg.cholesky(matrix.jnp.diag(1/Pmat) + Ft.T @ Ft, upper=True) for Pmat, Ft in zip(Pmats, Fts)]
-        # Ys = [matrix.jsp.linalg.solve_triangular(R, Ft.T @ Tt, lower=False) for R, Ft, Tt in zip(Rs, Fts, Tts)]
-        # Ss = [Tt.T @ Tt - Y.T @ Y for Tt, Y in zip(Tts, Ys)]
-
-        # with ridge regularization; the simple estimate based on the trace seems fine
-        # a more precise possibility is eps = matrix.jnp.maximum(0.0, -matrix.jnp.linalg.eigvalsh(S).min())
-        #                                     + 1e-10 * matrix.jnp.trace(S) / S.shape[0]
-        Ss = [0.5 * (S + S.T) for S in Ss]  # ensure symmetry
-        As = [matrix.jnp.linalg.cholesky(S + (1e-10 * matrix.jnp.trace(S) / S.shape[0]) * matrix.jnp.eye(S.shape[0]))
-              for S in Ss]
+        # S = G̃.T (I + F̃ B F̃.T)^-1 G̃; genuinely indefinite for high-precision
+        # pulsars, factored with an adaptive ridge (see ridge_cholesky)
+        As, Ss = zip(*[ridge_cholesky(1.0 / Pmat, Ft.T @ Ft, Ft.T @ Tt, Tt.T @ Tt)
+                       for Pmat, Ft, Tt in zip(Pmats, Fts, Tts)])
 
         Ds = [sPhi[:,matrix.jnp.newaxis] * S * sPhi[matrix.jnp.newaxis,:] for S in Ss]
-        bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+        bs = [matrix.jnp.sum(Ds[i] * Ds[j]) for (i,j) in self.pairs]  # Ds symmetric: tr(A@B)==sum(A*B)
 
         inds, cnt = [], 0
         for A in As:
@@ -279,7 +291,7 @@ class OS:
         PsTts = [sPhi[:,matrix.jnp.newaxis] * Tmat.T for Tmat in Tmats]
 
         Ds = [sPhi[:,matrix.jnp.newaxis] * TtKmT * sPhi[matrix.jnp.newaxis,:] for TtKmT in TtKmTs]
-        bs = [matrix.jnp.trace(Ds[i] @ Ds[j]) for (i,j) in self.pairs]
+        bs = [matrix.jnp.sum(Ds[i] * Ds[j]) for (i,j) in self.pairs]  # Ds symmetric: tr(A@B)==sum(A*B)
 
         cnt, iNs, iPs = 0, [], []
         for Nmat in Nmats:
@@ -342,7 +354,7 @@ class OS:
                 ts = [matrix.jnp.dot(sN * ks[i][0], sN * ks[j][0]) for (i,j) in pairs]
                 ds = [sN[:,matrix.jnp.newaxis] * k[1] * sN[matrix.jnp.newaxis,:] for k in ks]
 
-                bs = [matrix.jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
+                bs = [matrix.jnp.sum(ds[i] * ds[j]) for (i,j) in pairs]  # ds symmetric: tr(A@B)==sum(A*B)
             else:
                 U = matrix.jnp.linalg.cholesky(N, upper=True) # N = U^T U, so y = U^T x
 
@@ -350,7 +362,7 @@ class OS:
                 ds = [U @ k[1] @ U.T for k in ks]
 
                 ts = [matrix.jnp.dot(uks[i], uks[j].T) for (i,j) in pairs]
-                bs = [matrix.jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
+                bs = [matrix.jnp.sum(ds[i] * ds[j]) for (i,j) in pairs]  # ds symmetric: tr(A@B)==sum(A*B)
 
                 # slower:
                 # ts = [matrix.jnp.dot(U @ ks[i][0], U @ ks[j][0]) for (i,j) in pairs]
@@ -424,7 +436,7 @@ class OS:
             N = getN(params)
             ks = [k(params) for k in kernelsolves]
 
-            if sN.ndim == 2:
+            if N.ndim == 2:
                 raise NotImplementedError("Complex rhosigma not defined for 2D Phi.")
 
             sN = matrix.jnp.sqrt(N)
@@ -433,7 +445,7 @@ class OS:
             ts = [tsf[i] * matrix.jnp.conj(tsf[j]) for (i,j) in pairs]
 
             ds = [sN[:,matrix.jnp.newaxis] * k[1] * sN[matrix.jnp.newaxis,:] for k in ks]
-            bs = [matrix.jnp.trace(ds[i] @ ds[j]) for (i,j) in pairs]
+            bs = [matrix.jnp.sum(ds[i] * ds[j]) for (i,j) in pairs]  # ds symmetric: tr(A@B)==sum(A*B)
 
             # can't use matrix.jnparray or complex will be downcast
             return (matrix.jnparray(ts) / matrix.jnparray(bs)[:,matrix.jnp.newaxis],
@@ -472,22 +484,32 @@ class OS:
 
     def gx2cdf(self, params, osxs, cutoff=1e-6, limit=100, epsabs=1e-6):
         Qmat = self.Q(params)
+
         eigx = matrix.jnp.linalg.eigh(Qmat)[0]
 
         return eig2cdf(osxs, eigx, cutoff=cutoff, limit=limit, epsabs=epsabs)
 
 
+# @jax.jit
 @jax.jit
 def imhof(u, x, eigs):
     theta = 0.5 * matrix.jnp.sum(matrix.jnp.arctan(eigs * u), axis=0) - 0.5 * x * u
     rho = matrix.jnp.prod((1.0 + (eigs * u)**2)**0.25, axis=0)
 
-    return matrix.jnp.sin(theta) / (u * rho)
+    # the integrand has a removable 0/0 singularity at u=0 with finite limit
+    # ½(Σλ - x); quadax may sample the lower endpoint, so return the limit there
+    limit = 0.5 * (matrix.jnp.sum(eigs, axis=0) - x)
+    return matrix.jnp.where(u == 0.0, limit, matrix.jnp.sin(theta) / (u * rho))
 
 def eig2cdf(osxs, eigs, cutoff=1e-6, limit=100, epsabs=1e-6):
     # cutoff by number of eigenvalues is more friendly to jitted imhof
-    eigs = eigs[:cutoff] if cutoff > 1 else eigs[matrix.jnp.abs(eigs) > cutoff]
+    eigs = eigs[:cutoff] if cutoff > 1 else eigs[matrix.jnp.abs(eigs) > cutoff * matrix.jnp.abs(eigs).max()]
 
-    # jax.scipy.integrate is mostly not implemented. Could try quadax
-    return np.array([0.5 - scipy.integrate.quad(lambda u: float(imhof(u, osx, eigs)),
-                                                0, np.inf, limit=limit, epsabs=epsabs)[0] / np.pi for osx in osxs])
+    # quadax.quadgk is a JAX-transformable analog of scipy.integrate.quad,
+    # so we can vmap over osxs and keep everything in jax
+    def cdf(osx):
+        integral = quadax.quadgk(imhof, [0.0, matrix.jnp.inf], args=(osx, eigs),
+                                 epsabs=epsabs, max_ninter=limit)[0]
+        return 0.5 - integral / matrix.jnp.pi
+
+    return jax.vmap(cdf)(matrix.jnparray(osxs))
