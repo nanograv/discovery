@@ -1,4 +1,13 @@
+from types import SimpleNamespace
+
 import pytest
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pandas as pd
+import numpyro
+from numpyro import distributions as dist
 
 import discovery.samplers.numpyro as ds_numpyro
 
@@ -142,8 +151,6 @@ def test_ensure_sampler_to_df_raises_without_model_to_df():
 
 
 def test_run_nuts_with_checkpoints_mkdirs_path_and_recovers_to_df(tmp_path, monkeypatch):
-    import pandas as pd
-
     def model_with_df():
         pass
 
@@ -155,7 +162,7 @@ def test_run_nuts_with_checkpoints_mkdirs_path_and_recovers_to_df(tmp_path, monk
         def __init__(self):
             self.num_samples = 4
             self.sampler = RecordingNUTS(model_with_df)
-            self.last_state = "state"
+            self.last_state = SimpleNamespace(rng_key=0)
             self.post_warmup_state = None
             self.runs = 0
 
@@ -175,9 +182,6 @@ def test_run_nuts_with_checkpoints_mkdirs_path_and_recovers_to_df(tmp_path, monk
         saved["path"] = path
 
     monkeypatch.setattr(ds_numpyro, "save_chain", fake_save_chain)
-    monkeypatch.setattr(
-        ds_numpyro.jax.random, "split", lambda key: (key, key)
-    )
 
     outdir = tmp_path / "nested" / "chains"
     sampler = FakeSampler()
@@ -197,3 +201,46 @@ def test_run_nuts_with_checkpoints_mkdirs_path_and_recovers_to_df(tmp_path, monk
     assert saved["path"] == outdir / "numpyro-samples.feather"
     assert list(df["x"]) == [1, 2]
     assert (outdir / "numpyro-checkpoint.pickle").is_file()
+
+
+def normal_model():
+    numpyro.sample("x", dist.Normal(jnp.zeros(2), 1.0))
+
+
+normal_model.to_df = lambda samples: pd.DataFrame(np.asarray(samples["x"]), columns=["x0", "x1"])
+
+
+def normal_sampler(num_samples, num_chains=1):
+    return ds_numpyro.makesampler_nuts(
+        normal_model, num_warmup=200, num_samples=num_samples, num_chains=num_chains, progress_bar=False
+    )
+
+
+def test_run_nuts_with_checkpoints_matches_single_run(tmp_path):
+    key = jax.random.PRNGKey(0)
+
+    single = normal_sampler(30)
+    single.run(key)
+    expected = single.to_df()
+    assert expected["x0"].nunique() > 20
+
+    df = ds_numpyro.run_nuts_with_checkpoints(normal_sampler(30), 10, key, outdir=tmp_path)
+
+    pd.testing.assert_frame_equal(df.reset_index(drop=True), expected, check_exact=True)
+
+
+@pytest.mark.parametrize("num_chains", [1, 2])
+def test_run_nuts_with_checkpoints_resume_continues_chain(tmp_path, num_chains):
+    key = jax.random.PRNGKey(0)
+
+    expected = ds_numpyro.run_nuts_with_checkpoints(
+        normal_sampler(30, num_chains), 10, key, outdir=tmp_path / "full"
+    )
+    assert len(expected) == 30 * num_chains
+
+    ds_numpyro.run_nuts_with_checkpoints(normal_sampler(10, num_chains), 10, key, outdir=tmp_path / "resumed")
+    df = ds_numpyro.run_nuts_with_checkpoints(
+        normal_sampler(30, num_chains), 10, key, outdir=tmp_path / "resumed", resume=True
+    )
+
+    pd.testing.assert_frame_equal(df.reset_index(drop=True), expected.reset_index(drop=True), check_exact=True)

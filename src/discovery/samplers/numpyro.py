@@ -2,7 +2,6 @@ import inspect
 import pickle
 from pathlib import Path
 
-import jax
 import jax.numpy as jnp
 import pandas as pd
 
@@ -120,7 +119,8 @@ def run_nuts_with_checkpoints(
     num_samples_per_checkpoint : int
         The number of samples to save in each checkpoint.
     rng_key : jax.random.PRNGKey
-        The random number generator key for JAX.
+        The random number generator key for the first chunk. Each later chunk,
+        and a resumed run, continues from the key carried in the sampler state.
     outdir : str | Path
         The directory for output files.
     resume : bool
@@ -155,7 +155,7 @@ def run_nuts_with_checkpoints(
 
     if checkpoint_file.is_file() and samples_file.is_file() and resume:
         df = pd.read_feather(samples_file)
-        num_samples_saved = df.shape[0]
+        num_samples_saved = df.shape[0] // sampler.num_chains
 
         with checkpoint_file.open("rb") as f:
             checkpoint = pickle.load(f)
@@ -163,6 +163,7 @@ def run_nuts_with_checkpoints(
         total_sample_num = sampler.num_samples - num_samples_saved
 
         sampler.post_warmup_state = checkpoint
+        rng_key = checkpoint.rng_key
 
     else:
         df = None
@@ -193,7 +194,6 @@ def run_nuts_with_checkpoints(
             pickle.dump(sampler.last_state, f)
 
         sampler.post_warmup_state = sampler.last_state
-
-        rng_key, _ = jax.random.split(rng_key)
+        rng_key = sampler.last_state.rng_key
 
     return df
