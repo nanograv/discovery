@@ -120,12 +120,16 @@ class Pulsar:
     def save_feather(self, filename, noisedict=None):
         pydict = {array: getattr(self, array) for array in Pulsar.columns}
 
-        pydict.update({f'{array}_{i}': getattr(self, array)[:,i] for array in Pulsar.vector_columns
-                                                                 for i in range(getattr(self, array).shape[1])})
+        # read each array once: on enterprise Pulsars these are properties that return a fresh
+        # copy (e.g. Mmat = _designmatrix[_isort, :]), and every column slice would pin its own copy
+        for array in Pulsar.vector_columns:
+            values = getattr(self, array)
+            pydict.update({f'{array}_{i}': values[:,i] for i in range(values.shape[1])})
 
-        pydict.update({f'{array}_{i}_{j}': getattr(self, array)[:,i,j] for array in Pulsar.tensor_columns
-                                                                 for i in range(getattr(self, array).shape[1])
-                                                                 for j in range(getattr(self, array).shape[2])})
+        for array in Pulsar.tensor_columns:
+            values = getattr(self, array)
+            pydict.update({f'{array}_{i}_{j}': values[:,i,j] for i in range(values.shape[1])
+                                                             for j in range(values.shape[2])})
 
         pydict.update({f'flags_{flag}': self.flags[flag] for flag in self.flags})
 
